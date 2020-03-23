@@ -9,8 +9,14 @@ namespace DotNetLightning.LDK
         [DllImport(RustLightning, CallingConvention = CallingConvention.Cdecl)]
         internal static unsafe extern void* create_ffi_channel_manager(
             byte* seed_ptr,
+            int seed_len,
             Network* n,
             in NullFFILogger logger_ptr,
-            ref UserConfig config);
+            ref UserConfig config,
+            in FFIManyChannelMonitor monitor,
+            // in Broadcaster broadcaster,
+            // in FeeEstimator fee_est,
+            ulong current_block_height
+            );
     }
 }

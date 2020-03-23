@@ -1,7 +1,9 @@
+using DotNetLightning.LDK.Primitives;
+
 namespace DotNetLightning.LDK
 {
-    public class ChannelManager
+    public static class ChannelManager
     {
-        
+        public static void Create(UserConfig config) {}
     }
 }
