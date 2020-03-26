@@ -37,7 +37,7 @@ namespace DotNetLightning.LDK.Primitives
             if (lastResult._kind == _kind && lastResult._id == _id)
                 throw new Exception($"FFI against rust-lightning failed ({_kind}), {msg?.TrimEnd()}");
 
-            throw new Exception($"Native storage failed with {_kind}");
+            throw new Exception($"FFI against rust-lightning failed with {_kind}");
         }
     }
 }
