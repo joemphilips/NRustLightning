@@ -1,0 +1,4 @@
+[submodule "rust-lightning"]
+	path = rust-lightning
+	url = https://github.com/joemphilips/rust-lightning
+	branch = ffi_build_scripts
