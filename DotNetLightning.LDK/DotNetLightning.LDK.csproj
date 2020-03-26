@@ -15,4 +15,5 @@
     <ItemGroup>
         <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.6.0-*" />
     </ItemGroup>
+    <Import Project="LDK.targets" />
 </Project>

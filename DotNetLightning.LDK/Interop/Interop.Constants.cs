@@ -8,10 +8,12 @@ namespace DotNetLightning.LDK
         const string RustLightning = "*";
 #elif WINDOWS
         const string RustLightning = "Native/bindings.dll";
-#elif LINUX
-        const string RustLightning = "Native/libbindings.so";
 #elif MACOS
         const string RustLightning = "Native/libbindings.dylib";
+#elif LINUX
+        const string RustLightning = "Native/libbindings.so";
+#else // without this, editor might not notice the field.
+        const string RustLightning = "Native/libbindings.so";
 #endif
     }
 }
