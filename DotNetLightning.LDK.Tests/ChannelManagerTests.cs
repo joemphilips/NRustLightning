@@ -6,10 +6,10 @@ using DotNetLightning.LDK;
 
 namespace DotNetLightning.LDK.Tests
 {
-    public class UnitTest1
+    public class ChannelManagerTests
     {
         [Fact]
-        public void CanGetErrorMessage()
+        public void CanCreateChannelManager()
         {
         }
     }

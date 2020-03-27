@@ -1,6 +1,6 @@
 namespace DotNetLightning.LDK.Primitives
 {
-    internal enum Network : int
+    public enum Network : int
     {
         MainNet = 0,
         TestNet = 1,

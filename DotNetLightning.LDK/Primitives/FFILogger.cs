@@ -7,7 +7,7 @@ namespace DotNetLightning.LDK.Primitives
     internal delegate void NullLog(NullFFILogger self);
     
     [StructLayout(LayoutKind.Sequential)]
-    internal struct NullFFILogger
+    internal ref struct NullFFILogger
     {
         private NullLog log_ptr;
     }

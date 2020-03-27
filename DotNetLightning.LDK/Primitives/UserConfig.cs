@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace DotNetLightning.LDK.Primitives
 {
 	[StructLayout(LayoutKind.Sequential)]
-	public struct ChannelConfig
+	public ref struct ChannelConfig
 	{
 		/// Amount (in millionths of a satoshi) the channel will charge per transferred satoshi.
 		/// This may be allowed to change at runtime in a later update, however doing so must result in
