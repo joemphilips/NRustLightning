@@ -1,4 +1,4 @@
-namespace DotNetLightning.LDK.Primitives
+namespace DotNetLightning.LDK.Adaptors
 {
     public enum Network : int
     {

@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using DotNetLightning.LDK.Primitives;
+using DotNetLightning.LDK.Adaptors;
 
 namespace DotNetLightning.LDK
 {
@@ -54,6 +55,7 @@ namespace DotNetLightning.LDK
         {
             [MarshalAs(UnmanagedType.FunctionPtr)]
             public FFITestFn fn;
+            
         }
 
         internal class FFITestOutputStructHandle : SafeHandle

@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace DotNetLightning.LDK.Primitives
+namespace DotNetLightning.LDK.Adaptors
 {
 	[StructLayout(LayoutKind.Sequential)]
 	public ref struct ChannelConfig

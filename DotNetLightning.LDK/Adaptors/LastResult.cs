@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace DotNetLightning.LDK.Primitives
+namespace DotNetLightning.LDK.Adaptors
 {
     public class LastResult
     {

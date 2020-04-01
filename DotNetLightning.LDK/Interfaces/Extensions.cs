@@ -1,16 +1,11 @@
 using System;
-using DotNetLightning.LDK.Primitives;
+using DotNetLightning.LDK.Adaptors;
 
 namespace DotNetLightning.LDK.Interfaces
 {
     internal static class Extensions
     {
-        internal static FFIManyChannelMonitor ToFFI(this IManyChannelMonitor manyChannelMonitor)
-        {
-            throw new NotImplementedException();
-        }
-        
-        internal static NullFFILogger ToFFI(this ILogger logger)
+        internal static FFILogger ToFFI(this ILogger logger)
         {
             throw new NotImplementedException();
         }

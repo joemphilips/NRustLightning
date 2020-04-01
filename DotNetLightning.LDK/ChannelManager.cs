@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using DotNetLightning.LDK.Handles;
 using DotNetLightning.LDK.Interfaces;
-using DotNetLightning.LDK.Primitives;
+using DotNetLightning.LDK.Adaptors;
 
 namespace DotNetLightning.LDK
 {
@@ -19,7 +19,7 @@ namespace DotNetLightning.LDK
             Span<byte> seed,
             Network network,
             in UserConfig config,
-            IManyChannelMonitor monitor,
+            in ChannelMonitorHandle monitor,
             ILogger logger,
             IBroadcaster broadcaster,
             IFeeEstimator feeEstimator,
@@ -30,7 +30,6 @@ namespace DotNetLightning.LDK
             {
                 fixed (byte* b = seed)
                 {
-                    var ffiManyChannelMonitor = monitor.ToFFI();
                     var ffiLogger = logger.ToFFI();
                     var ffiBroadcaster = broadcaster.ToFFI();
                     var ffiFeeEstimator = feeEstimator.ToFFI();
@@ -39,7 +38,7 @@ namespace DotNetLightning.LDK
                         seed.Length,
                         in network,
                         in config,
-                        in ffiManyChannelMonitor,
+                        in monitor,
                         in ffiLogger,
                         in ffiBroadcaster,
                         in ffiFeeEstimator,

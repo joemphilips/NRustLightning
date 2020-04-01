@@ -11,7 +11,11 @@ namespace DotNetLightning.LDK.Tests
         [Fact]
         public void ShouldHandleSimpleStruct()
         {
-            var inputStruct = new Interop.FFITestInputInterface().ToFFI();
+            // this object must kept alive until the ffi code finish calling delegate.
+            // Since object holds the reference to the delegate, if this has been removed by GC
+            // the pointer on the rust side wil 
+            var inputInterface = new Interop.FFITestInputInterface();
+            var inputStruct = inputInterface.ToFFI();
             var ffiStruct = Interop.TestOutputStruct.Create(inputStruct);
             ffiStruct.Dispose();
 

@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using DotNetLightning.LDK.Handles;
-using DotNetLightning.LDK.Primitives;
+using DotNetLightning.LDK.Adaptors;
 
 namespace DotNetLightning.LDK
 {
@@ -19,8 +19,8 @@ namespace DotNetLightning.LDK
             int seed_len,
             in Network n,
             in UserConfig config,
-            in FFIManyChannelMonitor monitor,
-            in NullFFILogger logger_ptr,
+            in ChannelMonitorHandle monitor,
+            in FFILogger logger_ptr,
             in FFIBroadcaster broadcaster,
             in FFIFeeEstimator fee_est,
             ulong current_block_height,
