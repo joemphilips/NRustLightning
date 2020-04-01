@@ -32,11 +32,11 @@ namespace DotNetLightning.LDK
         #if DEBUG
         [DllImport(RustLightning, EntryPoint = "ffi_test_broadcaster",
             ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern FFIResult _ffi_test_broadcaster(ref FFIBroadcaster broadcaster);
+        internal static extern FFIResult _ffi_test_broadcaster(BroadcasterHandle handle);
 
-        internal static FFIResult ffi_test_broadcaster(ref FFIBroadcaster broadcaster, bool check = true)
+        internal static FFIResult ffi_test_broadcaster(BroadcasterHandle handle, bool check = true)
         {
-            return MaybeCheck(_ffi_test_broadcaster(ref broadcaster), check);
+            return MaybeCheck(_ffi_test_broadcaster(handle), check);
         }
         #endif
     }

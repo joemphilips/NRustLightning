@@ -21,7 +21,7 @@ namespace DotNetLightning.LDK
         // so that we can make sure that GC won't erase the pointer.
         // we e.g. https://stackoverflow.com/questions/5465060/do-i-need-to-pin-an-anonymous-delegate/5465074#5465074
         // and https://stackoverflow.com/questions/29300465/passing-function-pointer-in-c-sharp
-        private static FFIBroadcastTransaction broadcast_ptr = (tx) =>
+        private static FFIBroadcastTransaction broadcast_ptr = (ref FFITransaction tx) =>
         {
             Console.WriteLine($"tx is {Hex.Encode(tx.AsSpan())}");
         };

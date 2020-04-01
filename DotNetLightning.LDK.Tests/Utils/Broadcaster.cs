@@ -5,25 +5,30 @@ using DotNetLightning.LDK.Utils;
 
 namespace DotNetLightning.LDK.Tests.Utils
 {
-    public class BroadcasterWrapper : IDisposable
+    public class Broadcaster : IDisposable
     {
         private readonly BroadcasterHandle _handle;
 
-        private BroadcasterWrapper(BroadcasterHandle handle)
+        private Broadcaster(BroadcasterHandle handle)
         {
             _handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
 
-        private static FFIBroadcastTransaction broadcast_ptr = (tx) =>
+        private static FFIBroadcastTransaction broadcast_ptr = (ref FFITransaction tx) =>
         {
-            Console.WriteLine($"tx is {Hex.Encode(tx.AsSpan())}");
+            Console.WriteLine($"going to broadcast tx {Hex.Encode(tx.AsSpan())}");
         };
         
-        public static BroadcasterWrapper Create()
+        public static Broadcaster Create()
         {
             var broadcast = broadcast_ptr;
             Interop.create_broadcaster(ref broadcast, out var handle);
-            return new BroadcasterWrapper(handle);
+            return new Broadcaster(handle);
+        }
+
+        public void Broadcast()
+        {
+            Interop.ffi_test_broadcaster(_handle);
         }
         
         public void Dispose()

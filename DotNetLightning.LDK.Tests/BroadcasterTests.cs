@@ -8,7 +8,8 @@ namespace DotNetLightning.LDK.Tests
         [Fact]
         public void TestBroadcaster()
         {
-            var broadcaster = BroadcasterWrapper.Create();
+            var broadcaster = Broadcaster.Create();
+            broadcaster.Broadcast();
             broadcaster.Dispose();
         }
     }

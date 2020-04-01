@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace DotNetLightning.LDK.Adaptors
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void FFIBroadcastTransaction(FFITransaction tx);
+    public delegate void FFIBroadcastTransaction(ref FFITransaction tx);
     
     [StructLayout(LayoutKind.Sequential)]
     internal ref struct FFIBroadcaster
