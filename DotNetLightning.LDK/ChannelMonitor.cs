@@ -80,7 +80,6 @@ namespace DotNetLightning.LDK
             chainwatcher.FilterBlock = filter_block;
             
             var broadcaster = new FFIBroadcaster();
-            broadcaster.broadcast_transaction = broadcast_ptr;
             
             var logger = new FFILogger();
             logger.log = logConsole;
