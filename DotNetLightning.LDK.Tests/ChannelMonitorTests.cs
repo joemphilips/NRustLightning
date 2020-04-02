@@ -7,8 +7,8 @@ namespace DotNetLightning.LDK.Tests
         [Fact]
         public void ChannelMonitorTest()
         {
-            // var chanmon = ChannelMonitor.Create();
-            // chanmon.Dispose();
+            var chanmon = ChannelMonitor.Create();
+            chanmon.Dispose();
         }
     }
 }

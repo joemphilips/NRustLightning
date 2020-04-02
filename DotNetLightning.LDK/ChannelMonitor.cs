@@ -9,9 +9,23 @@ namespace DotNetLightning.LDK
 {
     public sealed class ChannelMonitor : IDisposable
     {
+        private readonly BroadcasterHandle _broadcasterHandle;
+        private readonly ChainWatchInterfaceHandle _chainWatchInterfaceHandle;
+        private readonly FeeEstimatorHandle _feeEstimatorHandle;
+        private readonly LoggerHandle _loggerHandle;
         private readonly ChannelMonitorHandle _handle;
-        internal ChannelMonitor(ChannelMonitorHandle handle)
+        internal ChannelMonitor(
+            ChainWatchInterfaceHandle chainWatchInterfaceHandle,
+            BroadcasterHandle broadcasterHandle,
+            FeeEstimatorHandle feeEstimatorHandle,
+            LoggerHandle loggerHandle,
+            ChannelMonitorHandle handle
+            )
         {
+            _chainWatchInterfaceHandle = chainWatchInterfaceHandle ?? throw new ArgumentNullException(nameof(chainWatchInterfaceHandle));
+            _broadcasterHandle = broadcasterHandle ?? throw new ArgumentNullException(nameof(broadcasterHandle));
+            _feeEstimatorHandle = feeEstimatorHandle ?? throw new ArgumentNullException(nameof(feeEstimatorHandle));
+            _loggerHandle = loggerHandle ?? throw new ArgumentNullException(nameof(loggerHandle));
             _handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
         // when passing delegates from C# to rust, we don't have to pin it but
@@ -71,29 +85,22 @@ namespace DotNetLightning.LDK
         
         public static ChannelMonitor Create()
         {
-            // we must make a copy of these delegates here.
-            var chainwatcher = new FFIChainWatchInterface();
-            chainwatcher.InstallWatchTx = install_watch_tx_ptr;
-            chainwatcher.InstallWatchOutPoint = install_watch_outpoint;
-            chainwatcher.WatchAllTxn = watch_all_txn;
-            chainwatcher.GetChainUtxo = get_chain_utxo;
-            chainwatcher.FilterBlock = filter_block;
+            Interop.create_chain_watch_interface(ref install_watch_tx_ptr, ref install_watch_outpoint, ref watch_all_txn, ref get_chain_utxo, ref filter_block, out var chainWatchInterfaceHandle);
+            Interop.create_broadcaster(ref broadcast_ptr, out var broadcasterHandle);
+            Interop.create_logger(ref logConsole, out var loggerHandle);
+            Interop.create_fee_estimator(ref get_est_sat_per_1000_weight, out var feeEstimatorHandle);
             
-            var broadcaster = new FFIBroadcaster();
-            
-            var logger = new FFILogger();
-            logger.log = logConsole;
-            
-            var feeEstimator = new FFIFeeEstimator();
-            feeEstimator.get_est_sat_per_1000_weight = get_est_sat_per_1000_weight;
-            
-            Interop.create_ffi_channel_monitor(ref chainwatcher, ref broadcaster, ref logger, ref feeEstimator, out var handle);
-            return new ChannelMonitor(handle);
+            Interop.create_ffi_channel_monitor(chainWatchInterfaceHandle, broadcasterHandle, loggerHandle, feeEstimatorHandle, out var handle);
+            return new ChannelMonitor(chainWatchInterfaceHandle, broadcasterHandle, feeEstimatorHandle, loggerHandle, handle);
         }
         
         public void Dispose()
         {
             _handle.Dispose();
+            _chainWatchInterfaceHandle.Dispose();
+            _broadcasterHandle.Dispose();
+            _feeEstimatorHandle.Dispose();
+            _loggerHandle.Dispose();
         }
     }
 }

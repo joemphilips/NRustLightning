@@ -3,9 +3,9 @@ using System.Runtime.InteropServices;
 
 namespace DotNetLightning.LDK.Handles
 {
-    public class LoggerHandle : SafeHandle
+    public class FeeEstimatorHandle : SafeHandle
     {
-        private LoggerHandle() : base(IntPtr.Zero, true)
+        private FeeEstimatorHandle() : base(IntPtr.Zero, true)
         {}
 
         public override bool IsInvalid => handle == IntPtr.Zero;
@@ -17,7 +17,7 @@ namespace DotNetLightning.LDK.Handles
             var h = handle;
             handle = IntPtr.Zero;
 
-            Interop.release_logger(h, false);
+            Interop.release_fee_estimator(h, false);
             return true;
         }
     }
