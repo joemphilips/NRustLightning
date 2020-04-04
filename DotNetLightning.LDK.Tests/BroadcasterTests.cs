@@ -58,6 +58,7 @@ namespace DotNetLightning.LDK.Tests
             ref FFIBroadcastTransaction IBroadcaster.BroadcastTransaction
                 => ref broadcast_ptr;
         }
+        
         [Fact]
         public void TestBroadcasterWrapper()
         {

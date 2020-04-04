@@ -41,37 +41,37 @@ namespace DotNetLightning.LDK
         };
 
         private static InstallWatchTx install_watch_tx_ptr =
-            (ref FFIChainWatchInterface self, ref FFISha256dHash txid,  ref FFIScript scriptPubKey) =>
+            (ref FFISha256dHash txid,  ref FFIScript scriptPubKey) =>
             {
                 Console.WriteLine($"Installing watch tx with txid ({Hex.Encode(txid.AsSpan())}) scriptPubKey {Hex.Encode(scriptPubKey.AsSpan())}");
             };
 
         private static InstallWatchOutPoint install_watch_outpoint =
-            (ref FFIChainWatchInterface self, ref FFIOutPoint outpoint, ref FFIScript script) =>
+            (ref FFIOutPoint outpoint, ref FFIScript script) =>
             {
                 Console.WriteLine($"Installing watch outpoint with {Hex.Encode(outpoint.script_pub_key.AsSpan())}, spk {Hex.Encode(script.AsSpan())}");
             };
 
         private static WatchAllTxn watch_all_txn =
-            (ref FFIChainWatchInterface self) =>
+            () =>
             {
                 Console.WriteLine("watch all txn");
             };
 
         private static GetChainUtxo get_chain_utxo =
-            (ref FFIChainWatchInterface self, ref FFISha256dHash genesisHash, ulong utxoId, ref ChainError err,
+            (ref FFISha256dHash genesisHash, ulong utxoId, ref ChainError err,
                 ref FFITxOut txOut) =>
             {
                 Console.WriteLine($"get_chain_utxo {Hex.Encode(genesisHash.AsSpan())}");
             };
 
         private static FilterBlock filter_block =
-            (ref FFIChainWatchInterface self, ref FFIBlock block) =>
+            (ref FFIBlock block) =>
             {
                 Console.WriteLine($"filtering block {Hex.Encode(block.AsSpan())}");
             };
 
-        private static Log logConsole = (ref FFILogger self, ref FFILogRecord record) =>
+        private static Log logConsole = (ref FFILogRecord record) =>
         {
             Console.WriteLine($"Logging {record.args}");
         };

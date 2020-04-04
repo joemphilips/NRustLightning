@@ -11,7 +11,7 @@ namespace DotNetLightning.LDK.Tests
         internal class TestLogger : ILogger
         {
 
-            private static Log log = (ref FFILogger logger, ref FFILogRecord record) =>
+            private static Log log = (ref FFILogRecord record) =>
             {
                 Console.WriteLine($"record {record.args}");
             };

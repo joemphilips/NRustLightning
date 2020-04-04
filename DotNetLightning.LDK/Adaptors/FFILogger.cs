@@ -31,7 +31,7 @@ namespace DotNetLightning.LDK.Adaptors
         public uint line;
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void Log(ref FFILogger self, ref FFILogRecord record);
+    public delegate void Log(ref FFILogRecord record);
     
     [StructLayout(LayoutKind.Sequential)]
     public ref struct FFILogger
