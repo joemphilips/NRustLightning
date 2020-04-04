@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using DotNetLightning.LDK.Handles;
 using DotNetLightning.LDK.Adaptors;
+using DotNetLightning.LDK.Interfaces;
 using DotNetLightning.LDK.Utils;
 
 namespace DotNetLightning.LDK
@@ -40,36 +41,6 @@ namespace DotNetLightning.LDK
             Console.WriteLine($"tx is {Hex.Encode(tx.AsSpan())}");
         };
 
-        private static InstallWatchTx install_watch_tx_ptr =
-            (ref FFISha256dHash txid,  ref FFIScript scriptPubKey) =>
-            {
-                Console.WriteLine($"Installing watch tx with txid ({Hex.Encode(txid.AsSpan())}) scriptPubKey {Hex.Encode(scriptPubKey.AsSpan())}");
-            };
-
-        private static InstallWatchOutPoint install_watch_outpoint =
-            (ref FFIOutPoint outpoint, ref FFIScript script) =>
-            {
-                Console.WriteLine($"Installing watch outpoint with {Hex.Encode(outpoint.script_pub_key.AsSpan())}, spk {Hex.Encode(script.AsSpan())}");
-            };
-
-        private static WatchAllTxn watch_all_txn =
-            () =>
-            {
-                Console.WriteLine("watch all txn");
-            };
-
-        private static GetChainUtxo get_chain_utxo =
-            (ref FFISha256dHash genesisHash, ulong utxoId, ref ChainError err,
-                ref FFITxOut txOut) =>
-            {
-                Console.WriteLine($"get_chain_utxo {Hex.Encode(genesisHash.AsSpan())}");
-            };
-
-        private static FilterBlock filter_block =
-            (ref FFIBlock block) =>
-            {
-                Console.WriteLine($"filtering block {Hex.Encode(block.AsSpan())}");
-            };
 
         private static Log logConsole = (ref FFILogRecord record) =>
         {
@@ -83,12 +54,23 @@ namespace DotNetLightning.LDK
                 return 1234;
             };
         
-        public static ChannelMonitor Create()
+        public static ChannelMonitor Create(
+            IChainWatchInterface chainWatchInterface,
+            IBroadcaster broadcaster,
+            ILogger logger,
+            IFeeEstimator feeEstimator
+            )
         {
-            Interop.create_chain_watch_interface(ref install_watch_tx_ptr, ref install_watch_outpoint, ref watch_all_txn, ref get_chain_utxo, ref filter_block, out var chainWatchInterfaceHandle);
-            Interop.create_broadcaster(ref broadcast_ptr, out var broadcasterHandle);
-            Interop.create_logger(ref logConsole, out var loggerHandle);
-            Interop.create_fee_estimator(ref get_est_sat_per_1000_weight, out var feeEstimatorHandle);
+            Interop.create_chain_watch_interface(
+                ref chainWatchInterface.InstallWatchTx, 
+                ref chainWatchInterface.InstallWatchOutPoint, 
+                ref chainWatchInterface.WatchAllTxn, 
+                ref chainWatchInterface.GetChainUtxo, 
+                ref chainWatchInterface.FilterBlock,
+                out var chainWatchInterfaceHandle);
+            Interop.create_broadcaster(ref broadcaster.BroadcastTransaction, out var broadcasterHandle);
+            Interop.create_logger(ref logger.Log, out var loggerHandle);
+            Interop.create_fee_estimator(ref feeEstimator.getEstSatPer1000Weight, out var feeEstimatorHandle);
             
             Interop.create_ffi_channel_monitor(chainWatchInterfaceHandle, broadcasterHandle, loggerHandle, feeEstimatorHandle, out var handle);
             return new ChannelMonitor(chainWatchInterfaceHandle, broadcasterHandle, feeEstimatorHandle, loggerHandle, handle);
