@@ -1,6 +1,7 @@
 using System;
 using DotNetLightning.LDK.Adaptors;
 using DotNetLightning.LDK.Handles;
+using DotNetLightning.LDK.Interfaces;
 using DotNetLightning.LDK.Utils;
 
 namespace DotNetLightning.LDK.Tests.Utils
@@ -14,15 +15,9 @@ namespace DotNetLightning.LDK.Tests.Utils
             _handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
 
-        private static FFIBroadcastTransaction broadcast_ptr = (ref FFITransaction tx) =>
+        public static Broadcaster Create(IBroadcaster broadcaster)
         {
-            Console.WriteLine($"going to broadcast tx {Hex.Encode(tx.AsSpan())}");
-        };
-        
-        public static Broadcaster Create()
-        {
-            var broadcast = broadcast_ptr;
-            Interop.create_broadcaster(ref broadcast, out var handle);
+            Interop.create_broadcaster(ref broadcaster.BroadcastTransaction, out var handle);
             return new Broadcaster(handle);
         }
 

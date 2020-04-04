@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace DotNetLightning.LDK.Adaptors
 {
-    internal enum FFILogLevel : int
+    public enum FFILogLevel : int
     {
         Off,
         Error,
@@ -13,7 +13,7 @@ namespace DotNetLightning.LDK.Adaptors
         Trace
     }
     [StructLayout(LayoutKind.Sequential)]
-    internal ref struct FFILogRecord
+    public ref struct FFILogRecord
     {
         /// The verbosity level of the message.
         public FFILogLevel level;
@@ -31,10 +31,10 @@ namespace DotNetLightning.LDK.Adaptors
         public uint line;
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal delegate void Log(ref FFILogger self, ref FFILogRecord record);
+    public delegate void Log(ref FFILogger self, ref FFILogRecord record);
     
     [StructLayout(LayoutKind.Sequential)]
-    internal ref struct FFILogger
+    public ref struct FFILogger
     {
         internal Log log;
     }

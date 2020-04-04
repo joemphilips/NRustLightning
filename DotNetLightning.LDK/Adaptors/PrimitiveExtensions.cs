@@ -47,6 +47,7 @@ namespace DotNetLightning.LDK.Adaptors
             var size = (int) ffi.len;
             unsafe
             {
+                
                 return new Span<byte>(ffi.ptr.ToPointer(), size);
             }
         }

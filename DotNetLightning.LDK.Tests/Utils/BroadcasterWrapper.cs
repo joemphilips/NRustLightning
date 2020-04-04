@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using DotNetLightning.LDK.Adaptors;
 using DotNetLightning.LDK.Handles;
+using DotNetLightning.LDK.Interfaces;
 using DotNetLightning.LDK.Tests.Utils;
 using DotNetLightning.LDK.Utils;
 
@@ -17,6 +18,7 @@ namespace DotNetLightning.LDK.Tests.Utils
     {
         private readonly BroadcasterWrapperHandle _handle;
         private readonly BroadcasterHandle _innerHandle;
+        private IBroadcaster _broadcaster;
 
         private BroadcasterWrapper(BroadcasterWrapperHandle handle, BroadcasterHandle innerHandle)
         {
@@ -24,15 +26,9 @@ namespace DotNetLightning.LDK.Tests.Utils
             _innerHandle = innerHandle ?? throw new ArgumentNullException(nameof(innerHandle));
         }
 
-        private static FFIBroadcastTransaction broadcast_ptr = (ref FFITransaction tx) =>
+        public static BroadcasterWrapper Create(IBroadcaster broadcaster)
         {
-            Console.WriteLine($"going to broadcast tx {Hex.Encode(tx.AsSpan())} from wrapper.");
-        };
-
-
-        public static BroadcasterWrapper Create()
-        {
-            Interop.create_broadcaster(ref broadcast_ptr, out var innerHandle);
+            Interop.create_broadcaster(ref broadcaster.BroadcastTransaction, out var innerHandle);
             Interop.create_broadcaster_wrapper(innerHandle, out var handle);
             return new BroadcasterWrapper(handle, innerHandle);
         }

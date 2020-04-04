@@ -8,25 +8,25 @@ namespace DotNetLightning.LDK.Adaptors
     public ref struct FFIScript
     {
         internal IntPtr ptr;
-        internal ulong len;
+        internal UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
     public ref struct SecretKey
     {
         internal IntPtr ptr;
-        internal ulong len;
+        internal UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
     public ref struct PublicKey
     {
         internal IntPtr ptr;
-        internal ulong len;
+        internal UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
     public ref struct FFISha256dHash
     {
         internal IntPtr ptr;
-        internal ulong len;
+        internal UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
     public ref struct FFIOutPoint
@@ -45,13 +45,13 @@ namespace DotNetLightning.LDK.Adaptors
     public ref struct FFITransaction
     {
         public IntPtr ptr;
-        public ulong len;
+        public UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
     public ref struct FFIBlock
     {
         internal IntPtr ptr;
-        internal ulong len;
+        internal UIntPtr len;
     }
     
 }
