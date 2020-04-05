@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DotNetLightning.LDK.Adaptors;
 using DotNetLightning.LDK.Handles;
 using DotNetLightning.LDK.Interfaces;
@@ -31,4 +32,23 @@ namespace DotNetLightning.LDK.Tests.Utils
             _handle.Dispose();
         }
     }
+        internal class TestBroadcaster : IBroadcaster
+        {
+            public List<string> BroadcastedTxHex { get; } = new List<string>();
+
+            public FFIBroadcastTransaction _broadcast_ptr;
+
+            public TestBroadcaster()
+            {
+                _broadcast_ptr =
+                    (ref FFITransaction tx) =>
+                     {
+                         var hex = Hex.Encode(tx.AsSpan());
+                         BroadcastedTxHex.Add(hex);
+                     };
+            }
+            ref FFIBroadcastTransaction IBroadcaster.BroadcastTransaction
+                => ref _broadcast_ptr;
+        }
+
 }

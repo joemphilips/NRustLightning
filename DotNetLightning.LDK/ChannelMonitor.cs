@@ -15,6 +15,7 @@ namespace DotNetLightning.LDK
         private readonly FeeEstimatorHandle _feeEstimatorHandle;
         private readonly LoggerHandle _loggerHandle;
         private readonly ChannelMonitorHandle _handle;
+        
         internal ChannelMonitor(
             ChainWatchInterfaceHandle chainWatchInterfaceHandle,
             BroadcasterHandle broadcasterHandle,
@@ -29,31 +30,6 @@ namespace DotNetLightning.LDK
             _loggerHandle = loggerHandle ?? throw new ArgumentNullException(nameof(loggerHandle));
             _handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
-        // when passing delegates from C# to rust, we don't have to pin it but
-        // we must
-        // 1. declare as a static field. (it may be unnecessary, I must check later.)
-        // 2. make a copy of it
-        // so that we can make sure that GC won't erase the pointer.
-        // we e.g. https://stackoverflow.com/questions/5465060/do-i-need-to-pin-an-anonymous-delegate/5465074#5465074
-        // and https://stackoverflow.com/questions/29300465/passing-function-pointer-in-c-sharp
-        private static FFIBroadcastTransaction broadcast_ptr = (ref FFITransaction tx) =>
-        {
-            Console.WriteLine($"tx is {Hex.Encode(tx.AsSpan())}");
-        };
-
-
-        private static Log logConsole = (ref FFILogRecord record) =>
-        {
-            Console.WriteLine($"Logging {record.args}");
-        };
-
-        private static FFIGetEstSatPer1000Weight get_est_sat_per_1000_weight =
-            (ref FFITransaction tx) =>
-            {
-                Console.WriteLine("Getting fee estimation");
-                return 1234;
-            };
-        
         public static ChannelMonitor Create(
             IChainWatchInterface chainWatchInterface,
             IBroadcaster broadcaster,
@@ -73,7 +49,8 @@ namespace DotNetLightning.LDK
             Interop.create_fee_estimator(ref feeEstimator.getEstSatPer1000Weight, out var feeEstimatorHandle);
             
             Interop.create_ffi_channel_monitor(chainWatchInterfaceHandle, broadcasterHandle, loggerHandle, feeEstimatorHandle, out var handle);
-            return new ChannelMonitor(chainWatchInterfaceHandle, broadcasterHandle, feeEstimatorHandle, loggerHandle, handle);
+            return new ChannelMonitor(chainWatchInterfaceHandle, broadcasterHandle, feeEstimatorHandle, loggerHandle,
+                handle);
         }
         
         public void Dispose()

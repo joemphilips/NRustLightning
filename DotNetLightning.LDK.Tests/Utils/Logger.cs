@@ -1,4 +1,5 @@
 using System;
+using DotNetLightning.LDK.Adaptors;
 using DotNetLightning.LDK.Handles;
 using DotNetLightning.LDK.Interfaces;
 
@@ -29,4 +30,15 @@ namespace DotNetLightning.LDK.Tests.Utils
             _handle.Dispose();
         }
     }
+    
+    internal class TestLogger : ILogger
+    {
+        private Log _log = (ref FFILogRecord record) =>
+        {
+            Console.WriteLine(record.args);
+        };
+
+        public ref Log Log => ref _log;
+    }
+
 }
