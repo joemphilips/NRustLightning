@@ -8,22 +8,11 @@ namespace DotNetLightning.LDK.Tests
 {
     public class LoggerTests
     {
-        internal class TestLogger : ILogger
-        {
-
-            private static Log log = (ref FFILogRecord record) =>
-            {
-                Console.WriteLine($"record {record.args}");
-            };
-
-            public ref Log Log => ref log;
-        }
-        
-        // [Fact]
-        [Fact(Skip = "make sure broadcaster works first")]
+        [Fact(Skip = "it crashes after calling logger.log in test_logger")]
         public void LoggerTest()
         {
-            var logger = Logger.Create(new TestLogger());
+            var l = new TestLogger();
+            var logger = Logger.Create(l);
             logger.Test();
             logger.Dispose();
         }

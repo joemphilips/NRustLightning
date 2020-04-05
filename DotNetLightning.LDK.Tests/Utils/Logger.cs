@@ -33,9 +33,9 @@ namespace DotNetLightning.LDK.Tests.Utils
     
     internal class TestLogger : ILogger
     {
-        private Log _log = (ref FFILogRecord record) =>
+        private static Log _log = (ref FFILogRecord record) =>
         {
-            Console.WriteLine(record.args);
+            Console.WriteLine($"message received from ffi is {record.args}");
         };
 
         public ref Log Log => ref _log;

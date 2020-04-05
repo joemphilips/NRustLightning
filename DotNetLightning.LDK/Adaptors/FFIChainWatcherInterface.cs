@@ -18,13 +18,4 @@ namespace DotNetLightning.LDK.Adaptors
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void FilterBlock(ref FFIBlock block);
     
-    [StructLayout(LayoutKind.Sequential)]
-    internal ref struct FFIChainWatchInterface
-    {
-        internal InstallWatchTx InstallWatchTx;
-        internal InstallWatchOutPoint InstallWatchOutPoint;
-        internal WatchAllTxn WatchAllTxn;
-        internal GetChainUtxo GetChainUtxo;
-        internal FilterBlock FilterBlock;
-    }
 }

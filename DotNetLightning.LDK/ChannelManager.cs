@@ -17,9 +17,9 @@ namespace DotNetLightning.LDK
         
         public static ChannelManager Create(
             Span<byte> seed,
-            Network network,
+            in Network network,
             in UserConfig config,
-            in ChannelMonitorHandle monitor,
+            IChainWatchInterface chainWatchInterface,
             ILogger logger,
             IBroadcaster broadcaster,
             IFeeEstimator feeEstimator,
@@ -30,18 +30,19 @@ namespace DotNetLightning.LDK
             {
                 fixed (byte* b = seed)
                 {
-                    var ffiLogger = logger.ToFFI();
-                    var ffiBroadcaster = broadcaster.ToFFI();
-                    var ffiFeeEstimator = feeEstimator.ToFFI();
+                    var monitor = ChannelMonitor.Create(chainWatchInterface, broadcaster, logger, feeEstimator);
+                    Interop.create_broadcaster(ref broadcaster.BroadcastTransaction, out var broadcasterHandle);
+                    Interop.create_logger(ref logger.Log, out var loggerHandle);
+                    Interop.create_fee_estimator(ref feeEstimator.getEstSatPer1000Weight, out var feeEstimatorHandle);
                     Interop.create_ffi_channel_manager(
                         b,
-                        seed.Length,
+                        (UIntPtr)seed.Length,
                         in network,
                         in config,
-                        in monitor,
-                        in ffiLogger,
-                        in ffiBroadcaster,
-                        in ffiFeeEstimator,
+                        monitor.Handle,
+                        loggerHandle,
+                        broadcasterHandle,
+                        feeEstimatorHandle,
                         currentBlockHeight,
                         out var handle);
                     return new ChannelManager(handle);

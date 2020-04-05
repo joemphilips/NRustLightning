@@ -14,7 +14,7 @@ namespace DotNetLightning.LDK
         private readonly ChainWatchInterfaceHandle _chainWatchInterfaceHandle;
         private readonly FeeEstimatorHandle _feeEstimatorHandle;
         private readonly LoggerHandle _loggerHandle;
-        private readonly ChannelMonitorHandle _handle;
+        internal readonly ChannelMonitorHandle Handle;
         
         internal ChannelMonitor(
             ChainWatchInterfaceHandle chainWatchInterfaceHandle,
@@ -28,7 +28,7 @@ namespace DotNetLightning.LDK
             _broadcasterHandle = broadcasterHandle ?? throw new ArgumentNullException(nameof(broadcasterHandle));
             _feeEstimatorHandle = feeEstimatorHandle ?? throw new ArgumentNullException(nameof(feeEstimatorHandle));
             _loggerHandle = loggerHandle ?? throw new ArgumentNullException(nameof(loggerHandle));
-            _handle = handle ?? throw new ArgumentNullException(nameof(handle));
+            Handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
         public static ChannelMonitor Create(
             IChainWatchInterface chainWatchInterface,
@@ -55,7 +55,7 @@ namespace DotNetLightning.LDK
         
         public void Dispose()
         {
-            _handle.Dispose();
+            Handle.Dispose();
             _chainWatchInterfaceHandle.Dispose();
             _broadcasterHandle.Dispose();
             _feeEstimatorHandle.Dispose();

@@ -13,19 +13,39 @@ namespace DotNetLightning.LDK
             return check ? result.Check() : result;
         }
 
-        [DllImport(RustLightning, CallingConvention = CallingConvention.Cdecl)]
-        internal static unsafe extern void* create_ffi_channel_manager(
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "create_channel_manager",
+            ExactSpelling = true)]
+        private static unsafe extern FFIResult _create_ffi_channel_manager(
             byte* seed_ptr,
-            int seed_len,
+            UIntPtr seed_len,
             in Network n,
             in UserConfig config,
-            in ChannelMonitorHandle monitor,
-            in FFILogger logger_ptr,
-            in FFIBroadcaster broadcaster,
-            in FFIFeeEstimator fee_est,
+            ChannelMonitorHandle monitor,
+            LoggerHandle logger_ptr,
+            BroadcasterHandle broadcaster,
+            FeeEstimatorHandle fee_est,
             ulong current_block_height,
             out ChannelManagerHandle handle
             );
+
+        internal static unsafe FFIResult create_ffi_channel_manager(
+            byte* seed_ptr,
+            UIntPtr seed_len,
+            in Network n,
+            in UserConfig config,
+            ChannelMonitorHandle monitor,
+            LoggerHandle logger_ptr,
+            BroadcasterHandle broadcaster,
+            FeeEstimatorHandle fee_est,
+            ulong current_block_height,
+            out ChannelManagerHandle handle,
+            bool check = true
+        )
+        {
+            return MaybeCheck(_create_ffi_channel_manager(seed_ptr, seed_len, in n , in config, monitor, logger_ptr, broadcaster, fee_est, current_block_height, out handle), check);
+        }
 
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,
