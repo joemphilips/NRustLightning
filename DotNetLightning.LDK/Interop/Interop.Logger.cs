@@ -29,7 +29,7 @@ namespace DotNetLightning.LDK
             return MaybeCheck(_release_broadcaster(handle), check);
         }
 
-        #if DEBUG
+#if DEBUG
         [DllImport(RustLightning, EntryPoint = "test_logger", ExactSpelling = true,
             CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _test_logger(LoggerHandle handle);
