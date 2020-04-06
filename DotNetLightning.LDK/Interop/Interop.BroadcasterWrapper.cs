@@ -11,15 +11,15 @@ namespace DotNetLightning.LDK
 
         [DllImport(RustLightning, EntryPoint = "create_broadcaster_wrapper", ExactSpelling = true,
             CallingConvention = CallingConvention.Cdecl)]
-        private static extern FFIResult _create_broadcaster_wrapper(BroadcasterHandle broadcasterHandle, out BroadcasterWrapperHandle handle);
+        private static extern FFIResult _create_broadcaster_wrapper(ref FFIBroadcastTransaction fn, out BroadcasterWrapperHandle handle);
 
         internal static FFIResult create_broadcaster_wrapper(
-            BroadcasterHandle broadcasterHandle,
+            ref FFIBroadcastTransaction fn,
             out BroadcasterWrapperHandle handle,
             bool check = true
             )
         {
-            return MaybeCheck(_create_broadcaster_wrapper(broadcasterHandle, out handle), check);
+            return MaybeCheck(_create_broadcaster_wrapper(ref fn, out handle), check);
         }
         [DllImport(RustLightning, EntryPoint = "release_broadcaster_wrapper", ExactSpelling = true,
             CallingConvention = CallingConvention.Cdecl)]

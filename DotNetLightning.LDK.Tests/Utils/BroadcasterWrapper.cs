@@ -17,20 +17,17 @@ namespace DotNetLightning.LDK.Tests.Utils
     public class BroadcasterWrapper : IDisposable
     {
         private readonly BroadcasterWrapperHandle _handle;
-        private readonly BroadcasterHandle _innerHandle;
         private IBroadcaster _broadcaster;
 
-        private BroadcasterWrapper(BroadcasterWrapperHandle handle, BroadcasterHandle innerHandle)
+        private BroadcasterWrapper(BroadcasterWrapperHandle handle)
         {
             _handle = handle ?? throw new ArgumentNullException(nameof(handle));
-            _innerHandle = innerHandle ?? throw new ArgumentNullException(nameof(innerHandle));
         }
 
         public static BroadcasterWrapper Create(IBroadcaster broadcaster)
         {
-            Interop.create_broadcaster(ref broadcaster.BroadcastTransaction, out var innerHandle);
-            Interop.create_broadcaster_wrapper(innerHandle, out var handle);
-            return new BroadcasterWrapper(handle, innerHandle);
+            Interop.create_broadcaster_wrapper(ref broadcaster.BroadcastTransaction, out var handle);
+            return new BroadcasterWrapper(handle);
         }
 
         public void Broadcast()
@@ -41,7 +38,6 @@ namespace DotNetLightning.LDK.Tests.Utils
         public void Dispose()
         {
             _handle.Dispose();
-            _innerHandle.Dispose();
         }
     }
     

@@ -13,7 +13,7 @@ namespace DotNetLightning.LDK.Tests
     public class BroadcasterTests
     {
         [Fact]
-        public void BroadcasterTest()
+        public void BroadcasterTestSimple()
         {
             var tb = new TestBroadcaster();
             var broadcaster = Broadcaster.Create(tb);
@@ -37,7 +37,7 @@ namespace DotNetLightning.LDK.Tests
 
         
         [Fact]
-        public void TestBroadcasterWrapper()
+        public void BroadcasterTestWrapper()
         {
             var tb = new TestBroadcaster();
             var wrapper = BroadcasterWrapper.Create(tb);
