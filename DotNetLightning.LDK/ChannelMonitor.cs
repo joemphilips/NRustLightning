@@ -56,6 +56,8 @@ namespace DotNetLightning.LDK
         public void Dispose()
         {
             Handle.Dispose();
+            // These are probably unnecessary (since rust side will drop the data recursively automatically)
+            // But leave it here anyway since it seems does not hurt.
             _chainWatchInterfaceHandle.Dispose();
             _broadcasterHandle.Dispose();
             _feeEstimatorHandle.Dispose();

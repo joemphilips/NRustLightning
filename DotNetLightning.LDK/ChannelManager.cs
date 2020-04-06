@@ -30,16 +30,23 @@ namespace DotNetLightning.LDK
             {
                 fixed (byte* b = seed)
                 {
-                    var monitor = ChannelMonitor.Create(chainWatchInterface, broadcaster, logger, feeEstimator);
+                    Interop.create_chain_watch_interface(
+                        ref chainWatchInterface.InstallWatchTx, 
+                        ref chainWatchInterface.InstallWatchOutPoint, 
+                        ref chainWatchInterface.WatchAllTxn, 
+                        ref chainWatchInterface.GetChainUtxo, 
+                        ref chainWatchInterface.FilterBlock,
+                    out var chainWatchInterfaceHandle);
                     Interop.create_broadcaster(ref broadcaster.BroadcastTransaction, out var broadcasterHandle);
                     Interop.create_logger(ref logger.Log, out var loggerHandle);
                     Interop.create_fee_estimator(ref feeEstimator.getEstSatPer1000Weight, out var feeEstimatorHandle);
+                    Interop.create_ffi_channel_monitor(chainWatchInterfaceHandle, broadcasterHandle, loggerHandle, feeEstimatorHandle, out var monitorHandle);
                     Interop.create_ffi_channel_manager(
                         b,
                         (UIntPtr)seed.Length,
                         in network,
                         in config,
-                        monitor.Handle,
+                        monitorHandle,
                         loggerHandle,
                         broadcasterHandle,
                         feeEstimatorHandle,

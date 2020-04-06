@@ -10,7 +10,7 @@ namespace DotNetLightning.LDK.Tests
 {
     public class ChannelManagerTests
     {
-        [Fact]
+        [Fact(Skip = "For Now")]
         public void CanCreateChannelManager()
         {
             var logger = new TestLogger();
