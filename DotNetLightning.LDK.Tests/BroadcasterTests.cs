@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using DotNetLightning.LDK.Adaptors;
 using DotNetLightning.LDK.Handles;
 using DotNetLightning.LDK.Interfaces;
@@ -53,6 +54,7 @@ namespace DotNetLightning.LDK.Tests
             GC.Collect();
             GC.WaitForPendingFinalizers();
             wrapper.Broadcast();
+            
             Assert.Equal(2, tb.BroadcastedTxHex.Count);
             Assert.Equal(expectedHex, tb.BroadcastedTxHex[1]);
             

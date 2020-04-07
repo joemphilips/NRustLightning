@@ -12,22 +12,30 @@ namespace DotNetLightning.LDK
             EntryPoint = "create_ffi_channel_monitor",
             ExactSpelling = true)]
         static extern FFIResult _create_ffi_channel_monitor(
-            ChainWatchInterfaceHandle chainWatchInterface,
-            BroadcasterHandle broadcaster,
-            LoggerHandle logger,
-            FeeEstimatorHandle feeEstimator,
+            ref InstallWatchTx installWatchTx,
+            ref InstallWatchOutPoint installWatchOutPoint,
+            ref WatchAllTxn watchAllTxn,
+            ref GetChainUtxo getChainUtxo,
+            ref FilterBlock filterBlock,
+            ref FFIBroadcastTransaction broadcastTransaction,
+            ref Log log,
+            ref FFIGetEstSatPer1000Weight getEstSatPer1000Weight,
             out ChannelMonitorHandle handle
             );
 
         internal static FFIResult create_ffi_channel_monitor(
-            ChainWatchInterfaceHandle chainWatchInterface,
-            BroadcasterHandle broadcaster,
-            LoggerHandle logger,
-            FeeEstimatorHandle feeEstimator,
+            ref InstallWatchTx installWatchTx,
+            ref InstallWatchOutPoint installWatchOutPoint,
+            ref WatchAllTxn watchAllTxn,
+            ref GetChainUtxo getChainUtxo,
+            ref FilterBlock filterBlock,
+            ref FFIBroadcastTransaction broadcastTransaction,
+            ref Log log,
+            ref FFIGetEstSatPer1000Weight getEstSatPer1000Weight,
             out ChannelMonitorHandle handle,
             bool check = true
         )
-            => MaybeCheck(_create_ffi_channel_monitor(chainWatchInterface, broadcaster, logger, feeEstimator, out handle), check);
+            => MaybeCheck(_create_ffi_channel_monitor(ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref broadcastTransaction, ref log, ref getEstSatPer1000Weight, out handle), check);
         
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,
