@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DotNetLightning.LDK.Adaptors;
 using DotNetLightning.LDK.Handles;
@@ -34,7 +35,7 @@ namespace DotNetLightning.LDK.Tests.Utils
     }
         internal class TestBroadcaster : IBroadcaster
         {
-            public List<string> BroadcastedTxHex { get; } = new List<string>();
+            public ConcurrentBag<string> BroadcastedTxHex { get; } = new ConcurrentBag<string>();
 
             public FFIBroadcastTransaction _broadcast_ptr;
 
