@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using DotNetLightning.LDK.Handles;
 using DotNetLightning.LDK.Interfaces;
 using DotNetLightning.LDK.Adaptors;
+using DotNetLightning.LDK.Facades;
 
 namespace DotNetLightning.LDK
 {
@@ -29,12 +33,14 @@ namespace DotNetLightning.LDK
             unsafe
             {
                 fixed (byte* b = seed)
+                fixed (Network* n = &network)
+                fixed (UserConfig* configPtr = &config)
                 {
                     Interop.create_ffi_channel_manager(
                         b,
                         (UIntPtr)seed.Length,
-                        in network,
-                        in config,
+                        n,
+                        configPtr,
                         ref chainWatchInterface.InstallWatchTx,
                         ref chainWatchInterface.InstallWatchOutPoint,
                         ref chainWatchInterface.WatchAllTxn,
@@ -49,6 +55,22 @@ namespace DotNetLightning.LDK
                 }
             }
         }
+        
+        public void SendPayment(FFIRouteHop[] routes, ref FFISha256dHash paymentHash)
+        {
+            unsafe
+            {
+
+                fixed (FFIRouteHop* r = routes)
+                fixed (FFISha256dHash* _ = &paymentHash)
+                {
+                    var routeHops = new FFIRouteHops((IntPtr) r, (UIntPtr) routes.Count());
+                    var route = new FFIRoute(routeHops);
+                    Interop.send_payment(_handle, ref routeHops, ref paymentHash);
+                }
+            }
+        }
+        
         
         public void Dispose()
         {

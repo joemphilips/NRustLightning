@@ -1,57 +1,70 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using DotNetLightning.LDK.Adaptors;
-
 namespace DotNetLightning.LDK.Adaptors
 {
     [StructLayout(LayoutKind.Sequential)]
-    public ref struct FFIScript
+    public readonly struct FFIScript
     {
-        internal IntPtr ptr;
-        internal UIntPtr len;
+        internal readonly IntPtr ptr;
+        internal readonly UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
-    public ref struct SecretKey
+    public readonly struct SecretKey
     {
-        internal IntPtr ptr;
-        internal UIntPtr len;
+        internal readonly IntPtr ptr;
+        internal readonly UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
-    public ref struct PublicKey
+    public readonly struct PublicKey
     {
-        internal IntPtr ptr;
-        internal UIntPtr len;
+        internal readonly IntPtr ptr;
+        internal readonly UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
-    public ref struct FFISha256dHash
+    public readonly struct FFISha256dHash
     {
-        internal IntPtr ptr;
-        internal UIntPtr len;
+        internal readonly IntPtr ptr;
+        internal readonly UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
-    public ref struct FFIOutPoint
+    public readonly struct FFIOutPoint
     {
-        internal FFIScript script_pub_key;
-        internal ushort index;
+        internal readonly FFIScript script_pub_key;
+        internal readonly ushort index;
     }
     [StructLayout(LayoutKind.Sequential)]
-    public ref struct FFITxOut
+    public readonly struct FFITxOut
     {
-        internal ulong value;
-        internal FFIScript script_pub_key;
+        internal readonly ulong value;
+        internal readonly FFIScript script_pub_key;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public ref struct FFITransaction
+    public readonly struct FFITransaction
     {
-        public IntPtr ptr;
-        public UIntPtr len;
+        public readonly IntPtr ptr;
+        public readonly UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
-    public ref struct FFIBlock
+    public readonly struct FFIBlock
     {
-        internal IntPtr ptr;
-        internal UIntPtr len;
+        internal readonly IntPtr ptr;
+        internal readonly UIntPtr len;
     }
     
+    [StructLayout(LayoutKind.Sequential)]
+    internal readonly struct NodeFeatures
+    {
+        internal readonly IntPtr ptr;
+        internal readonly UIntPtr len;
+    }
+    
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly  struct ChannelFeatures
+    {
+        internal readonly IntPtr ptr;
+        internal readonly UIntPtr len;
+    }
 }

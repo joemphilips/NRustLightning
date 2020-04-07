@@ -20,8 +20,8 @@ namespace DotNetLightning.LDK
         private static unsafe extern FFIResult _create_ffi_channel_manager(
             byte* seed_ptr,
             UIntPtr seed_len,
-            in Network n,
-            in UserConfig config,
+            Network* n,
+            UserConfig* config,
             
             ref InstallWatchTx installWatchTx,
             ref InstallWatchOutPoint installWatchOutPoint,
@@ -38,8 +38,8 @@ namespace DotNetLightning.LDK
         internal static unsafe FFIResult create_ffi_channel_manager(
             byte* seed_ptr,
             UIntPtr seed_len,
-            in Network n,
-            in UserConfig config,
+            Network* n,
+            UserConfig* config,
             ref InstallWatchTx installWatchTx,
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
@@ -53,7 +53,7 @@ namespace DotNetLightning.LDK
             bool check = true
         )
         {
-            return MaybeCheck(_create_ffi_channel_manager(seed_ptr, seed_len, in n , in config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref broadcastTransaction, ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
+            return MaybeCheck(_create_ffi_channel_manager(seed_ptr, seed_len, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref broadcastTransaction, ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
         }
 
         [DllImport(RustLightning,
@@ -71,6 +71,21 @@ namespace DotNetLightning.LDK
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "send_payment",
             ExactSpelling = true)]
-        static extern FFIResult send_payment(ChannelManagerHandle handle);
+        static extern FFIResult _send_payment(
+            ChannelManagerHandle handle,
+            ref FFIRoute route,
+            ref FFISha256dHash payment_hash
+            );
+
+        internal static FFIResult send_payment(
+            ChannelManagerHandle handle,
+            ref FFIRoute route,
+            ref FFISha256dHash payment_hash,
+            bool check = true
+            )
+        {
+            return MaybeCheck(_send_payment(handle, ref route, ref payment_hash), check);
+        }
+        
     }
 }

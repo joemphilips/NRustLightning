@@ -37,7 +37,7 @@ namespace DotNetLightning.LDK
                 out var handle);
             return new ChannelMonitor(handle);
         }
-        
+
         public void Dispose()
         {
             Handle.Dispose();
