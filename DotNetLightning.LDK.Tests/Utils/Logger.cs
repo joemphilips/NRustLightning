@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using DotNetLightning.LDK.Adaptors;
 using DotNetLightning.LDK.Handles;
 using DotNetLightning.LDK.Interfaces;
+using Microsoft.VisualBasic;
 
 namespace DotNetLightning.LDK.Tests.Utils
 {
@@ -30,13 +32,20 @@ namespace DotNetLightning.LDK.Tests.Utils
             _handle.Dispose();
         }
     }
-    
+
     internal class TestLogger : ILogger
     {
-        private static Log _log = (ref FFILogRecord record) =>
+        public ConcurrentBag<string> Msgs = new ConcurrentBag<string>();
+
+        private Log _log;
+        public TestLogger()
         {
-            Console.WriteLine($"message received from ffi is {record.args}");
-        };
+            _log = (ref FFILogRecord record) =>
+            {
+                Msgs.Add(record.Args);
+                Console.WriteLine($"message received from ffi is {record.Args}");
+            };
+        }
 
         public ref Log Log => ref _log;
     }

@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -12,23 +13,28 @@ namespace DotNetLightning.LDK.Adaptors
         Debug,
         Trace
     }
-    [StructLayout(LayoutKind.Sequential)]
-    public ref struct FFILogRecord
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public readonly ref struct FFILogRecord
     {
         /// The verbosity level of the message.
-        public FFILogLevel level;
+        public readonly FFILogLevel level;
 
         /// The message body.
-        public string args;
+        private readonly IntPtr args;
 
         /// The module path of the message.
-        public string module_path;
+        private readonly IntPtr module_path;
 
         /// The source file containing the message.
-        public string file;
+        private readonly IntPtr file;
 
         /// The line containing the message.
-        public uint line;
+        public readonly uint line;
+
+        public string Args => Marshal.PtrToStringUTF8(args);
+        public string ModulePath => Marshal.PtrToStringUTF8(module_path);
+        public string File => Marshal.PtrToStringUTF8(file);
+
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void Log(ref FFILogRecord record);

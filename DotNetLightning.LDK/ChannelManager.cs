@@ -56,17 +56,17 @@ namespace DotNetLightning.LDK
             }
         }
         
-        public void SendPayment(FFIRouteHop[] routes, ref FFISha256dHash paymentHash)
+        public void SendPayment(Route routes, ref FFISha256dHash paymentHash)
         {
             unsafe
             {
 
-                fixed (FFIRouteHop* r = routes)
+                var span = routes.AsSpan();
+                fixed (byte* r = span)
                 fixed (FFISha256dHash* _ = &paymentHash)
                 {
-                    var routeHops = new FFIRouteHops((IntPtr) r, (UIntPtr) routes.Count());
-                    var route = new FFIRoute(routeHops);
-                    Interop.send_payment(_handle, ref routeHops, ref paymentHash);
+                    var route = new FFIRoute((IntPtr)r, (UIntPtr)span.Length);
+                    Interop.send_payment(_handle, ref route, ref paymentHash);
                 }
             }
         }

@@ -8,12 +8,14 @@ namespace DotNetLightning.LDK.Tests
 {
     public class LoggerTests
     {
-        [Fact(Skip = "it crashes after calling logger.log in test_logger")]
+        [Fact]
         public void LoggerTest()
         {
             var l = new TestLogger();
             var logger = Logger.Create(l);
             logger.Test();
+            Assert.Single(l.Msgs);
+            Assert.All(l.Msgs, item => Assert.Equal("warn_msg", item));
             logger.Dispose();
         }
     }

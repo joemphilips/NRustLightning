@@ -21,11 +21,11 @@ namespace DotNetLightning.LDK.Tests
             var n = Network.TestNet;
             var channelManager = ChannelManager.Create(seed, in n, in TestUserConfig.Default, chainWatchInterface, logger, broadcaster, feeEstiamtor, 400000);
 
-            var hop1 = new FFIRouteHop();
-            var hop2 = new FFIRouteHop();
+            var hop1 = new FFIRoute();
+            var hop2 = new FFIRoute();
             
             var paymentHash = new FFISha256dHash();
-            channelManager.SendPayment(new [] {hop1, hop2}, ref paymentHash);
+            //channelManager.SendPayment(new [] {hop1, hop2}, ref paymentHash);
             
             channelManager.Dispose();
         }

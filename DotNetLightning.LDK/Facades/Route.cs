@@ -1,20 +1,25 @@
-using System.Runtime.InteropServices;
+using System;
+using System.Collections.Generic;
 using NBitcoin;
 
-namespace DotNetLightning.LDK.Adaptors
+namespace DotNetLightning.LDK.Facades
 {
 
     public struct RouteHop
     {
-        private readonly byte[] PubKey;
+        private readonly PubKey PubKey;
         private readonly byte[] NodeFeatures;
         private readonly ulong ShortChannelId;
         private readonly byte[] ChannelFeatures;
         private readonly ulong FeeMsat;
         private readonly uint cltvExpiryDelta;
-
-        public void Foo()
+    }
+    public class Route
+    {
+        public List<RouteHop> Hops;
+        public Span<byte> AsSpan()
         {
+            throw new NotImplementedException();
         }
     }
 }
