@@ -11,6 +11,8 @@ jobs:
       fail-fast: true
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Setup ${{ matrix.dotnet }} .NET Core
         uses: actions/setup-dotnet@v1
         with:
@@ -33,6 +35,8 @@ jobs:
       fail-fast: true
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Setup ${{ matrix.dotnet }} .NET Core
         uses: actions/setup-dotnet@v1
         with:
