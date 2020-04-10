@@ -5,4 +5,4 @@ export DYLD_LIBRARY_PATH="`pwd`/rust-lightning/target/debug:$DYLD_LIBRARY_PATH"
 
 cd rust-lightning/bindings && cargo build --features "debug_assertions"
 cd ../..
-dotnet test DotNetLightning.LDK.Tests
+dotnet test NRustLightning.Tests
