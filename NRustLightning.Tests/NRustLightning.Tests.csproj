@@ -4,6 +4,8 @@
         <TargetFramework>netcoreapp3.1</TargetFramework>
 
         <IsPackable>false</IsPackable>
+
+        <RootNamespace>DotNetLightning.LDK.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,7 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DotNetLightning.LDK\DotNetLightning.LDK.csproj" />
+      <ProjectReference Include="..\NRustLightning\NRustLightning.csproj" />
     </ItemGroup>
 
 </Project>

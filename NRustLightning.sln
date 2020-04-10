@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetLightning.LDK", "DotNetLightning.LDK\DotNetLightning.LDK.csproj", "{C0A2C18D-53D1-4189-9093-026D538715C9}"
+#
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRustLightning", "NRustLightning\NRustLightning.csproj", "{C0A2C18D-53D1-4189-9093-026D538715C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetLightning.LDK.Tests", "DotNetLightning.LDK.Tests\DotNetLightning.LDK.Tests.csproj", "{D7843E23-3E4E-4479-80F6-17874F25A073}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRustLightning.Tests", "NRustLightning.Tests\NRustLightning.Tests.csproj", "{D7843E23-3E4E-4479-80F6-17874F25A073}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
