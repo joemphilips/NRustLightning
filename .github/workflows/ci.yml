@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-18.04, ubuntu-16.04, windows-latest, macos-latest]
-        dotnet: ['2.2.103', '3.1.200']
+        dotnet: ['3.0.100', '3.1.200']
       fail-fast: true
     steps:
       - uses: actions/checkout@v2
