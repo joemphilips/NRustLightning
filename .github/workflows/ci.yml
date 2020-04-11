@@ -1,4 +1,4 @@
-name: build and deploy
+name: build and test
 on: [pull_request]
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
           components: rustfmt, clippy
       - name: Build with dotnet
         run: |
-          dotnet build --configuration Release src/NRustLightning
+          dotnet build --configuration Debug src/NRustLightning
 
       - name: Cache cargo registry
         uses: actions/cache@v1
@@ -41,7 +41,7 @@ jobs:
       - name: Cache cargo build
         uses: actions/cache@v1
         with:
-          path: target
+          path: rust-lightning/target
           key: ${{ matrix.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
   test:
