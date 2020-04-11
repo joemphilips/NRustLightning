@@ -22,6 +22,6 @@ namespace DotNetLightning.LDK.Handles
             Interop.release_broadcaster_wrapper(h, false);
             return true;
         }
-    #endif
     }
+    #endif
 }
