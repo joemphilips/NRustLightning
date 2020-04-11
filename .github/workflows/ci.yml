@@ -25,7 +25,24 @@ jobs:
           override: true
           components: rustfmt, clippy
       - name: Build with dotnet
-        run: dotnet build --configuration Release src/NRustLightning
+        run: dotnet build --configuration
+
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
   test:
     name: "Test on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
     runs-on: ${{ matrix.os }}
