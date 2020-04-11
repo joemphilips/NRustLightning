@@ -19,6 +19,15 @@ jobs:
         with:
           dotnet-version: ${{ matrix.dotnet }}
 
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+      - name: Build with dotnet
+        run: |
+          dotnet build --configuration Debug src/NRustLightning
       - name: Cache cargo registry
         uses: actions/cache@v1
         with:
@@ -35,15 +44,6 @@ jobs:
           path: rust-lightning/target
           key: ${{ matrix.os }}-cargo-build-target-${{ hashFiles('rust-lightning/Cargo.lock') }}
 
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-          components: rustfmt, clippy
-      - name: Build with dotnet
-        run: |
-          dotnet build --configuration Debug src/NRustLightning
   test:
     name: "Test on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
     runs-on: ${{ matrix.os }}
