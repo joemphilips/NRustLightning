@@ -1,7 +1,7 @@
 using System;
-using DotNetLightning.LDK.Adaptors;
+using NRustLightning.Adaptors;
 
-namespace DotNetLightning.LDK.Interfaces
+namespace NRustLightning.Interfaces
 {
     /// <summary>
     /// User defined broadcaster for broadcasting transaction.

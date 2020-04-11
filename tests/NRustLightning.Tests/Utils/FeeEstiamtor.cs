@@ -1,7 +1,7 @@
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Interfaces;
+using NRustLightning.Adaptors;
+using NRustLightning.Interfaces;
 
-namespace DotNetLightning.LDK.Tests.Utils
+namespace NRustLightning.Tests.Utils
 {
     internal class TestFeeEstimator : IFeeEstimator
     {

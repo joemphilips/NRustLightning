@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace DotNetLightning.LDK.Handles
+namespace NRustLightning.Handles
 {
     #if DEBUG
     public class BroadcasterWrapperHandle : SafeHandle

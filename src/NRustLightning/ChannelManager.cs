@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using DotNetLightning.LDK.Handles;
-using DotNetLightning.LDK.Interfaces;
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Facades;
+using NRustLightning.Adaptors;
+using NRustLightning.Facades;
+using NRustLightning.Handles;
+using NRustLightning.Interfaces;
 
-namespace DotNetLightning.LDK
+namespace NRustLightning
 {
     
     public sealed class ChannelManager : IDisposable

@@ -1,7 +1,7 @@
-using DotNetLightning.LDK.Tests.Utils;
+using NRustLightning.Tests.Utils;
 using Xunit;
 
-namespace DotNetLightning.LDK.Tests
+namespace NRustLightning.Tests
 {
     public class ChannelMonitorTests
     {

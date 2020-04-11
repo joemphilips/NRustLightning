@@ -1,4 +1,4 @@
-namespace DotNetLightning.LDK.Adaptors
+namespace NRustLightning.Adaptors
 {
     public enum Network : int
     {

@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace DotNetLightning.LDK.Tests
+namespace NRustLightning.Tests
 {
     public class UnitTest1
     {

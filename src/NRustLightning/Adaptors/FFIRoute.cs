@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace DotNetLightning.LDK.Adaptors
+namespace NRustLightning.Adaptors
 {
     [StructLayout(LayoutKind.Sequential)]
     internal readonly ref struct FFIRoute

@@ -1,10 +1,10 @@
 using System;
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Interfaces;
-using DotNetLightning.LDK.Tests.Utils;
+using NRustLightning.Adaptors;
+using NRustLightning.Interfaces;
+using NRustLightning.Tests.Utils;
 using Xunit;
 
-namespace DotNetLightning.LDK.Tests
+namespace NRustLightning.Tests
 {
     public class LoggerTests
     {

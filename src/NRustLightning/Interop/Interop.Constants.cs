@@ -1,5 +1,5 @@
 using System;
-namespace DotNetLightning.LDK
+namespace NRustLightning
 {
     internal static partial class Interop
     {

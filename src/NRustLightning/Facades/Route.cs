@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using NBitcoin;
 
-namespace DotNetLightning.LDK.Facades
+namespace NRustLightning.Facades
 {
 
     public struct RouteHop

@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
-using DotNetLightning.LDK.Utils;
+using NRustLightning.Utils;
 
-namespace DotNetLightning.LDK.Adaptors
+namespace NRustLightning.Adaptors
 {
     public static class ArrayLikePrimitiveExtensions
     {

@@ -5,7 +5,7 @@
 
         <IsPackable>false</IsPackable>
 
-        <RootNamespace>DotNetLightning.LDK.Tests</RootNamespace>
+        <RootNamespace>NRustLightning.Tests</RootNamespace>
     </PropertyGroup>
 
    <Import Project="../../src/LDK.targets" />

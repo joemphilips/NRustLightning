@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Handles;
-using DotNetLightning.LDK.Interfaces;
-using DotNetLightning.LDK.Tests.Utils;
-using DotNetLightning.LDK.Utils;
+using NRustLightning.Adaptors;
+using NRustLightning.Handles;
+using NRustLightning.Interfaces;
+using NRustLightning.Utils;
+using NRustLightning.Tests.Utils;
 using Xunit;
 
-namespace DotNetLightning.LDK.Tests
+namespace NRustLightning.Tests
 {
     public class BroadcasterTests
     {
