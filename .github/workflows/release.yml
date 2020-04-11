@@ -27,3 +27,23 @@ jobs:
             dotnet pack -p:Configuration=Release src/NRustLightning
             dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
           fi
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: true # TODO: change to false when ready
+      - name: upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg
+          asset_content_type: application/zip
+
