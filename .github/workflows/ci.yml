@@ -3,6 +3,7 @@ on: [pull_request]
 
 jobs:
   build:
+    name: "Build on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -26,6 +27,7 @@ jobs:
       - name: Build with dotnet
         run: dotnet build --configuration Release NRustLightning
   test:
+    name: "Test on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
     runs-on: ${{ matrix.os }}
     needs: build
     strategy:
