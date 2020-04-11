@@ -25,7 +25,8 @@ jobs:
           override: true
           components: rustfmt, clippy
       - name: Build with dotnet
-        run: dotnet build --configuration
+        run: |
+          dotnet --help; dotnet build --configuration
 
       - name: Cache cargo registry
         uses: actions/cache@v1
