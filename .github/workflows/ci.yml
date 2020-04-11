@@ -51,3 +51,13 @@ jobs:
           components: rustfmt, clippy
       - name: Run test in ${{ matrix.os }}
         run: dotnet test tests/NRustLightning.Tests
+  pack:
+    runs-on: ubuntu-18.04
+    needs: [build, test]
+    steps:
+    - name: pack and push to nuget
+      run: |
+        if [ ${{ secrets.NUGET_API_KEY }} ] && [ $GITHUB_REF == "refs/heads/master" ]; then
+          dotnet pack -p:Configuration=Release src/NRustLightning
+          dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+        fi
