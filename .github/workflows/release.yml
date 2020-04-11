@@ -23,10 +23,10 @@ jobs:
 
       - name: pack and push to nuget
         run: |
-          if [ ${{ secrets.NUGET_API_KEY }} ]; then
-            dotnet pack -p:Configuration=Release src/NRustLightning
-            dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
-          fi
+            if [ ${{ secrets.NUGET_API_KEY }} ]; then
+              dotnet pack -p:Configuration=Release src/NRustLightning
+              dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+            fi
 
       - name: Create release
         id: create_release
