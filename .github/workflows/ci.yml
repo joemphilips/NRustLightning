@@ -50,7 +50,7 @@ jobs:
           override: true
           components: rustfmt, clippy
       - name: Run test in ${{ matrix.os }}
-        run: ./test.sh
+        run: dotnet test tests/NRustLightning.Tests
   pack:
     runs-on: ubuntu-18.04
     needs: [build, test]
