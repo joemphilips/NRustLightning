@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - master
-      - ci
+      - 'nightly*' # to workaround regular publishing process
 
 jobs:
   pack_and_push:
