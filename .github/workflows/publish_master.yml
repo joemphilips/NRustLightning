@@ -1,0 +1,17 @@
+name: publish(master)
+on:
+  push:
+    branches:
+      - master
+      - ci
+
+jobs:
+  pack_and_push:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: pack and push to nuget
+      run: |
+        if [ ${{ secrets.NUGET_API_KEY }} ]; then
+          dotnet pack -p:Configuration=Release src/NRustLightning --version-suffix date`date +%Y%m%d-%H%M`.git-`echo $GITHUB_SHA | cut -c 1-7`
+          dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+        fi
