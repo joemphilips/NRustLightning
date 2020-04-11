@@ -6,6 +6,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <PackageId>NRustLightning</PackageId>
         <RootNamespace>NRustLightning</RootNamespace>
+        <PackageDescription>C# wrapper for rust-lightning</PackageDescription>
     </PropertyGroup>
 
    <Import Project="../LDK.targets" />  
