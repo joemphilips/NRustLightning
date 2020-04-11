@@ -57,7 +57,7 @@ jobs:
     steps:
     - name: dotnet pack
       run: |
-        dotnet pack -p:Configuration=Release
+        dotnet pack -p:Configuration=Release src/NRustLightning
     - name: push to nuget
       run: |
         dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
