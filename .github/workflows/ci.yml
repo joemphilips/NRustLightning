@@ -25,7 +25,7 @@ jobs:
           override: true
           components: rustfmt, clippy
       - name: Build with dotnet
-        run: dotnet build --configuration Release NRustLightning
+        run: dotnet build --configuration Release src/NRustLightning
   test:
     name: "Test on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
     runs-on: ${{ matrix.os }}
@@ -60,4 +60,4 @@ jobs:
         dotnet pack -p:Configuration=Release
     - name: push to nuget
       run: |
-        dotnet nuget push ./bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+        dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
