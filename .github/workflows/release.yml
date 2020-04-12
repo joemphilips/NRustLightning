@@ -2,12 +2,11 @@ name: publish(stable release)
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'
 
 jobs:
   pack_and_push:
     runs-on: ${{ matrix.os }}
-    needs: build
     strategy:
       matrix:
         os: [ubuntu-18.04, windows-latest, macos-latest]
@@ -27,9 +26,7 @@ jobs:
 
       - name: pack
         run: |
-            if [ ${{ secrets.NUGET_API_KEY }} ]; then
-              dotnet pack -p:Configuration=Release src/NRustLightning
-            fi
+            dotnet pack -p:Configuration=Release src/NRustLightning
 
       - name: Create release
         id: create_release
@@ -48,6 +45,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg
+          asset_path: src/NRustLightning/bin/Release/NRustLightning.*.nupkg
+          asset_name: NRustLightning-${{ matrix.os }}.${{ github.ref }}.nupkg
           asset_content_type: application/zip
 
