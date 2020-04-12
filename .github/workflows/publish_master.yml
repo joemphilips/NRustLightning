@@ -13,6 +13,13 @@ jobs:
       matrix:
         os: [ubuntu-18.04, windows-latest, macos-latest]
         dotnet: ['3.1.200']
+        include:
+          - os: ubuntu-18.04
+            RID: linux
+          - os: windows-latest
+            RID: win
+          - os: macos-latest
+            RID: osx
       fail-fast: true
     steps:
       - uses: actions/checkout@v2
@@ -48,5 +55,5 @@ jobs:
       - name: pack and push to nuget
         if: ${{ secrets.NUGET_API_KEY }}
         run: |
-          dotnet pack -p:Configuration=Release src/NRustLightning --version-suffix date`date +%Y%m%d-%H%M`.git-`echo $GITHUB_SHA | cut -c 1-7`-${{ matrix.os }}
+          dotnet pack -p:Configuration=Release src/NRustLightning --version-suffix date`date +%Y%m%d-%H%M`.git-`echo $GITHUB_SHA | cut -c 1-7`-${{ matrix.RID }}
           dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
