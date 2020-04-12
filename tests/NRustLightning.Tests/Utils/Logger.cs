@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Concurrent;
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Handles;
-using DotNetLightning.LDK.Interfaces;
 using Microsoft.VisualBasic;
+using NRustLightning.Adaptors;
+using NRustLightning.Handles;
+using NRustLightning.Interfaces;
 
-namespace DotNetLightning.LDK.Tests.Utils
+namespace NRustLightning.Tests.Utils
 {
     public class Logger : IDisposable
     {

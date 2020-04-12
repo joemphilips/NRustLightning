@@ -4,7 +4,9 @@
         <TargetFramework>netstandard2.1</TargetFramework>
         <LangVersion>8.0</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <RootNamespace>DotNetLightning.LDK</RootNamespace>
+        <PackageId>NRustLightning</PackageId>
+        <RootNamespace>NRustLightning</RootNamespace>
+        <PackageDescription>C# wrapper for rust-lightning</PackageDescription>
     </PropertyGroup>
 
    <Import Project="../LDK.targets" />  

@@ -1,13 +1,13 @@
-name: build and deploy
+name: build and test
 on: [pull_request]
 
 jobs:
   build:
-    name: "Build on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
+    name: "Build and Test on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, ubuntu-16.04, windows-latest, macos-latest]
+        os: [ubuntu-18.04, windows-latest, macos-latest]
         dotnet: ['3.0.100', '3.1.200']
       fail-fast: true
     steps:
@@ -18,36 +18,33 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: ${{ matrix.dotnet }}
+
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           override: true
           components: rustfmt, clippy
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('rust-lightning/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('rust-lightning/Cargo.lock') }}
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: rust-lightning/target
+          key: ${{ matrix.os }}-cargo-build-target-${{ hashFiles('rust-lightning/Cargo.lock') }}-${{ hashFiles('rust-lightning/**/src/**') }}
+
       - name: Build with dotnet
-        run: dotnet build --configuration Release src/NRustLightning
-  test:
-    name: "Test on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
-    runs-on: ${{ matrix.os }}
-    needs: build
-    strategy:
-      matrix:
-        os: [ubuntu-18.04, ubuntu-16.04, windows-latest, macos-latest]
-        dotnet: ['3.1.200']
-      fail-fast: true
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - name: Setup ${{ matrix.dotnet }} .NET Core
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: ${{ matrix.dotnet }}
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-          components: rustfmt, clippy
+        run: |
+          dotnet build --configuration Debug src/NRustLightning
+
       - name: Run test in ${{ matrix.os }}
+        if: startsWith(matrix.dotnet, '3.1')
         run: dotnet test tests/NRustLightning.Tests

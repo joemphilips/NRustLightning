@@ -1,6 +1,6 @@
-using DotNetLightning.LDK.Adaptors;
+using NRustLightning.Adaptors;
 
-namespace DotNetLightning.LDK.Interfaces
+namespace NRustLightning.Interfaces
 {
     /// <summary>
     /// User defined interface for watching blockchain.

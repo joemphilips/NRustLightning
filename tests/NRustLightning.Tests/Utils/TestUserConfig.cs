@@ -1,6 +1,6 @@
-using DotNetLightning.LDK.Adaptors;
+using NRustLightning.Adaptors;
 
-namespace DotNetLightning.LDK.Tests.Utils
+namespace NRustLightning.Tests.Utils
 {
     public static class TestUserConfig
     {

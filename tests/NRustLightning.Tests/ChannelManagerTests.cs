@@ -2,11 +2,11 @@ using System;
 using System.Text;
 using System.Transactions;
 using Xunit;
-using DotNetLightning.LDK;
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Tests.Utils;
+using NRustLightning;
+using NRustLightning.Adaptors;
+using NRustLightning.Tests.Utils;
 
-namespace DotNetLightning.LDK.Tests
+namespace NRustLightning.Tests
 {
     public class ChannelManagerTests
     {

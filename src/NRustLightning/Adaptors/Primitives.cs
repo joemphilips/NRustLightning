@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using NBitcoin;
 
-namespace DotNetLightning.LDK.Adaptors
+namespace NRustLightning.Adaptors
 {
 
     public struct RouteHop

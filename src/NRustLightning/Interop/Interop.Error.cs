@@ -5,9 +5,9 @@ using System.Dynamic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using DotNetLightning.LDK.Adaptors;
+using NRustLightning.Adaptors;
 
-namespace DotNetLightning.LDK
+namespace NRustLightning
 {
     internal static partial class Interop
     {

@@ -1,9 +1,9 @@
 using System;
 using System.Runtime.InteropServices;
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Handles;
+using NRustLightning.Adaptors;
+using NRustLightning.Handles;
 
-namespace DotNetLightning.LDK
+namespace NRustLightning
 {
     internal static partial class Interop
     {

@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace DotNetLightning.LDK.Utils
+namespace NRustLightning.Utils
 {
     internal static class Hex
     {

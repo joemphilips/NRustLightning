@@ -2,9 +2,9 @@ using System;
 using System.Text;
 using System.Transactions;
 using Xunit;
-using DotNetLightning.LDK;
+using NRustLightning;
 
-namespace DotNetLightning.LDK.Tests
+namespace NRustLightning.Tests
 {
     public class LastResultTests
     {

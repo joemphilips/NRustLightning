@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Handles;
-using DotNetLightning.LDK.Interfaces;
-using DotNetLightning.LDK.Utils;
+using NRustLightning.Adaptors;
+using NRustLightning.Handles;
+using NRustLightning.Interfaces;
+using NRustLightning.Utils;
 
-namespace DotNetLightning.LDK.Tests.Utils
+namespace NRustLightning.Tests.Utils
 {
     public class Broadcaster : IDisposable
     {

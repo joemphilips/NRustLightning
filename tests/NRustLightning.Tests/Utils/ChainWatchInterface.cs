@@ -1,10 +1,10 @@
 using System;
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Handles;
-using DotNetLightning.LDK.Interfaces;
-using DotNetLightning.LDK.Utils;
+using NRustLightning.Handles;
+using NRustLightning.Adaptors;
+using NRustLightning.Interfaces;
+using NRustLightning.Utils;
 
-namespace DotNetLightning.LDK.Tests.Utils
+namespace NRustLightning.Tests.Utils
 {
     public class TestChainWatchInterface : IChainWatchInterface
     {

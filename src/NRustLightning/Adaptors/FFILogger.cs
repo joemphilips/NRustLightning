@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace DotNetLightning.LDK.Adaptors
+namespace NRustLightning.Adaptors
 {
     public enum FFILogLevel : int
     {

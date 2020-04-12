@@ -1,12 +1,12 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
-using DotNetLightning.LDK.Handles;
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Interfaces;
-using DotNetLightning.LDK.Utils;
+using NRustLightning.Adaptors;
+using NRustLightning.Utils;
+using NRustLightning.Handles;
+using NRustLightning.Interfaces;
 
-namespace DotNetLightning.LDK
+namespace NRustLightning
 {
     public sealed class ChannelMonitor : IDisposable
     {

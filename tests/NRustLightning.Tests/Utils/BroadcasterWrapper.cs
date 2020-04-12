@@ -1,12 +1,12 @@
 using System;
 using System.Runtime.InteropServices;
-using DotNetLightning.LDK.Adaptors;
-using DotNetLightning.LDK.Handles;
-using DotNetLightning.LDK.Interfaces;
-using DotNetLightning.LDK.Tests.Utils;
-using DotNetLightning.LDK.Utils;
+using NRustLightning.Adaptors;
+using NRustLightning.Tests.Utils;
+using NRustLightning.Utils;
+using NRustLightning.Handles;
+using NRustLightning.Interfaces;
 
-namespace DotNetLightning.LDK.Tests.Utils
+namespace NRustLightning.Tests.Utils
 {
     /// <summary>
     /// Object for testing behavior of broadcaster when it is held in

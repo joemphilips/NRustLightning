@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using DotNetLightning.LDK.Adaptors;
-namespace DotNetLightning.LDK.Adaptors
+using NRustLightning.Adaptors;
+namespace NRustLightning.Adaptors
 {
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFIScript
