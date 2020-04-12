@@ -24,6 +24,12 @@ jobs:
           toolchain: nightly
           override: true
 
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: rust-lightning/target
+          key: ${{ matrix.os }}-cargo-build-target-${{ hashFiles('rust-lightning/Cargo.lock') }}-${{ hashFiles('rust-lightning/**/src/**') }}
+
       - name: pack
         run: |
             dotnet pack -p:Configuration=Release src/NRustLightning
@@ -45,7 +51,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: src/NRustLightning/bin/Release/NRustLightning.*.nupkg
-          asset_name: NRustLightning-${{ matrix.os }}.${{ github.ref }}.nupkg
+          asset_path: ./src/NRustLightning/bin/Release/*.nupkg
+          asset_name: NRustLightning-${{ matrix.os }}.${{ github.sha }}.nupkg
           asset_content_type: application/zip
 
