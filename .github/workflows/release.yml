@@ -6,7 +6,11 @@ on:
 
 jobs:
   pack_and_push:
-    runs-on: ubuntu-18.04
+    runs-on: ${{ matrix.os }}
+    needs: build
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -21,11 +25,10 @@ jobs:
           toolchain: nightly
           override: true
 
-      - name: pack and push to nuget
+      - name: pack
         run: |
             if [ ${{ secrets.NUGET_API_KEY }} ]; then
               dotnet pack -p:Configuration=Release src/NRustLightning
-              dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
             fi
 
       - name: Create release
@@ -38,6 +41,7 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: true # TODO: change to false when ready
+
       - name: upload release asset
         uses: actions/upload-release-asset@v1
         env:
