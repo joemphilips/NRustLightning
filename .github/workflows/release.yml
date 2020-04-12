@@ -34,17 +34,6 @@ jobs:
         run: |
             dotnet pack -p:Configuration=Release src/NRustLightning
 
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: true # TODO: change to false when ready
-
       # workaround for upload-release-asset does not support variable expansion.
       # see: https://github.com/actions/upload-release-asset/issues/17
       - name: get version
@@ -52,6 +41,17 @@ jobs:
         run: |
           echo ${GITHUB_REF/refs\/tags\/v/}
           echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          release_name: Release v${{ steps.get_versoin.outputs.VERSION }}
+          draft: false
+          prerelease: true # TODO: change to false when ready
 
       - name: upload release asset
         uses: actions/upload-release-asset@v1
