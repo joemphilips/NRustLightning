@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: rust-lightning/target
-          key: ${{ matrix.os }}-cargo-build-target-${{ hashFiles('rust-lightning/Cargo.lock') }}
+          key: ${{ matrix.os }}-cargo-build-target-${{ hashFiles('rust-lightning/Cargo.lock') }}-${{ hashFiles('rust-lightning/**/src/**') }}
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
