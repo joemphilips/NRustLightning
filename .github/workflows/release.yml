@@ -13,6 +13,7 @@ jobs:
       # see: https://github.com/actions/upload-release-asset/issues/17
       - name: get version
         id: get_version
+        # the substitution we use here does not work in windows.
         run: |
           echo ${GITHUB_REF/refs\/tags\/v/}
           echo ${GITHUB_REF/refs\/tags\/v/} > version.txt
@@ -45,6 +46,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-18.04, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-18.04
+            RID: linux
+          - os: windows-latest
+            RID: win
+          - os: macos-latest
+            RID: osx
     
     steps:
       - uses: actions/checkout@v2
@@ -92,6 +100,6 @@ jobs:
         with:
           upload_url: ${{ steps.upload-url.outputs.url }}
           asset_path: ./src/NRustLightning/bin/Release/NRustLightning.${{ steps.get_version.outputs.VERSION }}.nupkg
-          asset_name: NRustLightning-${{ matrix.os }}.${{ steps.get_version.outputs.VERSION }}.nupkg
+          asset_name: NRustLightning-${{ matrix.RID }}.${{ steps.get_version.outputs.VERSION }}.nupkg
           asset_content_type: application/zip
 
