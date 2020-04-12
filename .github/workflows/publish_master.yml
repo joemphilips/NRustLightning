@@ -28,6 +28,16 @@ jobs:
           toolchain: nightly
           override: true
 
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('rust-lightning/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('rust-lightning/Cargo.lock') }}
       - name: Cache cargo build
         uses: actions/cache@v1
         with:

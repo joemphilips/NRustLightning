@@ -19,19 +19,28 @@ jobs:
         with:
           dotnet-version: ${{ matrix.dotnet }}
 
-      # we alsot wanted to cache ~/.cargo , but actions/cache seems to not work well with actions-rs/toolchain
-      - name: Cache cargo build
-        uses: actions/cache@v1
-        with:
-          path: rust-lightning/target
-          key: ${{ matrix.os }}-cargo-build-target-${{ hashFiles('rust-lightning/Cargo.lock') }}-${{ hashFiles('rust-lightning/**/src/**') }}
-
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           override: true
           components: rustfmt, clippy
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('rust-lightning/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('rust-lightning/Cargo.lock') }}
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: rust-lightning/target
+          key: ${{ matrix.os }}-cargo-build-target-${{ hashFiles('rust-lightning/Cargo.lock') }}-${{ hashFiles('rust-lightning/**/src/**') }}
+
       - name: Build with dotnet
         run: |
           dotnet build --configuration Debug src/NRustLightning
