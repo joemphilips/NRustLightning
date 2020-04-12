@@ -36,15 +36,7 @@ jobs:
 
 
       - name: pack and push to nuget
+        if: ${{ secrets.NUGET_API_KEY }}
         run: |
-          if [ ${{ secrets.NUGET_API_KEY }} ]; then
-            if [ ${{ matrix.os }} = "macos-latest" ]; then
-              RID="osx-x64"
-            elif [ ${{ matrix.os }} = "ubuntu-18.04" ]; then 
-              RID="linux-x64"
-            else
-              RID="win"
-            fi
-            dotnet pack -p:Configuration=Release src/NRustLightning --version-suffix date`date +%Y%m%d-%H%M`.git-`echo $GITHUB_SHA | cut -c 1-7`-${RID}
-            dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
-          fi
+          dotnet pack -p:Configuration=Release src/NRustLightning --version-suffix date`date +%Y%m%d-%H%M`.git-`echo $GITHUB_SHA | cut -c 1-7`-${{ matrix.os }}
+          dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json

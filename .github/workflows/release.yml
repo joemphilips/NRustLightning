@@ -45,13 +45,21 @@ jobs:
           draft: false
           prerelease: true # TODO: change to false when ready
 
+      # workaround for upload-release-asset does not support variable expansion.
+      # see: https://github.com/actions/upload-release-asset/issues/17
+      - name: get version
+        id: get_version
+        run: |
+          echo ${GITHUB_REF/refs\/tags\/v/}
+          echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+
       - name: upload release asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./src/NRustLightning/bin/Release/*.nupkg
-          asset_name: NRustLightning-${{ matrix.os }}.${{ github.sha }}.nupkg
+          asset_path: ./src/NRustLightning/bin/Release/NRustLightning.${{ steps.get_version.outputs.VERSION }}.nupkg
+          asset_name: NRustLightning-${{ matrix.os }}.${{ steps.get_version.outputs.VERSION }}.nupkg
           asset_content_type: application/zip
 
