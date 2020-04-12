@@ -1,8 +1,6 @@
 name: publish(stable release)
 on:
   push:
-    branches-ignore:
-      - "*"
     tags:
       - 'v*.*.*'
 
