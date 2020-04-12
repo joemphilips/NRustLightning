@@ -3,11 +3,11 @@ on: [pull_request]
 
 jobs:
   build:
-    name: "Build on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
+    name: "Build and Test on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, ubuntu-16.04, windows-latest, macos-latest]
+        os: [ubuntu-18.04, windows-latest, macos-latest]
         dotnet: ['3.0.100', '3.1.200']
       fail-fast: true
     steps:
@@ -19,7 +19,7 @@ jobs:
         with:
           dotnet-version: ${{ matrix.dotnet }}
 
-      # we alsot wanted to cache ~/.cargo , but actions/cache seems to not work well with acctions-rs
+      # we alsot wanted to cache ~/.cargo , but actions/cache seems to not work well with actions-rs/toolchain
       - name: Cache cargo build
         uses: actions/cache@v1
         with:
@@ -36,28 +36,6 @@ jobs:
         run: |
           dotnet build --configuration Debug src/NRustLightning
 
-  test:
-    name: "Test on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
-    runs-on: ${{ matrix.os }}
-    needs: build
-    strategy:
-      matrix:
-        os: [ubuntu-18.04, ubuntu-16.04, windows-latest, macos-latest]
-        dotnet: ['3.1.200']
-      fail-fast: true
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - name: Setup ${{ matrix.dotnet }} .NET Core
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: ${{ matrix.dotnet }}
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-          components: rustfmt, clippy
       - name: Run test in ${{ matrix.os }}
+        if: startsWith(matrix.dotnet, '3.1')
         run: dotnet test tests/NRustLightning.Tests
