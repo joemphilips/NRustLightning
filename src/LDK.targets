@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <Version>1.0.2</Version>
+        <Version>1.0.3</Version>
         <Authors>Joe Miyamoto (joemphilips@gmail.com)</Authors>
         <CargoPackage>bindings</CargoPackage>
         <CargoWorkspacePath>$(MSBuildThisFileDirectory)/../rust-lightning</CargoWorkspacePath>
