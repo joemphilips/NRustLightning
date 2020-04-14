@@ -13,11 +13,15 @@ module Dict =
        match dict.TryGetValue key with
        | true, v -> Some v
        | false, _ -> None
-type System.UInt64 with
-    member this.GetBytesBigEndian() =
+
+[<Extension;AbstractClass;Sealed>]
+type PrimitiveExtensions() =
+    [<Extension>]
+    static member GetBytesBigEndian(this: uint64) =
         let d = BitConverter.GetBytes(this)
         if BitConverter.IsLittleEndian then (d |> Array.rev) else d
-    member x.ToVarInt() =
+    [<Extension>]
+    static member ToVarInt(x: uint64) =
         if x < 0xfdUL then
             [|uint8 x|]
         else if x < 0x10000UL then
@@ -47,14 +51,17 @@ type System.UInt64 with
             buf.[8] <- (byte x)
             buf
         
-type System.UInt32 with
-    member this.GetBytesBigEndian() =
+    [<Extension>]
+    static member GetBytesBigEndian(this: uint32) =
         let d = BitConverter.GetBytes(this)
         if BitConverter.IsLittleEndian then (d |> Array.rev) else d
+        
+    [<Extension>]
+    static member GetBytesBigEndian(this: uint16) =
+        let d = BitConverter.GetBytes(this)
+        if BitConverter.IsLittleEndian then (d |> Array.rev) else d
+        
 type System.UInt16 with
-    member this.GetBytesBigEndian() =
-        let d = BitConverter.GetBytes(this)
-        if BitConverter.IsLittleEndian then (d |> Array.rev) else d
     static member FromBytesBigEndian(value: byte[]) =
         ((uint16 value.[0]) <<< 8 ||| (uint16 value.[1]))
 type System.Int64 with

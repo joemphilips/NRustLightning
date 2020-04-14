@@ -44,13 +44,13 @@ namespace NRustLightning.Tests
 
             var nodeFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
             var channelFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
-            Console.WriteLine($"node features in C# are {Hex.EncodeData(nodeFeature.ByteArray)}");
             var hop1 = new RouteHopWithFeature(_nodeIds[0], nodeFeature, 1, channelFeature, 1000, 72);
             var hop2 = new RouteHopWithFeature(_nodeIds[1], nodeFeature, 2, channelFeature, 1000, 72);
             var route = new RouteWithFeature(hop1, hop2);
             
             var paymentHash = new uint256();
-            channelManager.SendPayment(route, paymentHash.ToBytes());
+            var e = Assert.Throws<Exception>(() => channelManager.SendPayment(route, paymentHash.ToBytes()));
+            Assert.Equal("FFI against rust-lightning failed (InternalError), Error: No channel available with first hop!", e.Message);
             
             channelManager.Dispose();
         }

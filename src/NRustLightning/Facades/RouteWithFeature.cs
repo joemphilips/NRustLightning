@@ -4,6 +4,7 @@ using DotNetLightning.Serialize;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
+using static DotNetLightning.Core.Utils.Extensions.PrimitiveExtensions;
 
 namespace NRustLightning.Facades
 {
@@ -50,10 +51,10 @@ namespace NRustLightning.Facades
             {
                 result.AddRange(hop.NodeId.Value.ToBytes());
                 result.AddRange(hop.NodeFeatures.ToByteArrayWithLength());
-                result.AddRange(hop.ShortChannelId.AsArray());
+                result.AddRange(hop.ShortChannelId.GetBytesBigEndian());
                 result.AddRange(hop.ChannelFeatures.ToByteArrayWithLength());
-                result.AddRange(hop.FeeMsat.AsArray());
-                result.AddRange(hop.CltvExpiryDelta.AsArray());
+                result.AddRange(hop.FeeMsat.GetBytesBigEndian());
+                result.AddRange(hop.CltvExpiryDelta.GetBytesBigEndian());
             }
             return result.ToArray();
         }
