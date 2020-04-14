@@ -271,6 +271,9 @@ module Primitives =
             | _              -> false
         override this.GetHashCode() =
             this.Value.GetHashCode()
+            
+        member this.ToBytes64() =
+            this.Value.Decompress().ToBytes().[1..64]
 
     [<StructuralComparison;StructuralEquality>]
     type TxId = | TxId of uint256 with

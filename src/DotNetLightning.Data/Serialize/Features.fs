@@ -246,6 +246,11 @@ type FeatureBit private (bitArray) =
         sb.ToString()
     
     member this.ToByteArray() = this.ByteArray
+    
+    member this.ToByteArrayWithLength() =
+        let b = this.ByteArray
+        let len = ((uint16)b.Length).GetBytesBigEndian()
+        Array.concat[len; b]
         
     // --- equality and comparison members ----
     member this.Equals(o: FeatureBit) =

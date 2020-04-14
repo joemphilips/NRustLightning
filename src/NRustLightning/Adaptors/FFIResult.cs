@@ -10,7 +10,7 @@ namespace NRustLightning.Adaptors
         {
             Ok,
             EmptyPointerProvided,
-            InvalidSeedLength,
+            InvalidDataLength,
             BufferTooSmall,
             InternalError,
         }
