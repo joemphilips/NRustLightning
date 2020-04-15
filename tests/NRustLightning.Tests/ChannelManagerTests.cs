@@ -31,9 +31,10 @@ namespace NRustLightning.Tests
         private static PubKey[] _pubKeys = _keys.Select(k => k.PubKey).ToArray();
         private static Primitives.NodeId[] _nodeIds = _pubKeys.Select(x => Primitives.NodeId.NewNodeId(x)).ToArray();
 
-        [Fact]
-        public void CanCreateChannelManager()
+
+        private ChannelManager GetTestChannelManager()
         {
+            
             var logger = new TestLogger();
             var broadcaster = new TestBroadcaster();
             var feeEstiamtor = new TestFeeEstimator();
@@ -41,7 +42,12 @@ namespace NRustLightning.Tests
             var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
             var n = Network.TestNet;
             var channelManager = ChannelManager.Create(seed, in n, in TestUserConfig.Default, chainWatchInterface, logger, broadcaster, feeEstiamtor, 400000);
-
+            return channelManager;
+        }
+        [Fact]
+        public void CanCreateChannelManager()
+        {
+            var channelManager = GetTestChannelManager();
             var nodeFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
             var channelFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
             var hop1 = new RouteHopWithFeature(_nodeIds[0], nodeFeature, 1, channelFeature, 1000, 72);
@@ -53,6 +59,12 @@ namespace NRustLightning.Tests
             Assert.Equal("FFI against rust-lightning failed (InternalError), Error: No channel available with first hop!", e.Message);
             
             channelManager.Dispose();
+        }
+
+        [Fact]
+        public void CanGetPendingEvent()
+        {
+            var channelManager = GetTestChannelManager();
         }
     }
 }

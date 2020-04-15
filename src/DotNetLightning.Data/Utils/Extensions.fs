@@ -1,6 +1,5 @@
 module DotNetLightning.Core.Utils.Extensions
 
-open NBitcoin
 open System.Linq
 open System
 open System.Collections
@@ -20,6 +19,10 @@ type PrimitiveExtensions() =
     static member GetBytesBigEndian(this: uint64) =
         let d = BitConverter.GetBytes(this)
         if BitConverter.IsLittleEndian then (d |> Array.rev) else d
+    [<Extension>]
+    static member GetBytesBigEndian(this: int64) =
+        (uint64 this).GetBytesBigEndian()
+        
     [<Extension>]
     static member ToVarInt(x: uint64) =
         if x < 0xfdUL then
@@ -64,6 +67,45 @@ type PrimitiveExtensions() =
 type System.UInt16 with
     static member FromBytesBigEndian(value: byte[]) =
         ((uint16 value.[0]) <<< 8 ||| (uint16 value.[1]))
+    static member FromBytesBigEndian(value: Span<byte>) =
+        ((uint16 value.[0]) <<< 8 ||| (uint16 value.[1]))
+        
+type System.UInt32 with
+    static member FromBytes(value: byte[], littleEndian) =
+        if littleEndian then
+            (uint32 value.[0]) <<< 24
+             ||| (uint32 value.[1] <<< 16)
+             ||| (uint32 value.[2] <<< 8)
+             ||| (uint32 value.[3])
+        else
+            (uint32 value.[3])
+            ||| (uint32 value.[2] <<< 8)
+            ||| (uint32 value.[1] <<< 16)
+            ||| (uint32 value.[0] <<< 24)
+        
+type System.UInt64 with
+    static member FromSpan(value: Span<byte>, littleEndian: bool) =
+        if (littleEndian) then
+            (uint64 value.[0])
+            ||| (uint64 value.[1] <<< 8)
+            ||| (uint64 value.[2] <<< 16)
+            ||| (uint64 value.[3] <<< 24)
+            ||| (uint64 value.[4] <<< 32)
+            ||| (uint64 value.[5] <<< 40)
+            ||| (uint64 value.[6] <<< 48)
+            ||| (uint64 value.[7] <<< 56)
+        else
+            (uint64 value.[7])
+            ||| (uint64 value.[6] <<< 8)
+            ||| (uint64 value.[5] <<< 16)
+            ||| (uint64 value.[4] <<< 24)
+            ||| (uint64 value.[3] <<< 32)
+            ||| (uint64 value.[2] <<< 40)
+            ||| (uint64 value.[1] <<< 48)
+            ||| (uint64 value.[0] <<< 56)
+    static member FromBytes(value: byte[], lEndian: bool) =
+        UInt64.FromSpan(value.AsSpan(), lEndian)
+        
 type System.Int64 with
     member this.ToVarInt() = (uint64 this).ToVarInt()
 type System.Byte
@@ -184,7 +226,7 @@ type DictionaryExtensions() =
     [<Extension>]
     static member TryGetValueOption(this: IDictionary<_, _>, key) =
         Dict.tryGetValue key this
-        
+
 module Seq =
     let skipSafe num = 
         Seq.zip (Seq.initInfinite id)

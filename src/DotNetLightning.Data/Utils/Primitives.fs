@@ -2,6 +2,7 @@ namespace DotNetLightning.Utils
 
 open NBitcoin
 open NBitcoin.Crypto
+open DotNetLightning.Core.Utils.Extensions
 
 open System
 open System.Net
@@ -174,7 +175,7 @@ module Primitives =
         member x.ToBytes(?lEndian) =
             let e = defaultArg lEndian true
             x.Value.ToBytes(e)
-
+            
         member x.GetRIPEMD160() =
             let b = x.Value.ToBytes()
             Crypto.Hashes.RIPEMD160(b, b.Length)
@@ -282,7 +283,7 @@ module Primitives =
         
     /// Small wrapper for NBitcoin's OutPoint type
     /// So that it supports comparison and equality constraints
-    [<CustomComparison;CustomEquality>]
+    [<CustomComparison;CustomEquality;>]
     type LNOutPoint = LNOutPoint of OutPoint with
         member x.Value = let (LNOutPoint v) = x in v
         
@@ -318,6 +319,12 @@ module Primitives =
             
         interface IEquatable<LNOutPoint> with
             member this.Equals(other) = this.Equals(other)
+            
+        /// rust-lightning compatible serialization
+        static member FromBytes(b: byte[]) =
+            let txid = uint256(b.[0..31], false)
+            let vout = UInt32.FromBytes(b.[32..35], false)
+            OutPoint(txid, vout) |> LNOutPoint
 
     type FeeRatePerKw = | FeeRatePerKw of uint32 with
         member x.Value = let (FeeRatePerKw v) = x in v

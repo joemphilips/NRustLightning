@@ -86,6 +86,16 @@ namespace NRustLightning
         {
             return MaybeCheck(_send_payment(handle, ref route, ref payment_hash), check);
         }
-        
+
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "_get_and_clear_pending_events",
+            ExactSpelling = true)]
+        static extern FFIResult _get_and_clear_pending_events(ChannelManagerHandle handle, out FFIBytes events);
+
+        internal static FFIResult get_and_clear_pending_events(ChannelManagerHandle handle, out FFIBytes events,
+            bool check = true)
+            => MaybeCheck(_get_and_clear_pending_events(handle, out events), check);
+
     }
 }

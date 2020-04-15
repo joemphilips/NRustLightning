@@ -6,10 +6,10 @@
 
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Utils\Extensions.fs" />
     <Compile Include="Utils/Primitives.fs" />
     <Compile Include="Utils/LNMoney.fs" />
     <Compile Include="Utils/NBitcoinExtensions.fs" />
-    <Compile Include="Utils\Extensions.fs" />
     <Compile Include="Utils/Utils.fs" />
     <Compile Include="Utils/Aether.fs" />
     <Compile Include="Utils/Config.fs" />
@@ -25,6 +25,7 @@
     <Compile Include="Serialize\TLVs.fs" />
     <Compile Include="Serialize\OnionPayload.fs" />
     <Compile Include="Serialize/Msgs/Msgs.fs" />
+    <Compile Include="NRustLightningTypes\Event.fs" />
   </ItemGroup>
 
   <ItemGroup>

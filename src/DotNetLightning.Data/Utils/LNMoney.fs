@@ -2,6 +2,7 @@ namespace DotNetLightning.Utils
 open System
 open System.Globalization
 open NBitcoin
+open DotNetLightning.Core.Utils.Extensions
 
 [<Flags>]
 type LNMoneyUnit =
@@ -105,6 +106,12 @@ type LNMoney = | LNMoney of int64 with
     member this.BTC = this.MilliSatoshi / (int64 LNMoneyUnit.BTC)
     member this.Value = this.MilliSatoshi
     member this.ToMoney() = this.Satoshi |> Money
+    
+    member this.ToBytesBE() =
+        this.Value.GetBytesBigEndian()
+        
+    static member FromBytes(bytes: byte[]) =
+        UInt64.FromBytes(bytes, false) |> int64 |> LNMoney
 
     member this.Split(parts: int): LNMoney seq =
         if parts <= 0 then
