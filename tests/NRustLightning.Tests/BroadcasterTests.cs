@@ -14,7 +14,7 @@ namespace NRustLightning.Tests
 {
     public class BroadcasterTests
     {
-        [Fact(Skip = "For now")]
+        [Fact]
         public void BroadcasterTestSimple()
         {
             var tb = new TestBroadcaster();
@@ -48,8 +48,7 @@ namespace NRustLightning.Tests
         }
 
         
-        //[Fact]
-        [Fact(Skip = "For now")]
+        [Fact]
         public void BroadcasterTestWrapper()
         {
             var tb = new TestBroadcaster();
