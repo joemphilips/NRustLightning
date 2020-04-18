@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using DotNetLightning.Data.NRustLightningTypes;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
 using NRustLightning.Handles;
@@ -56,19 +57,26 @@ namespace NRustLightning
             }
         }
         
-        public void SendPayment(Route routes, ref FFISha256dHash paymentHash)
+        public void SendPayment(RouteWithFeature routesWithFeature, Span<byte> paymentHash)
         {
             unsafe
             {
 
-                var span = routes.AsSpan();
+                var span = routesWithFeature.AsArray();
                 fixed (byte* r = span)
-                fixed (FFISha256dHash* _ = &paymentHash)
+                fixed (byte* p = paymentHash)
                 {
                     var route = new FFIRoute((IntPtr)r, (UIntPtr)span.Length);
-                    Interop.send_payment(_handle, ref route, ref paymentHash);
+                    var ffiPaymentHash = new FFISha256dHash((IntPtr)p, (UIntPtr)paymentHash.Length);
+                    Interop.send_payment(_handle, ref route, ref ffiPaymentHash);
                 }
             }
+        }
+
+        public Event[] GetAndClearPendingEvents()
+        {
+            Interop.get_and_clear_pending_events(_handle, out var eventsBytes);
+            return Event.ParseManyUnsafe(eventsBytes.AsArray());
         }
         
         

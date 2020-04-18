@@ -39,7 +39,7 @@ namespace NRustLightning.Adaptors
         /// </summary>
         /// <param name="ffi"></param>
         /// <returns></returns>
-        public static Span<byte> AsSpan(this SecretKey ffi)
+        public static Span<byte> AsSpan(this FFISecretKey ffi)
         {
             var size = (int) ffi.len;
             unsafe
@@ -47,7 +47,7 @@ namespace NRustLightning.Adaptors
                 return new Span<byte>(ffi.ptr.ToPointer(), size);
             }
         }
-        public static byte[] AsArray(this SecretKey ffi)
+        public static byte[] AsArray(this FFISecretKey ffi)
         {
             var arr = new byte[(int)ffi.len];
             var span = ffi.AsSpan();
@@ -64,7 +64,7 @@ namespace NRustLightning.Adaptors
         /// </summary>
         /// <param name="ffi"></param>
         /// <returns></returns>
-        public static Span<byte> AsSpan(this PublicKey ffi)
+        public static Span<byte> AsSpan(this FFIPublicKey ffi)
         {
             var size = (int) ffi.len;
             unsafe
@@ -72,7 +72,7 @@ namespace NRustLightning.Adaptors
                 return new Span<byte>(ffi.ptr.ToPointer(), size);
             }
         }
-        public static byte[] AsArray(this PublicKey ffi)
+        public static byte[] AsArray(this FFIPublicKey ffi)
         {
             var arr = new byte[(int)ffi.len];
             var span = ffi.AsSpan();

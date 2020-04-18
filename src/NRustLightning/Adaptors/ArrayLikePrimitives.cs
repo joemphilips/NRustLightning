@@ -1,3 +1,7 @@
+/*
+ * You can think these are just a type alias for Span<T>
+ */
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -11,13 +15,13 @@ namespace NRustLightning.Adaptors
         internal readonly UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
-    public readonly ref struct SecretKey
+    public readonly ref struct FFISecretKey
     {
         internal readonly IntPtr ptr;
         internal readonly UIntPtr len;
     }
     [StructLayout(LayoutKind.Sequential)]
-    public readonly ref struct PublicKey
+    public readonly ref struct FFIPublicKey
     {
         internal readonly IntPtr ptr;
         internal readonly UIntPtr len;
@@ -27,6 +31,12 @@ namespace NRustLightning.Adaptors
     {
         internal readonly IntPtr ptr;
         internal readonly UIntPtr len;
+
+        public FFISha256dHash(IntPtr ptr, UIntPtr len)
+        {
+            this.ptr = ptr;
+            this.len = len;
+        }
     }
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFIOutPoint
@@ -54,4 +64,47 @@ namespace NRustLightning.Adaptors
         internal readonly UIntPtr len;
     }
     
+    #region internal members
+   
+    [StructLayout(LayoutKind.Sequential)]
+    internal readonly ref struct FFIRoute
+    {
+        internal readonly IntPtr ptr;
+        internal readonly UIntPtr len;
+
+        public FFIRoute(IntPtr ptr, UIntPtr len)
+        {
+            this.ptr = ptr;
+            this.len = len;
+        }
+    }
+
+    internal readonly ref struct FFIBytes
+    {
+        internal readonly IntPtr ptr;
+        internal readonly UIntPtr len;
+        public FFIBytes(IntPtr ptr, UIntPtr len)
+        {
+            this.ptr = ptr;
+            this.len = len;
+        }
+        
+        public Span<byte> AsSpan()
+        {
+            var size = (int) len;
+            unsafe
+            {
+                return new Span<byte>(ptr.ToPointer(), size);
+            }
+        }
+        public byte[] AsArray()
+        {
+            var arr = new byte[(int)len];
+            var span = ptr.AsSpan();
+            span.CopyTo(arr);
+            return arr;
+        }
+    }
+    
+    # endregion
 }
