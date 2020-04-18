@@ -4,6 +4,7 @@ on: [pull_request]
 jobs:
   build:
     name: "Build and Test on os: ${{ matrix.os }}. dotnet SDK version: ${{ matrix.dotnet }}"
+    timeout-minutes: 10
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
