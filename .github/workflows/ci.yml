@@ -48,4 +48,4 @@ jobs:
 
       - name: Run test in ${{ matrix.os }}
         if: startsWith(matrix.dotnet, '3.1')
-        run: dotnet test --filter "FullyQualifiedName~Broadcaster" tests/NRustLightning.Tests -- RunConfiguration.TestSessionTimeout=15000
+        run: dotnet test tests/NRustLightning.Tests -- RunConfiguration.TestSessionTimeout=15000
