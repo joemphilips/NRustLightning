@@ -44,7 +44,8 @@ namespace NRustLightning.Tests
             var channelManager = ChannelManager.Create(seed, in n, in TestUserConfig.Default, chainWatchInterface, logger, broadcaster, feeEstiamtor, 400000);
             return channelManager;
         }
-        [Fact]
+        
+        [Fact(Timeout = 15000)]
         public void CanCreateChannelManager()
         {
             var channelManager = GetTestChannelManager();
@@ -57,7 +58,6 @@ namespace NRustLightning.Tests
             var paymentHash = new uint256();
             var e = Assert.Throws<Exception>(() => channelManager.SendPayment(route, paymentHash.ToBytes()));
             Assert.Equal("FFI against rust-lightning failed (InternalError), Error: No channel available with first hop!", e.Message);
-            
             channelManager.Dispose();
         }
 
