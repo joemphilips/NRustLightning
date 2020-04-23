@@ -9,10 +9,10 @@ namespace NRustLightning
     {
         [DllImport(RustLightning, EntryPoint = "create_fee_estimator", ExactSpelling = true,
             CallingConvention = CallingConvention.Cdecl)]
-        internal static extern FFIResult _create_fee_estimator(ref FFIGetEstSatPer1000Weight fn, out FeeEstimatorHandle handle);
+        internal static extern FFIResult _create_fee_estimator(ref GetEstSatPer1000Weight fn, out FeeEstimatorHandle handle);
 
         internal static FFIResult create_fee_estimator(
-            ref FFIGetEstSatPer1000Weight fn,
+            ref GetEstSatPer1000Weight fn,
             out FeeEstimatorHandle handle,
             bool check = true
             )

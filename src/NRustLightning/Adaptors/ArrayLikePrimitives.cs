@@ -19,6 +19,12 @@ namespace NRustLightning.Adaptors
     {
         internal readonly IntPtr ptr;
         internal readonly UIntPtr len;
+
+        public FFISecretKey(IntPtr ptr, UIntPtr len)
+        {
+            this.ptr = ptr;
+            this.len = len;
+        }
     }
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFIPublicKey
@@ -33,6 +39,19 @@ namespace NRustLightning.Adaptors
         internal readonly UIntPtr len;
 
         public FFISha256dHash(IntPtr ptr, UIntPtr len)
+        {
+            if (len != (UIntPtr) 32) throw new ArgumentException($"must be 32, it was {len}");
+            this.ptr = ptr;
+            this.len = len;
+        }
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly ref struct FFISecret
+    {
+        internal readonly IntPtr ptr;
+        internal readonly UIntPtr len;
+
+        public FFISecret(IntPtr ptr, UIntPtr len)
         {
             this.ptr = ptr;
             this.len = len;
@@ -79,7 +98,7 @@ namespace NRustLightning.Adaptors
         }
     }
 
-    internal readonly ref struct FFIBytes
+    public readonly ref struct FFIBytes
     {
         internal readonly IntPtr ptr;
         internal readonly UIntPtr len;
@@ -103,6 +122,11 @@ namespace NRustLightning.Adaptors
             var span = ptr.AsSpan();
             span.CopyTo(arr);
             return arr;
+        }
+
+        public Memory<byte> AsMemory()
+        {
+            return new Memory<byte>(this.AsArray());
         }
     }
     

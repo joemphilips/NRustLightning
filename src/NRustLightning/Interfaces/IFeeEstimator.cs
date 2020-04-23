@@ -13,6 +13,6 @@ namespace NRustLightning.Interfaces
     /// </summary>
     public interface IFeeEstimator
     {
-        ref FFIGetEstSatPer1000Weight getEstSatPer1000Weight { get; }
+        ref GetEstSatPer1000Weight getEstSatPer1000Weight { get; }
     }
 }

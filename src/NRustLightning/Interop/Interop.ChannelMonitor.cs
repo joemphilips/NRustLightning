@@ -17,9 +17,9 @@ namespace NRustLightning
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
             ref FilterBlock filterBlock,
-            ref FFIBroadcastTransaction broadcastTransaction,
+            ref BroadcastTransaction broadcastTransaction,
             ref Log log,
-            ref FFIGetEstSatPer1000Weight getEstSatPer1000Weight,
+            ref GetEstSatPer1000Weight getEstSatPer1000Weight,
             out ChannelMonitorHandle handle
             );
 
@@ -29,9 +29,9 @@ namespace NRustLightning
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
             ref FilterBlock filterBlock,
-            ref FFIBroadcastTransaction broadcastTransaction,
+            ref BroadcastTransaction broadcastTransaction,
             ref Log log,
-            ref FFIGetEstSatPer1000Weight getEstSatPer1000Weight,
+            ref GetEstSatPer1000Weight getEstSatPer1000Weight,
             out ChannelMonitorHandle handle,
             bool check = true
         )

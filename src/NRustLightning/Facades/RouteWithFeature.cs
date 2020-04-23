@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DotNetLightning.Serialize;
 using DotNetLightning.Utils;
 using NBitcoin;
@@ -34,11 +35,11 @@ namespace NRustLightning.Facades
         }
     }
     
-    public class RouteWithFeature
+    internal class RouteWithFeatureList
     {
         public readonly RouteHopWithFeature[] Hops;
 
-        public RouteWithFeature(params RouteHopWithFeature[] hops)
+        public RouteWithFeatureList(params RouteHopWithFeature[] hops)
         {
             Hops = hops;
         }
@@ -56,6 +57,28 @@ namespace NRustLightning.Facades
                 result.AddRange(hop.FeeMsat.GetBytesBigEndian());
                 result.AddRange(hop.CltvExpiryDelta.GetBytesBigEndian());
             }
+            return result.ToArray();
+        }
+    }
+
+    public class RoutesWithFeature
+    {
+        private readonly RouteWithFeatureList[] Routes;
+        public RoutesWithFeature(params RouteHopWithFeature[][] hopsList)
+        {
+            Routes = hopsList.Select(hops => new RouteWithFeatureList(hops)).ToArray();
+        }
+
+        public byte[] AsArray()
+        {
+            var result = new List<byte>();
+            var length = (ulong)Routes.Length;
+            result.AddRange(BitConverter.GetBytes(length).Reverse());
+            foreach (var route in Routes)
+            {
+                result.AddRange(route.AsArray());
+            }
+
             return result.ToArray();
         }
     }

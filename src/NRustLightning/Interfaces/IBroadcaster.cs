@@ -14,6 +14,6 @@ namespace NRustLightning.Interfaces
     /// </summary>
     public interface IBroadcaster
     {
-        ref FFIBroadcastTransaction BroadcastTransaction { get; }
+        ref BroadcastTransaction BroadcastTransaction { get; }
     }
 }

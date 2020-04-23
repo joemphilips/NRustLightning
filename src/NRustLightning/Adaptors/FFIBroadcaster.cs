@@ -4,6 +4,6 @@ using System.Runtime.InteropServices;
 namespace NRustLightning.Adaptors
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void FFIBroadcastTransaction(ref FFITransaction tx);
+    public delegate void BroadcastTransaction(ref FFITransaction tx);
     
 }
