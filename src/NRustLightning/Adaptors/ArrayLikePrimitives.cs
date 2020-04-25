@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NBitcoin;
 using NRustLightning.Adaptors;
 namespace NRustLightning.Adaptors
 {
@@ -75,6 +76,13 @@ namespace NRustLightning.Adaptors
     {
         public readonly IntPtr ptr;
         public readonly UIntPtr len;
+        public Transaction AsTransaction(NBitcoin.Network n)
+        {
+            var t = Transaction.Create(n);
+            t.FromBytes(this.AsArray());
+            return t;
+        }
+
     }
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFIBlock
@@ -101,7 +109,7 @@ namespace NRustLightning.Adaptors
     public readonly ref struct FFIBytes
     {
         internal readonly IntPtr ptr;
-        internal readonly UIntPtr len;
+        public readonly UIntPtr len;
         public FFIBytes(IntPtr ptr, UIntPtr len)
         {
             this.ptr = ptr;

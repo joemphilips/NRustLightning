@@ -5,6 +5,11 @@ using NRustLightning.Interfaces;
 
 namespace NRustLightning.Tests.Utils
 {
+    public interface ISocketDescriptorFactory
+    {
+        ISocketDescriptor GetNewSocket();
+        ISocketDescriptor GetSocket(int index);
+    }
     public class SocketDescriptorFactory : ISocketDescriptorFactory
     {
         private int CurrentNum = 0;

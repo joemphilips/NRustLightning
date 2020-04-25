@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace NRustLightning.Adaptors
 {
 	[StructLayout(LayoutKind.Sequential)]
-	public ref struct ChannelConfig
+	public struct ChannelConfig
 	{
 		/// Amount (in millionths of a satoshi) the channel will charge per transferred satoshi.
 		/// This may be allowed to change at runtime in a later update, however doing so must result in
@@ -151,37 +151,13 @@ namespace NRustLightning.Adaptors
     [StructLayout(LayoutKind.Sequential)]
     public struct UserConfig
     {
-	    /// Amount (in millionths of a satoshi) the channel will charge per transferred satoshi.
-	    /// This may be allowed to change at runtime in a later update, however doing so must result in
-	    /// update messages sent to notify all nodes of our updated relay fee.
-	    ///
-	    /// Default value: 0.
-	    public uint fee_proportional_millionths;
+	    /// Channel config that we propose to our counterparty.
+	    public ChannelHandshakeConfig own_channel_config;
 
-	    /// Set to announce the channel publicly and notify all nodes that they can route via this
-	    /// channel.
-	    ///
-	    /// This should only be set to true for nodes which expect to be online reliably.
-	    ///
-	    /// As the node which funds a channel picks this value this will only apply for new outbound
-	    /// channels unless ChannelHandshakeLimits::force_announced_channel_preferences is set.
-	    ///
-	    /// This cannot be changed after the initial channel handshake.
-	    ///
-	    /// Default value: false.
-	    public byte announced_channel;
+	    /// Limits applied to our counterparty's proposed channel config settings.
+	    public ChannelHandshakeLimits peer_channel_config_limits;
 
-	    /// When set, we commit to an upfront shutdown_pubkey at channel open. If our counterparty
-	    /// supports it, they will then enforce the mutual-close output to us matches what we provided
-	    /// at intialization, preventing us from closing to an alternate pubkey.
-	    ///
-	    /// This is set to true by default to provide a slight increase in security, though ultimately
-	    /// any attacker who is able to take control of a channel can just as easily send the funds via
-	    /// lightning payments, so we never require that our counterparties support this option.
-	    ///
-	    /// This cannot be changed after a channel has been initialized.
-	    ///
-	    /// Default value: true.
-	    public byte commit_upfront_shutdown_pubkey;
+	    /// Channel config which affects behavior during channel lifetime.
+	    public ChannelConfig channel_options;
     }
 }

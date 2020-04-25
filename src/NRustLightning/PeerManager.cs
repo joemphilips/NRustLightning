@@ -79,21 +79,6 @@ namespace NRustLightning
             Interop.timer_tick_occured(Handle);
         }
 
-        public void WriteBufferSpaceAvail(ISocketDescriptor descriptor)
-        {
-            Interop.write_buffer_space_avail(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, Handle);
-        }
-
-        public unsafe void ReadEvent(ISocketDescriptor descriptor, Span<byte> data)
-        {
-            fixed (byte* d = data)
-            {
-                var bytes = new FFIBytes((IntPtr)d, (UIntPtr)data.Length);
-                Interop.read_event(
-                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, Handle);
-            }
-        }
-
         public void NewInboundConnection(ISocketDescriptor descriptor)
         {
             Interop.new_inbound_connection(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, Handle);
@@ -104,6 +89,26 @@ namespace NRustLightning
             
             Interop.new_outbound_connection(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref theirNodeId, Handle);
         }
+        public void WriteBufferSpaceAvail(ISocketDescriptor descriptor)
+        {
+            Interop.write_buffer_space_avail(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, Handle);
+        }
+
+        public unsafe void ReadEvent(ISocketDescriptor descriptor, ReadOnlySpan<byte> data)
+        {
+            fixed (byte* d = data)
+            {
+                var bytes = new FFIBytes((IntPtr)d, (UIntPtr)data.Length);
+                Interop.read_event(
+                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, Handle);
+            }
+        }
+
+        public void ProcessEvents()
+        {
+            Interop.process_events(Handle);
+        }
+
         public void Dispose()
         {
             tick.Dispose();

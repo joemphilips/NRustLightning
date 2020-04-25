@@ -1,0 +1,16 @@
+# must be one of "Mainnet" "Regtest" "Testnet"
+network = "Mainnet"
+
+# p2p endpoint we listen on
+P2PIPEndPoint = "127.0.0.1:9735"
+
+# uri of nbxplorer to which we will send a query
+NBXplorerUri = "http://127.0.0.1:4774"
+
+ConfigurationFile = "$HOME/.nrustlightning/nrustlightning.conf"
+DataDir="$HOME/.nrustlightning/data"
+
+[btc]
+NodeEndPoint = "http://127.0.0.1:8080"
+CredentialString = 'johndoe:75669617aaedb394397ddc7213bb1ea9$3a50ee2f4dff3cd49475295124aa3d48a61d6ae3cdcb4d2cf199dac6551217f4'
+
