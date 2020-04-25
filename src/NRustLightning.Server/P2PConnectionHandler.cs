@@ -23,6 +23,9 @@ namespace NRustLightning.Server
         public P2PConnectionHandler(ISocketDescriptorFactory descriptorFactory, PeerManagerProvider peerManager, ILogger<P2PConnectionHandler> logger)
         {
             var pmProvider = peerManager ?? throw new ArgumentNullException(nameof(peerManager));
+            // TODO: Support other chains
+            PeerManager = pmProvider.GetPeerManager("BTC");
+            Console.Write("WARNING: it only supports BTC");
             this.descriptorFactory = descriptorFactory ?? throw new ArgumentNullException(nameof(descriptorFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
