@@ -77,4 +77,10 @@ services:
     restart: never
     image: joemphilips/nrustlightning
     build:
-      context: src/NRustLightning.Server
+      context: .
+      dockerfile: src/NRustLightning.Server/Dockerfile
+    ports:
+      - 9735
+    links:
+      - bitcoind
+      - lnd
