@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace NRustLightning.Utils
 {
-    internal static class Hex
+    public static class Hex
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int Encode4Bits(

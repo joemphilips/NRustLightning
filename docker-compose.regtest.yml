@@ -53,6 +53,7 @@ services:
       - --bitcoind.zmqpubrawtx=tcp://bitcoind:28333
       - --trickledelay=1000
       - --externalip=lnd:9735
+      - --debuglevel=trace
         #- --no-macaroons
       - --datadir=/data
       - --debuglevel=debug
@@ -72,3 +73,8 @@ services:
       - "./data/.bitcoin:/deps/.bitcoin"
     links:
       - bitcoind
+  nrustlightning:
+    restart: never
+    image: joemphilips/nrustlightning
+    build:
+      context: src/NRustLightning.Server

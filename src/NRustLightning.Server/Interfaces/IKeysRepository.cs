@@ -1,7 +1,9 @@
+using NBitcoin;
+
 namespace NRustLightning.Server.Interfaces
 {
     public interface IKeysRepository
     {
-        byte[] GetNodeSecret();
+        Key GetNodeSecret();
     }
 }

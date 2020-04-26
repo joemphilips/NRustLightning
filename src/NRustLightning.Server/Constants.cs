@@ -15,7 +15,7 @@ namespace NRustLightning.Server
         public static string HomeDirectoryPath = Path.Join(HomePath, HomeDirectoryName);
         public static string DataDirectoryPath = Path.Join(HomeDirectoryPath, "data");
         public static string DefaultP2PHost = "127.0.0.1";
-        public static string DefaultP2PIP = "9735";
-        public static IPEndPoint DefaultP2PEndPoint = IPEndPoint.Parse($"{DefaultP2PHost}:{DefaultP2PIP}");
+        public static int DefaultP2PPort = 9735;
+        public static IPEndPoint DefaultP2PEndPoint = IPEndPoint.Parse($"{DefaultP2PHost}:{DefaultP2PPort}");
     }
 }

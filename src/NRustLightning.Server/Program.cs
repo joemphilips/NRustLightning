@@ -37,14 +37,18 @@ namespace NRustLightning.Server
                     return builder.AddCommandLine(args);
                 };
             var config = configureConfig(new ConfigurationBuilder()).Build();
-            var ipEndPoint = IPEndPoint.Parse(config.GetValue<string>("P2PIpEndPoint") ?? Constants.DefaultP2PHost);
+            var v = config.GetValue<string>("P2PIpEndPoint");
+            var ipEndPoint = (v is null) ? Constants.DefaultP2PEndPoint : IPEndPoint.Parse(v);
+            var p2pPort = config.GetValue<int>("P2Port");
+            var port = p2pPort == 0 ? Constants.DefaultP2PPort : p2pPort;
             return
                 Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration(builder => builder.AddConfiguration(config))
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseKestrel(options => { options.Listen(ipEndPoint, listenOptions =>
+                    webBuilder.UseKestrel(options => {
+                        options.ListenAnyIP(port, listenOptions =>
                         {
                             listenOptions.UseConnectionLogging();
                             listenOptions.UseConnectionHandler<P2PConnectionHandler>();

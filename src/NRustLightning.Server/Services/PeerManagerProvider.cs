@@ -45,7 +45,7 @@ namespace NRustLightning.Server.Services
                     RandomUtils.GetBytes(seed);
                     var ffiN = n.FFINetwork;
                     var conf = config.Value.RustLightningConfig;
-                    var peerMan = PeerManager.Create(seed.AsSpan(), in ffiN, in conf, chainWatchInterface, b, logger, feeEst, routingMsgHandler, 400000, keysRepository.GetNodeSecret());
+                    var peerMan = PeerManager.Create(seed.AsSpan(), in ffiN, in conf, chainWatchInterface, b, logger, feeEst, routingMsgHandler, 400000, keysRepository.GetNodeSecret().ToBytes());
                     _peerManagers.Add(n.CryptoCode, peerMan);
                 }
             }
