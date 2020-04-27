@@ -13,7 +13,7 @@ namespace NRustLightning.Tests.Utils
     public class SocketDescriptorFactory : ISocketDescriptorFactory
     {
         private int CurrentNum = 0;
-        private Dictionary<int, ISocketDescriptor> Sockets;
+        private Dictionary<int, ISocketDescriptor> Sockets = new Dictionary<int, ISocketDescriptor>();
         public ISocketDescriptor GetNewSocket()
         {
             CurrentNum++;

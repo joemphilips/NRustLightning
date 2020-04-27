@@ -42,8 +42,10 @@ namespace NRustLightning.Tests
         [Fact]
         public void PeerManagerTestsSimple()
         {
-            var peerMan = getTestPeerManager();
-            peerMan.Dispose();
+            var socketFactory = new SocketDescriptorFactory();
+            using var peerMan = getTestPeerManager();
+            var socket1 = socketFactory.GetNewSocket();
+            peerMan.NewInboundConnection(socket1);
         }
     }
 }
