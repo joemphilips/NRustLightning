@@ -103,6 +103,7 @@ namespace NRustLightning
         
         [DllImport(RustLightning, EntryPoint = "new_inbound_connection", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _new_inbound_connection(
+            UIntPtr index,
             ref SendData sendData,
             ref DisconnectSocket disconnectSocket,
             PeerManagerHandle handle
@@ -114,10 +115,11 @@ namespace NRustLightning
             ref DisconnectSocket disconnectSocket,
             PeerManagerHandle handle,
             bool check = true
-        ) => MaybeCheck(_new_inbound_connection(ref sendData, ref disconnectSocket, handle), check);
+        ) => MaybeCheck(_new_inbound_connection(index, ref sendData, ref disconnectSocket, handle), check);
         
         [DllImport(RustLightning, EntryPoint = "new_outbound_connection", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _new_outbound_connection(
+            UIntPtr index,
             ref SendData sendData,
             ref DisconnectSocket disconnectSocket,
             ref FFIPublicKey theirNodeId,
@@ -131,7 +133,7 @@ namespace NRustLightning
             ref FFIPublicKey theirNodeId,
             PeerManagerHandle handle,
             bool check = true
-        ) => MaybeCheck(_new_outbound_connection(ref sendData, ref disconnectSocket, ref theirNodeId, handle), check);
+        ) => MaybeCheck(_new_outbound_connection(index, ref sendData, ref disconnectSocket, ref theirNodeId, handle), check);
 
         [DllImport(RustLightning, EntryPoint = "write_buffer_space_avail")]
         private static extern FFIResult _write_buffer_space_avail(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket, PeerManagerHandle handle);

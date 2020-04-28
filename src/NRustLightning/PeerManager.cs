@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading;
 using NRustLightning.Adaptors;
 using NRustLightning.Handles;
@@ -37,6 +38,8 @@ namespace NRustLightning
             int tickIntervalMSec = 30000
             )
         {
+            if (seed.Length != 32) throw new InvalidDataException($"seed must be 32 bytes! it was {seed.Length}");
+            if (ourNodeSecret.Length != 32) throw new InvalidDataException($"ourNodeSecret must be 32 bytes! it was {seed.Length}");
             unsafe
             {
                 fixed (byte* seedPtr = seed)
