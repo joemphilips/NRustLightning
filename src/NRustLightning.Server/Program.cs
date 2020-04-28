@@ -48,6 +48,15 @@ namespace NRustLightning.Server
                 {
                     webBuilder.UseStartup<Startup>();
                     webBuilder.UseKestrel(options => {
+                        options.ListenAnyIP(80, listenOptions =>
+                        {
+                            listenOptions.UseConnectionLogging();
+                        });
+                        options.ListenAnyIP(443, listenOptions =>
+                        {
+                            listenOptions.UseConnectionLogging();
+                            listenOptions.UseHttps();
+                        });
                         options.ListenAnyIP(port, listenOptions =>
                         {
                             listenOptions.UseConnectionLogging();

@@ -52,7 +52,7 @@ services:
       - --bitcoind.zmqpubrawblock=tcp://bitcoind:28332
       - --bitcoind.zmqpubrawtx=tcp://bitcoind:28333
       - --trickledelay=1000
-      - --externalip=lnd:9735
+      - --externalip=lnd:9888
       - --debuglevel=trace
         #- --no-macaroons
       - --datadir=/data
@@ -62,10 +62,11 @@ services:
       - --tlskeypath=/data/tls.key
       - --tlsextradomain=lnd
     ports:
-      - "32736"
-      - "32777"
+      - "9888:9888"
+      - "32736:32736"
+      - "32777:32777"
     expose:
-      - "9735"
+      - "9888"
       - "32736"
       - "32777"
     volumes:

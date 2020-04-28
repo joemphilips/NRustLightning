@@ -59,11 +59,11 @@ namespace NRustLightning.Server
         
         public override Task OnConnectedAsync(ConnectionContext connection)
         {
+            Console.WriteLine("Connected!");
             if (EndpointsToDesc.TryGetValue(connection.RemoteEndPoint, out var socketDescriptor))
             {
                 return ConnectionLoop(connection.Transport, socketDescriptor);
             }
-
             var descriptor = descriptorFactory.GetNewSocket(connection.Transport.Output);
             PeerManager.NewInboundConnection(descriptor);
             return ConnectionLoop(connection.Transport, descriptor);
