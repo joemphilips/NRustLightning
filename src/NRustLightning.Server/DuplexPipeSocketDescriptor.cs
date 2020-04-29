@@ -1,8 +1,10 @@
 using System;
 using System.Buffers;
 using System.IO.Pipelines;
+using Microsoft.Extensions.Logging;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
+using NRustLightning.Utils;
 
 namespace NRustLightning.Server
 {
@@ -20,12 +22,13 @@ namespace NRustLightning.Server
         /// </summary>
         public bool Disconnected { get; set; }
         
-        public DuplexPipeSocketDescriptor(UIntPtr index,  PipeWriter output)
+        public DuplexPipeSocketDescriptor(UIntPtr index,  PipeWriter output, ILogger<DuplexPipeSocketDescriptor> logger)
         {
             Index = index;
             Output = output ?? throw new ArgumentNullException(nameof(output));
             sendData = (ref FFIBytes data, byte resumeRead) =>
             {
+                logger.LogDebug($"Writing: {Hex.Encode(data.AsSpan())}");
                 Output.Write(data.AsSpan());
                 return Disconnected ? (UIntPtr)0 : data.len;
             };

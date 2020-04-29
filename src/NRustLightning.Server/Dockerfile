@@ -24,6 +24,8 @@ RUN which cargo
 RUN rustup install nightly
 RUN rustup default nightly
 
+ARG CONFIGURATION="Release"
+RUN echo "building with configuration: ${CONFIGURATION}"
 
 # --- workaround to restore only deps for caching. -- 
 RUN USER=root cargo new --lib lightning
@@ -33,7 +35,7 @@ COPY rust-lightning/Cargo* ./
 COPY rust-lightning/bindings/Cargo.toml ./bindings/
 COPY rust-lightning/lightning/Cargo.toml ./lightning/
 COPY rust-lightning/lightning-net-tokio/Cargo.toml ./lightning-net-tokio/
-RUN cargo build --release && rm -rf bindings lightning lightning-net-tokio
+RUN bash -c 'if [[ $CONFIGURATION == "Release" ]]; then cargo build --release; else cargo build; fi' && rm -rf bindings lightning lightning-net-tokio
 # -- --
 
 COPY rust-lightning/lightning ./lightning/
@@ -48,10 +50,12 @@ COPY ["src/NRustLightning.Server/NRustLightning.Server.csproj", "src/NRustLightn
 RUN dotnet restore "src/NRustLightning.Server/NRustLightning.Server.csproj"
 COPY . .
 WORKDIR "/src/src/NRustLightning.Server"
-RUN dotnet build "NRustLightning.Server.csproj" -c Release -o /app/build
+RUN dotnet build "NRustLightning.Server.csproj" -c $CONFIGURATION -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "NRustLightning.Server.csproj" -c Release -o /app/publish
+ARG CONFIGURATION="Release"
+RUN echo "packing with configuration: ${CONFIGURATION}"
+RUN dotnet publish "NRustLightning.Server.csproj" -c $CONFIGURATION -o /app/publish
 
 FROM base AS final
 WORKDIR /app

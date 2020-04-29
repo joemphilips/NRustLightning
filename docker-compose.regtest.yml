@@ -119,6 +119,8 @@ services:
     build:
       context: .
       dockerfile: src/NRustLightning.Server/Dockerfile
+      args:
+        CONFIGURATION: "Debug"
     ports:
       - "9735:9735"
       - "5001:5001"
