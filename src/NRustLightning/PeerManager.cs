@@ -97,13 +97,20 @@ namespace NRustLightning
             Interop.write_buffer_space_avail(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, Handle);
         }
 
-        public unsafe void ReadEvent(ISocketDescriptor descriptor, ReadOnlySpan<byte> data)
+        /// <summary>
+        /// If it returns `true`, we must stop feeding bytes into PeerManager for DoS prevention.
+        /// </summary>
+        /// <param name="descriptor"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public unsafe bool ReadEvent(ISocketDescriptor descriptor, ReadOnlySpan<byte> data)
         {
             fixed (byte* d = data)
             {
                 var bytes = new FFIBytes((IntPtr)d, (UIntPtr)data.Length);
                 Interop.read_event(
-                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, Handle);
+                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, out var shouldPause, Handle);
+                return shouldPause == 1;
             }
         }
 

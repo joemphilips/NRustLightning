@@ -32,16 +32,6 @@ namespace NRustLightning.Server
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private async Task ReadLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
-        {
-            var readResult = await transport.Input.ReadAsync();
-            foreach (var r in readResult.Buffer)
-            {
-                logger.LogDebug($"Received {Hex.Encode(r.Span)}");
-                PeerManager.ReadEvent(socketDescriptor, r.Span);
-            }
-        }
-
         private async Task ConnectionLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
         {
             while (true)
@@ -52,9 +42,19 @@ namespace NRustLightning.Server
                     return;
                 }
 
-                await ReadLoop(transport, socketDescriptor);
+                var readResult = await transport.Input.ReadAsync();
+                var buf = readResult.Buffer;
+                foreach (var r in buf)
+                {
+                    logger.LogDebug($"Received {Hex.Encode(r.Span)}");
+                    PeerManager.ReadEvent(socketDescriptor, r.Span);
+                }
+                transport.Input.AdvanceTo(buf.End);
+                if (readResult.IsCompleted)
+                {
+                    break;
+                }
             }
-
         }
         
         public override Task OnConnectedAsync(ConnectionContext connection)

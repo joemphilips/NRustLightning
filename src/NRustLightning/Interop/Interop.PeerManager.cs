@@ -143,11 +143,11 @@ namespace NRustLightning
             => MaybeCheck(_write_buffer_space_avail(index, ref sendData, ref disconnectSocket, handle), check);
         
         [DllImport(RustLightning, EntryPoint = "read_event")]
-        private static extern FFIResult _read_event(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket,  ref FFIBytes data, PeerManagerHandle handle);
+        private static extern FFIResult _read_event(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket,  ref FFIBytes data, out byte shouldPause, PeerManagerHandle handle);
 
         internal static FFIResult read_event(UIntPtr index, ref SendData sendData,
-            ref DisconnectSocket disconnectSocket, ref FFIBytes data, PeerManagerHandle handle, bool check = true)
-            => MaybeCheck(_read_event(index, ref sendData, ref disconnectSocket, ref data, handle), check);
+            ref DisconnectSocket disconnectSocket, ref FFIBytes data, out byte shouldPause, PeerManagerHandle handle,  bool check = true)
+            => MaybeCheck(_read_event(index, ref sendData, ref disconnectSocket, ref data, out shouldPause, handle), check);
         
         [DllImport(RustLightning, EntryPoint = "process_events")]
         private static extern FFIResult _process_events(PeerManagerHandle handle);
