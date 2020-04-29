@@ -18,6 +18,6 @@ namespace NRustLightning.Server
         public static int DefaultP2PPort = 9735;
         public static int DefaultHttpPort = 80;
         public static int DefaultHttpsPort = 443;
-        public static string DefaultP2PAllowIp = DefaultP2PHost;
+        public static IPEndPoint DefaultP2PExternalIp = IPEndPoint.Parse($"{DefaultP2PHost}:{DefaultP2PPort}");
     }
 }

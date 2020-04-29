@@ -37,7 +37,7 @@ namespace NRustLightning.Server
             var readResult = await transport.Input.ReadAsync();
             foreach (var r in readResult.Buffer)
             {
-                logger.LogTrace($"Received {Hex.Encode(r.Span)}");
+                logger.LogDebug($"Received {Hex.Encode(r.Span)}");
                 PeerManager.ReadEvent(socketDescriptor, r.Span);
             }
         }
@@ -59,7 +59,6 @@ namespace NRustLightning.Server
         
         public override Task OnConnectedAsync(ConnectionContext connection)
         {
-            Console.WriteLine("Connected!");
             if (EndpointsToDesc.TryGetValue(connection.RemoteEndPoint, out var socketDescriptor))
             {
                 return ConnectionLoop(connection.Transport, socketDescriptor);
@@ -68,7 +67,6 @@ namespace NRustLightning.Server
             logger.LogDebug($"New inbound connection from {connection.RemoteEndPoint}");
             var descriptor = descriptorFactory.GetNewSocket(connection.Transport.Output);
             PeerManager.NewInboundConnection(descriptor);
-            Console.WriteLine("New Inbound!");
             return ConnectionLoop(connection.Transport, descriptor);
         }
     }

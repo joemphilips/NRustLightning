@@ -7,7 +7,7 @@ namespace NRustLightning.Server.Configuration
 {
     public class Config
     {
-        public IPEndPoint P2PIpEndPoint { get; set; } = IPEndPoint.Parse(Constants.DefaultP2PAllowIp);
+        public IPEndPoint P2PExternalIp { get; set; } = Constants.DefaultP2PExternalIp;
         public Uri NBXplorerUri { get; set; } = new Uri("http://127.0.0.1:4774");
         public string ConfigurationFile { get; set; } = "nrustlightning.conf";
         public string DataDir { get; set; } = Constants.DataDirectoryPath;

@@ -51,7 +51,7 @@ namespace NRustLightning.Server
             
             var config = configureConfig(new ConfigurationBuilder()).Build();
             var v = config.GetValue<string>("P2PAllowIp");
-            var isListenAllIp = v == "*";
+            var isListenAllIp = (v is null) || v == "*";
             var maybeP2PPort = config.GetValue<int>("P2Port");
             var p2pPort = maybeP2PPort == 0 ? Constants.DefaultP2PPort : maybeP2PPort;
 
@@ -93,7 +93,7 @@ namespace NRustLightning.Server
                         }
                         else
                         {
-                            var allowedIpEndPoint = IPEndPoint.Parse(v ?? Constants.DefaultP2PAllowIp);
+                            var allowedIpEndPoint = IPEndPoint.Parse(v);
                             logger.LogInformation($"Listening for P2P message from {allowedIpEndPoint}");
                             options.Listen(allowedIpEndPoint, listenOptions =>
                             {
