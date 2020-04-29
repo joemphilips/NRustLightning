@@ -32,6 +32,7 @@ RUN USER=root cargo new --bin lightning-net-tokio
 COPY rust-lightning/Cargo* ./
 COPY rust-lightning/bindings/Cargo.toml ./bindings/
 COPY rust-lightning/lightning/Cargo.toml ./lightning/
+COPY rust-lightning/lightning-net-tokio/Cargo.toml ./lightning-net-tokio/
 RUN cargo build --release && rm -rf bindings lightning lightning-net-tokio
 # -- --
 
@@ -40,6 +41,9 @@ COPY rust-lightning/bindings ./bindings/
 
 WORKDIR /src
 
+COPY ["src/DotNetLightning.Data/DotNetLightning.Data.fsproj", "src/DotNetLightning.Data/"]
+COPY ["src/ResultUtils/ResultUtils.fsproj", "src/ResultUtils/"]
+COPY ["src/NRustLightning/NRustLightning.csproj", "src/NRustLightning/"]
 COPY ["src/NRustLightning.Server/NRustLightning.Server.csproj", "src/NRustLightning.Server/"]
 RUN dotnet restore "src/NRustLightning.Server/NRustLightning.Server.csproj"
 COPY . .
@@ -52,4 +56,4 @@ RUN dotnet publish "NRustLightning.Server.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "NRustLightning.Server.dll"]
+CMD ["dotnet", "NRustLightning.Server.dll"]

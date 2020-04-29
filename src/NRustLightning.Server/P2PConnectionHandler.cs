@@ -27,7 +27,7 @@ namespace NRustLightning.Server
             var pmProvider = peerManager ?? throw new ArgumentNullException(nameof(peerManager));
             // TODO: Support other chains
             PeerManager = pmProvider.GetPeerManager("BTC");
-            Console.Write("WARNING: it only supports BTC");
+            logger.LogWarning("WARNING: it only supports BTC");
             this.descriptorFactory = descriptorFactory ?? throw new ArgumentNullException(nameof(descriptorFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -64,8 +64,11 @@ namespace NRustLightning.Server
             {
                 return ConnectionLoop(connection.Transport, socketDescriptor);
             }
+
+            logger.LogDebug($"New inbound connection from {connection.RemoteEndPoint}");
             var descriptor = descriptorFactory.GetNewSocket(connection.Transport.Output);
             PeerManager.NewInboundConnection(descriptor);
+            Console.WriteLine("New Inbound!");
             return ConnectionLoop(connection.Transport, descriptor);
         }
     }

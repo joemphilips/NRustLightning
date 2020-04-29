@@ -9,3 +9,4 @@ services:
       dockerfile: src/NRustLightning.Server/Dockerfile
     ports:
       - 80
+      - "9735:9735"

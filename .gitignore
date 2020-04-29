@@ -3,3 +3,4 @@ obj/
 /packages/
 RustFSharpFFI
 data/
+env.sh
