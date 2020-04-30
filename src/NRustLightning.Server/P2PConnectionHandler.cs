@@ -32,10 +32,11 @@ namespace NRustLightning.Server
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private Task WriteLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
+        private async Task<bool> WriteLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
         {
+            var flushResult = await transport.Output.FlushAsync();
             PeerManager.WriteBufferSpaceAvail(socketDescriptor);
-            return Task.CompletedTask;
+            return flushResult.IsCompleted;
         }
 
         private async Task<bool> ReadLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
