@@ -32,6 +32,24 @@ namespace NRustLightning.Server
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        private Task WriteLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
+        {
+            PeerManager.WriteBufferSpaceAvail(socketDescriptor);
+            return Task.CompletedTask;
+        }
+
+        private async Task<bool> ReadLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
+        {
+            var readResult = await transport.Input.ReadAsync();
+            var buf = readResult.Buffer;
+            foreach (var r in buf)
+            {
+                logger.LogDebug($"Received {Hex.Encode(r.Span)}");
+                PeerManager.ReadEvent(socketDescriptor, r.Span);
+            }
+            transport.Input.AdvanceTo(buf.End);
+            return readResult.IsCompleted;
+        }
         private async Task ConnectionLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
         {
             while (true)
@@ -42,18 +60,7 @@ namespace NRustLightning.Server
                     return;
                 }
 
-                var readResult = await transport.Input.ReadAsync();
-                var buf = readResult.Buffer;
-                foreach (var r in buf)
-                {
-                    logger.LogDebug($"Received {Hex.Encode(r.Span)}");
-                    PeerManager.ReadEvent(socketDescriptor, r.Span);
-                }
-                transport.Input.AdvanceTo(buf.End);
-                if (readResult.IsCompleted)
-                {
-                    break;
-                }
+                await Task.WhenAny(ReadLoop(transport, socketDescriptor), WriteLoop(transport, socketDescriptor));
             }
         }
         

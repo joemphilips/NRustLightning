@@ -16,11 +16,12 @@ namespace NRustLightning.Server
         private DisconnectSocket disconnectSocket;
 
         private PipeWriter Output;
+
         /// <summary>
         /// If this is true, that means rust-lightning has told us
         /// not to call anymore WriteBufferSpaceAvail, ReadEvent, and SocketDisconnected.
         /// </summary>
-        public bool Disconnected { get; set; }
+        public bool Disconnected { get; set; } = false;
         
         public DuplexPipeSocketDescriptor(UIntPtr index,  PipeWriter output, ILogger<DuplexPipeSocketDescriptor> logger)
         {
@@ -30,11 +31,13 @@ namespace NRustLightning.Server
             {
                 logger.LogDebug($"Writing: {Hex.Encode(data.AsSpan())}");
                 Output.Write(data.AsSpan());
+                Output.Complete();
                 return Disconnected ? (UIntPtr)0 : data.len;
             };
             disconnectSocket = () =>
             {
-                if (!Disconnected) throw new Exception("rust-lightning has called disconnect_socket more than once.");
+                logger.LogDebug($"Disconnecting socket {Index}");
+                if (Disconnected) throw new Exception("rust-lightning has called disconnect_socket more than once.");
                 Disconnected = true;
             };
         }
