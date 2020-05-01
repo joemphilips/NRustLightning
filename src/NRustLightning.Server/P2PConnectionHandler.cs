@@ -74,6 +74,7 @@ namespace NRustLightning.Server
 
             logger.LogDebug($"New inbound connection from {connection.RemoteEndPoint}");
             var descriptor = descriptorFactory.GetNewSocket(connection.Transport.Output);
+            EndpointsToDesc.Add(connection.RemoteEndPoint, descriptor);
             PeerManager.NewInboundConnection(descriptor);
             return ConnectionLoop(connection.Transport, descriptor);
         }
