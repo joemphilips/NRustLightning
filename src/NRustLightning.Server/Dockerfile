@@ -50,14 +50,10 @@ COPY ["src/NRustLightning.Server/NRustLightning.Server.csproj", "src/NRustLightn
 RUN dotnet restore "src/NRustLightning.Server/NRustLightning.Server.csproj"
 COPY . .
 WORKDIR "/src/src/NRustLightning.Server"
-RUN dotnet build "NRustLightning.Server.csproj" -c $CONFIGURATION -o /app/build
-
-FROM build AS publish
-ARG CONFIGURATION="Release"
 RUN echo "packing with configuration: ${CONFIGURATION}"
 RUN dotnet publish "NRustLightning.Server.csproj" -c $CONFIGURATION -o /app/publish
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
 CMD ["dotnet", "NRustLightning.Server.dll"]
