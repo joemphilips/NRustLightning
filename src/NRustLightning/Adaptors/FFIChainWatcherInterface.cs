@@ -14,8 +14,5 @@ namespace NRustLightning.Adaptors
     
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void GetChainUtxo(ref FFISha256dHash genesisHash, ulong utxoId, ref ChainError error, ref FFITxOut txout);
-    
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void FilterBlock(ref FFIBlock block);
-    
+
 }

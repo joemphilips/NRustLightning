@@ -34,14 +34,14 @@ namespace NRustLightning.Server
 
         private async Task<bool> WriteLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
         {
-            var flushResult = await transport.Output.FlushAsync();
+            var flushResult = await transport.Output.FlushAsync().ConfigureAwait(false);
             PeerManager.WriteBufferSpaceAvail(socketDescriptor);
             return flushResult.IsCompleted;
         }
 
         private async Task<bool> ReadLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
         {
-            var readResult = await transport.Input.ReadAsync();
+            var readResult = await transport.Input.ReadAsync().ConfigureAwait(false);
             var buf = readResult.Buffer;
             foreach (var r in buf)
             {

@@ -11,6 +11,10 @@
     <PackageReference Include="System.IO.Pipelines" Version="4.7.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Utils" />
+  </ItemGroup>
+
   <Import Project="../LDK.targets" />   
 
   <PropertyGroup>

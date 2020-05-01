@@ -27,7 +27,6 @@ namespace NRustLightning
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
-            ref FilterBlock filterBlock,
             ref BroadcastTransaction broadcastTransaction,
             ref Log log,
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
@@ -44,7 +43,6 @@ namespace NRustLightning
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
-            ref FilterBlock filterBlock,
             ref BroadcastTransaction broadcastTransaction,
             ref Log log,
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
@@ -53,7 +51,7 @@ namespace NRustLightning
             bool check = true
         )
         {
-            return MaybeCheck(_create_ffi_channel_manager(seed_ptr, seed_len, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref broadcastTransaction, ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
+            return MaybeCheck(_create_ffi_channel_manager(seed_ptr, seed_len, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref broadcastTransaction, ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
         }
 
         [DllImport(RustLightning,

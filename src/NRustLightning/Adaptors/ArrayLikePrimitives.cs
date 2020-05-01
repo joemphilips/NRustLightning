@@ -14,6 +14,9 @@ namespace NRustLightning.Adaptors
     {
         internal readonly IntPtr ptr;
         internal readonly UIntPtr len;
+
+        public Script ToScript()
+            => Script.FromBytesUnsafe(this.AsArray());
     }
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFISecretKey
@@ -45,6 +48,8 @@ namespace NRustLightning.Adaptors
             this.ptr = ptr;
             this.len = len;
         }
+
+        public uint256 ToUInt256() => new uint256(this.AsArray());
     }
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFISecret
@@ -61,8 +66,10 @@ namespace NRustLightning.Adaptors
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFIOutPoint
     {
-        internal readonly FFIScript script_pub_key;
-        internal readonly ushort index;
+        internal readonly uint256 txid;
+        internal readonly uint index;
+
+        public (uint256, uint) ToTuple() => (txid, index);
     }
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFITxOut
@@ -89,6 +96,7 @@ namespace NRustLightning.Adaptors
     {
         internal readonly IntPtr ptr;
         internal readonly UIntPtr len;
+        public Block ToBlock(NBitcoin.Network n) => Block.Load(this.AsArray(), n);
     }
     
     #region internal members

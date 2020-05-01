@@ -57,7 +57,6 @@ namespace NRustLightning
                         ref chainWatchInterface.InstallWatchOutPoint,
                         ref chainWatchInterface.WatchAllTxn,
                         ref chainWatchInterface.GetChainUtxo,
-                        ref chainWatchInterface.FilterBlock,
                         ref broadcaster.BroadcastTransaction,
                         ref logger.Log,
                         ref feeEstimator.getEstSatPer1000Weight,

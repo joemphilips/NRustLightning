@@ -38,7 +38,7 @@ namespace NRustLightning.Server.Services
                 {
                     var b = new BitcoinCoreBroadcaster(rpc);
                     var feeEst = new BitcoinCoreFeeEstimator(rpc);
-                    var chainWatchInterface = new NBXChainWatchInterface(nbx);
+                    var chainWatchInterface = new NBXChainWatchInterface(nbx, loggerFactory.CreateLogger<NBXChainWatchInterface>(), n);
                     var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
                     var routingMsgHandler = new RoutingMsgHandler();
                     var seed = new byte[32];
