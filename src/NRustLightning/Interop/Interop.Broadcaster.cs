@@ -9,10 +9,10 @@ namespace NRustLightning
     {
         [DllImport(RustLightning, EntryPoint = "create_broadcaster", ExactSpelling = true,
             CallingConvention = CallingConvention.Cdecl)]
-        internal static extern FFIResult _create_broadcaster(ref FFIBroadcastTransaction fn, out BroadcasterHandle handle);
+        internal static extern FFIResult _create_broadcaster(ref BroadcastTransaction fn, out BroadcasterHandle handle);
 
         internal static FFIResult create_broadcaster(
-            ref FFIBroadcastTransaction fn,
+            ref BroadcastTransaction fn,
             out BroadcasterHandle handle,
             bool check = true
             )

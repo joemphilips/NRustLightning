@@ -37,7 +37,7 @@ namespace NRustLightning.Tests.Utils
         {
             public ConcurrentBag<string> BroadcastedTxHex { get; } = new ConcurrentBag<string>();
 
-            public FFIBroadcastTransaction _broadcast_ptr;
+            public BroadcastTransaction _broadcast_ptr;
 
             public TestBroadcaster()
             {
@@ -48,7 +48,7 @@ namespace NRustLightning.Tests.Utils
                          BroadcastedTxHex.Add(hex);
                      };
             }
-            ref FFIBroadcastTransaction IBroadcaster.BroadcastTransaction
+            ref BroadcastTransaction IBroadcaster.BroadcastTransaction
                 => ref _broadcast_ptr;
         }
 

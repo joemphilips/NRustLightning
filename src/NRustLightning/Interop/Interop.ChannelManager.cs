@@ -27,10 +27,9 @@ namespace NRustLightning
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
-            ref FilterBlock filterBlock,
-            ref FFIBroadcastTransaction broadcastTransaction,
+            ref BroadcastTransaction broadcastTransaction,
             ref Log log,
-            ref FFIGetEstSatPer1000Weight getEstSatPer1000Weight,
+            ref GetEstSatPer1000Weight getEstSatPer1000Weight,
             ulong current_block_height,
             out ChannelManagerHandle handle
             );
@@ -44,16 +43,15 @@ namespace NRustLightning
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
-            ref FilterBlock filterBlock,
-            ref FFIBroadcastTransaction broadcastTransaction,
+            ref BroadcastTransaction broadcastTransaction,
             ref Log log,
-            ref FFIGetEstSatPer1000Weight getEstSatPer1000Weight,
+            ref GetEstSatPer1000Weight getEstSatPer1000Weight,
             ulong current_block_height,
             out ChannelManagerHandle handle,
             bool check = true
         )
         {
-            return MaybeCheck(_create_ffi_channel_manager(seed_ptr, seed_len, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref broadcastTransaction, ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
+            return MaybeCheck(_create_ffi_channel_manager(seed_ptr, seed_len, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref broadcastTransaction, ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
         }
 
         [DllImport(RustLightning,
@@ -74,17 +72,19 @@ namespace NRustLightning
         static extern FFIResult _send_payment(
             ChannelManagerHandle handle,
             ref FFIRoute route,
-            ref FFISha256dHash payment_hash
+            ref FFISha256dHash paymentHash,
+            ref FFISecret paymentSecret
             );
 
         internal static FFIResult send_payment(
             ChannelManagerHandle handle,
             ref FFIRoute route,
-            ref FFISha256dHash payment_hash,
+            ref FFISha256dHash paymentHash,
+            ref FFISecret paymentSecret,
             bool check = true
             )
         {
-            return MaybeCheck(_send_payment(handle, ref route, ref payment_hash), check);
+            return MaybeCheck(_send_payment(handle, ref route, ref paymentHash, ref paymentSecret), check);
         }
 
         [DllImport(RustLightning,

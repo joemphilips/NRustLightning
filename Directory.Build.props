@@ -3,6 +3,7 @@
     <Deterministic>true</Deterministic>
     <LangVersion>latest</LangVersion>
     <NullableReferenceType>True</NullableReferenceType>
+    <Nullable>enable</Nullable>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 

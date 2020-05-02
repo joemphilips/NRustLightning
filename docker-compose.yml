@@ -1,0 +1,12 @@
+# Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP .NET Core service.
+version: '3.4'
+
+services:
+  nrustlightning:
+    image: nrustlightning
+    build:
+      context: .
+      dockerfile: src/NRustLightning.Server/Dockerfile
+    ports:
+      - 80
+      - "9735:9735"

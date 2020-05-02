@@ -61,7 +61,7 @@
     </ItemGroup>
 
     <Target Name="Cargo" BeforeTargets="Build">
-        <Exec Command="cargo @(CargoChannelArg, ' ') build @(CargoBuildArg, ' ')" WorkingDirectory="$(CargoWorkspacePath)" />
+        <Exec Command="cargo @(CargoChannelArg, ' ') build @(CargoBuildArg, ' ') --package bindings " WorkingDirectory="$(CargoWorkspacePath)" />
     </Target>
 
     <!-- In AOT builds, add a reference to the IL compiler and link the static native artifact -->

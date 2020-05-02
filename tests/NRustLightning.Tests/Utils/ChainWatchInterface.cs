@@ -14,7 +14,6 @@ namespace NRustLightning.Tests.Utils
 
         private WatchAllTxn _watchAllTxn;
         private GetChainUtxo _getChainUtxo;
-        private FilterBlock _filterBlock;
         public TestChainWatchInterface()
         {
             _installWatchTx =
@@ -26,7 +25,7 @@ namespace NRustLightning.Tests.Utils
             _installWatchOutpoint =
             (ref FFIOutPoint outpoint, ref FFIScript script) =>
             {
-                Console.WriteLine($"Installing watch outpoint with {Hex.Encode(outpoint.script_pub_key.AsSpan())}, spk {Hex.Encode(script.AsSpan())}");
+                Console.WriteLine($"Installing watch outpoint with txid: {outpoint.txid}, index: {outpoint.index} spk: {Hex.Encode(script.AsSpan())}");
             };
             _watchAllTxn =
             () =>
@@ -40,13 +39,6 @@ namespace NRustLightning.Tests.Utils
             {
                 Console.WriteLine($"get_chain_utxo {Hex.Encode(genesisHash.AsSpan())}");
             };
-            _filterBlock =
-            (ref FFIBlock block) =>
-            {
-                Console.WriteLine($"filtering block {Hex.Encode(block.AsSpan())}");
-            };
-
-
         }
         public ref InstallWatchTx InstallWatchTx => ref _installWatchTx;
 
@@ -55,7 +47,5 @@ namespace NRustLightning.Tests.Utils
         public ref WatchAllTxn WatchAllTxn => ref _watchAllTxn;
 
         public ref GetChainUtxo GetChainUtxo => ref _getChainUtxo;
-
-        public ref FilterBlock FilterBlock => ref _filterBlock;
     }
 }

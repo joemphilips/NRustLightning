@@ -11,6 +11,7 @@ namespace NRustLightning.Adaptors
             Ok,
             EmptyPointerProvided,
             InvalidDataLength,
+            DeserializationFailure,
             BufferTooSmall,
             InternalError,
         }

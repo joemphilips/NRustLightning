@@ -3,11 +3,12 @@ using System.Runtime.InteropServices;
 
 namespace NRustLightning.Handles
 {
-    public class ChannelMonitorHandle : SafeHandle
+    public class PeerManagerHandle : SafeHandle
     {
-        private ChannelMonitorHandle() : base(IntPtr.Zero, true)
-        {}
-        public override bool IsInvalid => handle == IntPtr.Zero;
+        public PeerManagerHandle() : base(IntPtr.Zero, true)
+        {
+        }
+
         protected override bool ReleaseHandle()
         {
             if (handle == IntPtr.Zero) return true;
@@ -15,8 +16,10 @@ namespace NRustLightning.Handles
             var h = handle;
             handle = IntPtr.Zero;
 
-            Interop.release_ffi_channel_monitor(h, false);
+            Interop.release_peer_manager(h, false);
             return true;
         }
+
+        public override bool IsInvalid => handle == IntPtr.Zero;
     }
 }

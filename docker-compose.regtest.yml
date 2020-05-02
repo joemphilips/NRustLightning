@@ -1,0 +1,147 @@
+version: "3"
+services:
+  bitcoind:
+    restart: unless-stopped
+    build:
+      context: ./Dockerfiles
+      dockerfile: bitcoin
+    image: joemphilips/bitcoind
+    environment:
+      BITCOIN_NETWORK: regtest
+    user: root:root
+    command:
+      - bitcoind
+      - -regtest
+      - -datadir=/data
+      - -rpcauth=${BITCOIND_RPC_AUTH}
+      - -rpcport=43782
+      - -rpcbind=0.0.0.0:43782
+      - -rpcallowip=0.0.0.0/0
+      - -port=39388
+      - -txindex=1
+      - -zmqpubrawblock=tcp://0.0.0.0:28332
+      - -zmqpubrawtx=tcp://0.0.0.0:28333
+      - -deprecatedrpc=signrawtransaction
+      - -assumevalid=00000000000000000012d0c0982d818aa909d78e54525b10563c698d89997632
+    ports:
+      - "43782:43782"
+    expose:
+      - "43782" # RPC
+      - "39388" # P2P
+      - "28332" # ZMQ
+      - "28333" # ZMQ
+    networks:
+      main:
+        aliases:
+          - bitcoind
+    volumes:
+      - "./data/.bitcoin:/data"
+  lnd:
+    restart: unless-stopped
+    image: joemphilips/lnd
+    build:
+      context: ./Dockerfiles
+      dockerfile: lnd
+    entrypoint: ["./start-lnd.sh"]
+    environment:
+      NETWORK: regtest
+    command:
+      - --restlisten=0.0.0.0:32736
+      - --rpclisten=0.0.0.0:32777
+      - --bitcoin.regtest
+      - --bitcoin.node=bitcoind
+      - --bitcoind.rpchost=bitcoind:43782
+      - --bitcoind.rpcuser=${BITCOIND_RPC_USER}
+      - --bitcoind.rpcpass=${BITCOIND_RPC_PASS}
+      - --bitcoind.zmqpubrawblock=tcp://bitcoind:28332
+      - --bitcoind.zmqpubrawtx=tcp://bitcoind:28333
+      - --trickledelay=1000
+      - --externalip=lnd:9888
+      - --debuglevel=trace
+        #- --no-macaroons
+      - --datadir=/data
+      - --debuglevel=debug
+      - --noseedbackup
+      - --tlscertpath=/data/tls.cert
+      - --tlskeypath=/data/tls.key
+      - --tlsextradomain=lnd
+    ports:
+      - "9888:9888"
+      - "32736:32736"
+      - "32777:32777"
+    expose:
+      - "9888"
+      - "32736"
+      - "32777"
+    volumes:
+      - "./data/.lnd:/data"
+      - "./data/.bitcoin:/deps/.bitcoin"
+    links:
+      - bitcoind
+    networks:
+      main:
+        aliases:
+          - lnd
+  lightningd:
+    image: blockstream/lightningd:prom
+    command:
+      - lightningd
+      - --bitcoin-rpcconnect=bitcoind
+      - --bitcoin-rpcuser=${BITCOIND_RPC_USER}
+      - --bitcoin-rpcpassword=${BITCOIND_RPC_PASS}
+      - --bitcoin-rpcport=43782
+      # - --network=bitcoin
+      - --network=regtest
+      - --plugin-dir=/usr/local/bin/plugins
+      - --alias=jem2323-lighningd1
+      - --log-level=debug
+      - --lightning-dir=/root/.lightning
+    environment:
+      EXPOSE_TCP: "true"
+    expose:
+      - "9735" # server port
+      - "9835" # api port
+      - "9900" # prometheus plugin
+    ports:
+      - "0.0.0.0:9999:9735"
+      - "0.0.0.0:9835:9835"
+      - "0.0.0.0:9900:9900"
+    networks:
+      main:
+        aliases:
+          - lightningd
+    volumes:
+      - "./data/.lightningd:/root/.lightning"                                                                                 
+
+  nrustlightning:
+    restart: "unless-stopped"
+    image: joemphilips/nrustlightning
+    build:
+      context: .
+      dockerfile: src/NRustLightning.Server/Dockerfile
+      args:
+        CONFIGURATION: "Debug"
+    ports:
+      - "9735:9735"
+      - "5001:5001"
+    expose:
+      - "9735"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - RUST_BACKTRACE=1
+      #- ASPNETCORE_URLS="https://+;http://+"
+      - ASPNETCORE_HTTPS_PORT=5001
+    links:
+      - bitcoind
+      - lnd
+    volumes:
+      - "${HOME}/.aspnet/:/root/.aspnet/"
+      - "${HOME}/.microsoft/usersecrets/:/root/.microsoft/usersecrets"
+      - "./data/nrustlightning/:/root/.nrustlightning"
+    networks:
+      main:
+        aliases:
+          - nrustlightning
+ 
+networks:
+  main:

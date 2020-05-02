@@ -8,6 +8,7 @@ using NRustLightning.Adaptors;
 using NRustLightning.Facades;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
+using NRustLightning.Utils;
 
 namespace NRustLightning
 {
@@ -15,8 +16,10 @@ namespace NRustLightning
     public sealed class ChannelManager : IDisposable
     {
         private readonly ChannelManagerHandle _handle;
-        internal ChannelManager(ChannelManagerHandle handle)
+        private readonly object[] _deps;
+        internal ChannelManager(ChannelManagerHandle handle, object[] deps)
         {
+            _deps = deps;
             _handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
         
@@ -46,29 +49,33 @@ namespace NRustLightning
                         ref chainWatchInterface.InstallWatchOutPoint,
                         ref chainWatchInterface.WatchAllTxn,
                         ref chainWatchInterface.GetChainUtxo,
-                        ref chainWatchInterface.FilterBlock,
                         ref broadcaster.BroadcastTransaction,
                         ref logger.Log,
                         ref feeEstimator.getEstSatPer1000Weight,
                         currentBlockHeight,
                         out var handle);
-                    return new ChannelManager(handle);
+                    return new ChannelManager(handle, new object[] {chainWatchInterface, logger, broadcaster, feeEstimator});
                 }
             }
         }
-        
-        public void SendPayment(RouteWithFeature routesWithFeature, Span<byte> paymentHash)
+
+        public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash)
+            => SendPayment(routesWithFeature, paymentHash, new byte[0]);
+        public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash, Span<byte> paymentSecret)
         {
+            if (paymentSecret.Length != 0 && paymentSecret.Length != 32) throw new ArgumentException($"paymentSecret must be length of 32 or empty");
             unsafe
             {
 
-                var span = routesWithFeature.AsArray();
-                fixed (byte* r = span)
+                var routesInBytes = routesWithFeature.AsArray();
+                fixed (byte* r = routesInBytes)
                 fixed (byte* p = paymentHash)
+                fixed (byte* s = paymentSecret)
                 {
-                    var route = new FFIRoute((IntPtr)r, (UIntPtr)span.Length);
+                    var route = new FFIRoute((IntPtr)r, (UIntPtr)routesInBytes.Length);
                     var ffiPaymentHash = new FFISha256dHash((IntPtr)p, (UIntPtr)paymentHash.Length);
-                    Interop.send_payment(_handle, ref route, ref ffiPaymentHash);
+                    var ffiPaymentSecret = new FFISecret((IntPtr)s, (UIntPtr)paymentSecret.Length);
+                    Interop.send_payment(_handle, ref route, ref ffiPaymentHash, ref ffiPaymentSecret);
                 }
             }
         }

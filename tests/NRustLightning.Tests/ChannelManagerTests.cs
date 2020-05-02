@@ -44,6 +44,7 @@ namespace NRustLightning.Tests
             var channelManager = ChannelManager.Create(seed, in n, in TestUserConfig.Default, chainWatchInterface, logger, broadcaster, feeEstiamtor, 400000);
             return channelManager;
         }
+        
         [Fact]
         public void CanCreateChannelManager()
         {
@@ -52,12 +53,12 @@ namespace NRustLightning.Tests
             var channelFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
             var hop1 = new RouteHopWithFeature(_nodeIds[0], nodeFeature, 1, channelFeature, 1000, 72);
             var hop2 = new RouteHopWithFeature(_nodeIds[1], nodeFeature, 2, channelFeature, 1000, 72);
-            var route = new RouteWithFeature(hop1, hop2);
+            var route1 = new[] {hop1, hop2};
+            var routes = new RoutesWithFeature(route1);
             
             var paymentHash = new uint256();
-            var e = Assert.Throws<Exception>(() => channelManager.SendPayment(route, paymentHash.ToBytes()));
-            Assert.Equal("FFI against rust-lightning failed (InternalError), Error: No channel available with first hop!", e.Message);
-            
+            var e = Assert.Throws<Exception>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
+            Assert.Equal("FFI against rust-lightning failed (InternalError), Error: AllFailedRetrySafe([No channel available with first hop!])", e.Message);
             channelManager.Dispose();
         }
 
