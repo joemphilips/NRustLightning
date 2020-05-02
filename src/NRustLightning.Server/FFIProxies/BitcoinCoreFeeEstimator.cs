@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using NBitcoin.RPC;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;

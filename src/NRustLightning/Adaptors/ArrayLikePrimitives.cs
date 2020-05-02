@@ -35,6 +35,11 @@ namespace NRustLightning.Adaptors
     {
         internal readonly IntPtr ptr;
         internal readonly UIntPtr len;
+        public FFIPublicKey(IntPtr ptr, UIntPtr len)
+        {
+            this.ptr = ptr;
+            this.len = len;
+        }
     }
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFISha256dHash

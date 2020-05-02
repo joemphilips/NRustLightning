@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.FSharp.Core;
 using NRustLightning.Adaptors;
 using NRustLightning.Handles;
 
@@ -23,15 +24,9 @@ namespace NRustLightning
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
             UIntPtr currentBlockHeight,
             
-            ref HandleNodeAnnouncement handleNodeAnnouncement,
-            ref HandleChannelAnnouncement handleChannelAnnouncement,
-            ref HandleChannelUpdate handleChannelUpdate,
-            ref HandleHTLCFailChannelUpdate handleHtlcFailChannelUpdate,
-            ref GetNextChannelAnnouncements getNextChannelAnnouncements,
-            ref GetNextNodeAnnouncements getNextNodeAnnouncements,
-            ref ShouldRequestFullSync shouldRequestFullSync,
-            
             ref FFISecretKey ourNodeSecret,
+            ref FFIPublicKey ourNodeId,
+            
             out PeerManagerHandle handle
             );
 
@@ -49,15 +44,9 @@ namespace NRustLightning
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
             UIntPtr currentBlockHeight,
             
-            ref HandleNodeAnnouncement handleNodeAnnouncement,
-            ref HandleChannelAnnouncement handleChannelAnnouncement,
-            ref HandleChannelUpdate handleChannelUpdate,
-            ref HandleHTLCFailChannelUpdate handleHtlcFailChannelUpdate,
-            ref GetNextChannelAnnouncements getNextChannelAnnouncements,
-            ref GetNextNodeAnnouncements getNextNodeAnnouncements,
-            ref ShouldRequestFullSync shouldRequestFullSync,
-            
             ref FFISecretKey ourNodeSecret,
+            ref FFIPublicKey ourNodeId,
+            
             out PeerManagerHandle handle,
             bool check = true
             ) =>
@@ -74,14 +63,8 @@ namespace NRustLightning
                 ref log,
                 ref getEstSatPer1000Weight,
                 currentBlockHeight,
-                ref handleNodeAnnouncement,
-                ref handleChannelAnnouncement,
-                ref handleChannelUpdate,
-                ref handleHtlcFailChannelUpdate,
-                ref getNextChannelAnnouncements,
-                ref getNextNodeAnnouncements,
-                ref shouldRequestFullSync,
                 ref ourNodeSecret,
+                ref ourNodeId,
                 out handle),
                 check);
         
@@ -132,24 +115,31 @@ namespace NRustLightning
             bool check = true
         ) => MaybeCheck(_new_outbound_connection(index, ref sendData, ref disconnectSocket, ref theirNodeId, handle), check);
 
-        [DllImport(RustLightning, EntryPoint = "write_buffer_space_avail")]
+        [DllImport(RustLightning, EntryPoint = "write_buffer_space_avail", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _write_buffer_space_avail(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket, PeerManagerHandle handle);
 
         internal static FFIResult write_buffer_space_avail(UIntPtr index, ref SendData sendData,
             ref DisconnectSocket disconnectSocket, PeerManagerHandle handle, bool check = true)
             => MaybeCheck(_write_buffer_space_avail(index, ref sendData, ref disconnectSocket, handle), check);
         
-        [DllImport(RustLightning, EntryPoint = "read_event")]
+        [DllImport(RustLightning, EntryPoint = "read_event", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _read_event(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket,  ref FFIBytes data, out byte shouldPause, PeerManagerHandle handle);
 
         internal static FFIResult read_event(UIntPtr index, ref SendData sendData,
             ref DisconnectSocket disconnectSocket, ref FFIBytes data, out byte shouldPause, PeerManagerHandle handle,  bool check = true)
             => MaybeCheck(_read_event(index, ref sendData, ref disconnectSocket, ref data, out shouldPause, handle), check);
         
-        [DllImport(RustLightning, EntryPoint = "process_events")]
+        [DllImport(RustLightning, EntryPoint = "process_events", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _process_events(PeerManagerHandle handle);
 
         internal static FFIResult process_events(PeerManagerHandle handle, bool check = true)
             => MaybeCheck(_process_events(handle), check);
+
+        [DllImport(RustLightning, EntryPoint = "socket_disconnected", ExactSpelling = true,
+            CallingConvention = CallingConvention.Cdecl)]
+        private static extern FFIResult _socket_disconnected(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket, PeerManagerHandle handle);
+
+        internal static FFIResult socket_disconnected(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket, PeerManagerHandle handle, bool check = true) =>
+            MaybeCheck(_socket_disconnected(index, ref sendData, ref disconnectSocket, handle), check);
     }
 }

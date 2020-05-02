@@ -11,7 +11,7 @@ namespace NRustLightning.Server.Services
     public class SocketDescriptorFactory : ISocketDescriptorFactory
     {
         private readonly ILoggerFactory loggerFactory;
-        private int CurrentNum = 0;
+        private UIntPtr CurrentNum = (UIntPtr)0;
         private Dictionary<int, ISocketDescriptor> Sockets = new Dictionary<int, ISocketDescriptor>();
         public SocketDescriptorFactory(ILoggerFactory loggerFactory)
         {
@@ -19,9 +19,9 @@ namespace NRustLightning.Server.Services
         }
         public ISocketDescriptor GetNewSocket(PipeWriter writer)
         {
-            CurrentNum++;
-            Sockets[CurrentNum] = new DuplexPipeSocketDescriptor((UIntPtr)CurrentNum, writer, loggerFactory.CreateLogger<DuplexPipeSocketDescriptor>());
-            return Sockets[CurrentNum];
+            CurrentNum = CurrentNum + 1;
+            Sockets[(int)CurrentNum] = new DuplexPipeSocketDescriptor(CurrentNum, writer, loggerFactory.CreateLogger<DuplexPipeSocketDescriptor>());
+            return Sockets[(int)CurrentNum];
         }
     }
 }

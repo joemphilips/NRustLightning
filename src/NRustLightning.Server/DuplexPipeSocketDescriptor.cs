@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.IO.Pipelines;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
@@ -20,7 +21,7 @@ namespace NRustLightning.Server
         SendData sendData;
         private DisconnectSocket disconnectSocket;
 
-        private PipeWriter Output;
+        public PipeWriter Output;
 
         /// <summary>
         /// If this is true, that means rust-lightning has told us
@@ -34,8 +35,9 @@ namespace NRustLightning.Server
             Output = output ?? throw new ArgumentNullException(nameof(output));
             sendData = (ref FFIBytes data, byte resumeRead) =>
             {
-                logger.LogDebug($"Writing: {Hex.Encode(data.AsSpan())}");
+                logger.LogTrace($"Writing: {Hex.Encode(data.AsSpan())}");
                 Output.Write(data.AsSpan());
+                var _ = Output.FlushAsync().Result;
                 return Disconnected ? (UIntPtr)0 : data.len;
             };
             disconnectSocket = () =>

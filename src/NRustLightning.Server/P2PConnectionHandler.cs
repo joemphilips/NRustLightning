@@ -32,26 +32,33 @@ namespace NRustLightning.Server
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private async Task<bool> WriteLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
+        private async Task WriteLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor, CancellationToken ct)
         {
-            var flushResult = await transport.Output.FlushAsync().ConfigureAwait(false);
-            PeerManager.WriteBufferSpaceAvail(socketDescriptor);
-            return flushResult.IsCompleted;
+            bool shouldStop = false;
+            while (!shouldStop)
+            {
+                PeerManager.WriteBufferSpaceAvail(socketDescriptor);
+                logger.LogTrace("Flushing");
+                var flushResult = await transport.Output.FlushAsync(ct).ConfigureAwait(false);
+                logger.LogTrace($"flushed. Completed: {flushResult.IsCompleted}. Canceled: {flushResult.IsCanceled}");
+                shouldStop = flushResult.IsCompleted || flushResult.IsCanceled;
+            }
         }
 
-        private async Task<bool> ReadLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
+        private async Task<bool> ReadLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor, CancellationToken ct)
         {
-            var readResult = await transport.Input.ReadAsync().ConfigureAwait(false);
+            var readResult = await transport.Input.ReadAsync(ct).ConfigureAwait(false);
             var buf = readResult.Buffer;
             foreach (var r in buf)
             {
-                logger.LogDebug($"Received {Hex.Encode(r.Span)}");
+                logger.LogTrace($"Received {Hex.Encode(r.Span)}");
                 PeerManager.ReadEvent(socketDescriptor, r.Span);
+                PeerManager.ProcessEvents();
             }
             transport.Input.AdvanceTo(buf.End);
             return readResult.IsCompleted;
         }
-        private async Task ConnectionLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor)
+        private async Task ConnectionLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor, CancellationToken ct)
         {
             while (true)
             {
@@ -61,7 +68,18 @@ namespace NRustLightning.Server
                     return;
                 }
 
-                await Task.WhenAny(ReadLoop(transport, socketDescriptor), WriteLoop(transport, socketDescriptor));
+                try
+                {
+                    var isCompleted = await ReadLoop(transport, socketDescriptor, ct);
+                    if (isCompleted && !socketDescriptor.Disconnected)
+                        await WriteLoop(transport, socketDescriptor, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    logger.LogWarning($"Disconnecting peer since the socket is disconnected");
+                    PeerManager.SocketDisconnected(socketDescriptor);
+                    return;
+                }
             }
         }
         
@@ -69,14 +87,15 @@ namespace NRustLightning.Server
         {
             if (EndpointsToDesc.TryGetValue(connection.RemoteEndPoint, out var socketDescriptor))
             {
-                return ConnectionLoop(connection.Transport, socketDescriptor);
+                logger.LogDebug($"connection from known peer: {connection.RemoteEndPoint}, {socketDescriptor.Index}");
+                return ConnectionLoop(connection.Transport, socketDescriptor, connection.ConnectionClosed);
             }
-
+            
             logger.LogDebug($"New inbound connection from {connection.RemoteEndPoint}");
             var descriptor = descriptorFactory.GetNewSocket(connection.Transport.Output);
             EndpointsToDesc.Add(connection.RemoteEndPoint, descriptor);
             PeerManager.NewInboundConnection(descriptor);
-            return ConnectionLoop(connection.Transport, descriptor);
+            return ConnectionLoop(connection.Transport, descriptor, connection.ConnectionClosed);
         }
     }
 }

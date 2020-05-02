@@ -40,14 +40,17 @@ namespace NRustLightning
         {
             if (seed.Length != 32) throw new InvalidDataException($"seed must be 32 bytes! it was {seed.Length}");
             if (ourNodeSecret.Length != 32) throw new InvalidDataException($"ourNodeSecret must be 32 bytes! it was {seed.Length}");
+            var ourNodeId = new NBitcoin.Key(ourNodeSecret.ToArray()).PubKey.ToBytes();
             unsafe
             {
                 fixed (byte* seedPtr = seed)
                 fixed (Network* n = &network)
                 fixed (UserConfig* configPtr = &config)
                 fixed (byte* secretPtr = ourNodeSecret)
+                fixed (byte* pubkeyPtr = ourNodeId)
                 {
                     var ffiOurNodeSecret  = new FFISecretKey((IntPtr)secretPtr, (UIntPtr)ourNodeSecret.Length);
+                    var ffiOurNodeId = new FFIPublicKey((IntPtr)pubkeyPtr, (UIntPtr)ourNodeId.Length);
                     Interop.create_peer_manager(
                         seedPtr,
                         (UIntPtr)(seed.Length),
@@ -61,14 +64,8 @@ namespace NRustLightning
                         ref logger.Log,
                         ref feeEstimator.getEstSatPer1000Weight,
                         (UIntPtr)currentBlockHeight,
-                        ref routingMsgHandler.HandleNodeAnnouncement,
-                        ref routingMsgHandler.HandleChannelAnnouncement,
-                        ref routingMsgHandler.HandleChannelUpdate,
-                        ref routingMsgHandler.HandleHtlcFailChannelUpdate,
-                        ref routingMsgHandler.GetNextChannelAnnouncements,
-                        ref routingMsgHandler.GetNextNodeAnnouncements,
-                        ref routingMsgHandler.ShouldRequestFullSync,
                         ref ffiOurNodeSecret,
+                        ref ffiOurNodeId,
                         out var handle
                         );
                     return new PeerManager(handle, tickIntervalMSec,new object[]{ chainWatchInterface, broadcaster, logger, feeEstimator, routingMsgHandler });
@@ -94,6 +91,11 @@ namespace NRustLightning
         public void WriteBufferSpaceAvail(ISocketDescriptor descriptor)
         {
             Interop.write_buffer_space_avail(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, Handle);
+        }
+
+        public void SocketDisconnected(ISocketDescriptor descriptor)
+        {
+            Interop.socket_disconnected(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, Handle);
         }
 
         /// <summary>
