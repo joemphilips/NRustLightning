@@ -7,16 +7,23 @@
   <ItemGroup>
     <PackageReference Include="NBitcoin.Altcoins" Version="2.0.8" />
     <PackageReference Include="NBXplorer.Client" Version="3.0.9" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20214.1" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.112.1" />
     <PackageReference Include="System.IO.Pipelines" Version="4.7.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Utils" />
+    <None Update=".dockerignore">
+      <DependentUpon>Dockerfile</DependentUpon>
+    </None>
+    <None Update="docker-compose.yml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
-  <Import Project="../LDK.targets" />   
-
+  <Import Project="../LDK.targets" />
+  
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>

@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Autofac;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -13,6 +14,14 @@ namespace NRustLightning.Server.Tests
 {
     public class UnitTest1
     {
+        public IServiceProvider sp;
+
+        public UnitTest1()
+        {
+            var service = new ServiceCollection();
+            service.AddDockerComposeService("docker-compose.yml");
+            sp = service.BuildServiceProvider();
+        }
         [Fact]
         public async Task Test1()
         {
@@ -29,8 +38,7 @@ namespace NRustLightning.Server.Tests
         [Fact]
         public void RunRegisteredTests()
         {
-            var service = new ServiceCollection();
-            service.AddTestCaseRunnerModule("tmp");
+            using var process = sp.GetRequiredService<DockerComposeProcess>();
         }
     }
 }

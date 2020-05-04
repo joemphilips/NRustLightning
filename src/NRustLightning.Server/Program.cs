@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -16,12 +19,17 @@ namespace NRustLightning.Server
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            var command = Configuration.CommandLine.GetRootCommand();
+            command.Handler = CommandHandler.Create((ParseResult parseResult) =>
+            {
+                CreateHostBuilder(args, parseResult).Build().Run();
+            });
+            await command.InvokeAsync(args);
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args)
+        public static IHostBuilder CreateHostBuilder(string[] args, ParseResult parseResult)
         {
             Func<IConfigurationBuilder, IConfigurationBuilder> configureConfig =
                 builder =>
@@ -33,10 +41,9 @@ namespace NRustLightning.Server
                     {
                         File.Create(iniFile);
                     }
-
                     builder.AddIniFile(iniFile);
                     builder.AddEnvironmentVariables(prefix: "NRUSTLIGHTNING_");
-                    return builder.AddCommandLine(args);
+                    return builder.AddCommandLineDirectives(parseResult, "config");
                 };
 
             Action<ILoggingBuilder> configureLogging = builder =>
@@ -52,7 +59,7 @@ namespace NRustLightning.Server
             var config = configureConfig(new ConfigurationBuilder()).Build();
             var v = config.GetValue<string>("P2PAllowIp");
             var isListenAllIp = (v is null) || v == "*";
-            var maybeP2PPort = config.GetValue<int>("P2Port");
+            var maybeP2PPort = config.GetValue<int>("P2PPort");
             var p2pPort = maybeP2PPort == 0 ? Constants.DefaultP2PPort : maybeP2PPort;
 
             var maybeHttpPort = config.GetValue<int>("HTTPPort");

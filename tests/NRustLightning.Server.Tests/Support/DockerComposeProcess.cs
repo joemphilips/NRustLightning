@@ -1,12 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
+using NRustLightning.Server.Tests.Api;
 
 namespace NRustLightning.Server.Tests.Support
 {
-    public class ServerProcess : IDisposable
+    public class DockerComposeProcess : IDisposable
     {
         private readonly ManualResetEvent _errorComplete = new ManualResetEvent(false);
         private readonly StringWriter _output = new StringWriter();
@@ -14,9 +16,11 @@ namespace NRustLightning.Server.Tests.Support
         private readonly Process _process;
         
         private readonly object _sync = new object();
+        public Client Client;
 
-        public ServerProcess(string binPath, string listenUrl, string dataPath)
+        public DockerComposeProcess(string composeFilePath, string listenUrl, string dataPath)
         {
+            Client = new Client(listenUrl);
             var startInfo = new ProcessStartInfo()
             {
                 StandardOutputEncoding = new UTF8Encoding(false),
@@ -24,9 +28,14 @@ namespace NRustLightning.Server.Tests.Support
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                FileName = binPath,
-                Arguments = $"--urls \"{listenUrl}\" --datapath \"{dataPath}\""
+                FileName = "docker-compose",
+                Arguments = $"-f {composeFilePath} up",
             };
+            startInfo.EnvironmentVariables["LISTEN_URL"] = listenUrl;
+            startInfo.EnvironmentVariables["DATA_PATH"] = dataPath;
+            startInfo.EnvironmentVariables["BITCOIND_RPC_AUTH"] = Constants.BitcoindRPCAuth;
+            startInfo.EnvironmentVariables["BITCOIND_RPC_USER"] = Constants.BitcoindRPCUser;
+            startInfo.EnvironmentVariables["BITCOIND_RPC_PASS"] = Constants.BitcoindRPCPass;
 
             _process = Process.Start(startInfo);
             if (_process is null) throw new InvalidOperationException("Failed to start server");

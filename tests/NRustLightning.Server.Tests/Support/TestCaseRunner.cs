@@ -3,13 +3,14 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Autofac.Features.OwnedInstances;
 
 namespace NRustLightning.Server.Tests.Support
 {
     public class TestCaseRunner
     {
-        private readonly IEnumerable<Func<TestCase>> _tests;
-        public TestCaseRunner(IEnumerable<Func<TestCase>> tests)
+        private readonly IEnumerable<Func<Owned<TestCase>>> _tests;
+        public TestCaseRunner(IEnumerable<Func<Owned<TestCase>>> tests)
         {
             _tests = tests;
         }
@@ -22,7 +23,8 @@ namespace NRustLightning.Server.Tests.Support
 
             Parallel.ForEach(testsToRun, new ParallelOptions {MaxDegreeOfParallelism = 4}, (testFac, state) =>
             {
-                var test = testFac();
+                using var ownedTest = testFac();
+                var test = ownedTest.Value;
                 try
                 {
                     test.Execute().GetAwaiter().GetResult();
@@ -34,6 +36,7 @@ namespace NRustLightning.Server.Tests.Support
                     results.Add($"FAIL {test.Name}\n{e}\n{test.ServerOutput}");
                 }
             });
+            foreach (var r in results) Console.WriteLine(r);
 
             return success ? 0 : 1;
         }
