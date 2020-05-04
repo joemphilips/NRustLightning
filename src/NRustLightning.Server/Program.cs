@@ -43,7 +43,7 @@ namespace NRustLightning.Server
                     }
                     builder.AddIniFile(iniFile);
                     builder.AddEnvironmentVariables(prefix: "NRUSTLIGHTNING_");
-                    return builder.AddCommandLineDirectives(parseResult, "config");
+                    return builder.AddCommandLineOptions(parseResult);
                 };
 
             Action<ILoggingBuilder> configureLogging = builder =>
@@ -57,13 +57,13 @@ namespace NRustLightning.Server
             var logger = s.BuildServiceProvider().GetService<ILoggerFactory>().CreateLogger<Program>();
             
             var config = configureConfig(new ConfigurationBuilder()).Build();
-            var v = config.GetValue<string>("P2PAllowIp");
-            var isListenAllIp = (v is null) || v == "*";
-            var maybeP2PPort = config.GetValue<int>("P2PPort");
-            var p2pPort = maybeP2PPort == 0 ? Constants.DefaultP2PPort : maybeP2PPort;
+            
+            var v = config.GetValue("bind", "*");
+            var isListenAllIp = v == "*";
+            
+            var p2pPort = config.GetValue("port", Constants.DefaultP2PPort);
 
-            var maybeHttpPort = config.GetValue<int>("HTTPPort");
-            var httpPort = maybeHttpPort == 0 ? Constants.DefaultHttpPort : maybeHttpPort;
+            var httpPort = config.GetValue("httpport", Constants.DefaultHttpPort);
 
             return
                 Host.CreateDefaultBuilder(args)
@@ -76,6 +76,7 @@ namespace NRustLightning.Server
                         {
                             listenOptions.UseConnectionLogging();
                         });
+                        
                         var httpsConf = config.GetSection("https");
                         if (httpsConf.Exists())
                         {
@@ -100,7 +101,7 @@ namespace NRustLightning.Server
                         }
                         else
                         {
-                            var allowedIpEndPoint = IPEndPoint.Parse(v);
+                            var allowedIpEndPoint = new IPEndPoint(IPAddress.Parse(v), p2pPort);
                             logger.LogInformation($"Listening for P2P message from {allowedIpEndPoint}");
                             options.Listen(allowedIpEndPoint, listenOptions =>
                             {

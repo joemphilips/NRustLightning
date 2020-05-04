@@ -33,25 +33,15 @@ namespace NRustLightning.Server.Configuration
             throw new NotSupportedException("Configuration value does not support type " + typeof(T).Name);
         }
 
-        public static IConfigurationBuilder AddCommandLineDirectives(this IConfigurationBuilder config,
-            ParseResult commandline, string name)
+        public static IConfigurationBuilder AddCommandLineOptions(this IConfigurationBuilder config,
+            ParseResult commandline)
         {
             if (commandline is null)
                 throw new ArgumentNullException(nameof(commandline));
-            if (name is null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (!commandline.Directives.TryGetValues(name, out var directives))
-                return config;
-
-            var kvpSeparator = new[] { '=' };
-            return config.AddInMemoryCollection(directives.Select(s =>
-            {
-                var parts = s.Split(kvpSeparator, count: 2);
-                var key = parts[0];
-                var value = parts.Length > 1 ? parts[1] : null;
-                return new KeyValuePair<string, string>(key, value);
-            }).ToList());
+            
+            return config.AddInMemoryCollection(CommandLine.GetOptions().Select(op =>
+                new KeyValuePair<string, string>(op.Name, commandline.CommandResult.ValueForOption<string>(op.Name))
+            ));
         }   
     }
 }
