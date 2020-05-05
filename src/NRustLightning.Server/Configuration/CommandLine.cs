@@ -45,16 +45,52 @@ namespace NRustLightning.Server.Configuration
                 { Argument = new Argument{ Arity =  ArgumentArity.ZeroOrMore}.FromAmong(allCryptoCodes)});
             foreach (var crypto in allCryptoCodes)
             {
-                options.Add(new Option($"--{crypto}rpcuser",
-                    "RPC authentication method 1: The RPC user (default: using cookie auth from default network folder)"));
-                options.Add(new Option($"--{crypto}rpcpassword",
-                    "RPC authentication method 1: The RPC password (default: using cookie auth from default network folder)"));
-                options.Add(new Option($"--{crypto}rpccookiefile",
-                    $"RPC authentication method 2: The RPC cookiefile (default: using cookie auth from default network folder)"));
-                options.Add(new Option($"--{crypto}rpcauth",
-                    $"RPC authentication method 3: user:password or cookiefile=path (default: using cookie auth from default network folder)"));
-                options.Add(new Option($"--{crypto}rpcurl",
-                    $"The RPC server url (default: rpc server depended on the network)"));
+                options.Add(new Option($"--{crypto}.rpcuser",
+                    "RPC authentication method 1: The RPC user (default: using cookie auth from default network folder)")
+                    {
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ExactlyOne
+                        }
+                    }
+                );
+                options.Add(new Option($"--{crypto}.rpcpassword",
+                    "RPC authentication method 1: The RPC password (default: using cookie auth from default network folder)"
+                    )
+                    {
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ExactlyOne
+                        }
+                    }
+                );
+                options.Add(new Option($"--{crypto}.rpccookiefile",
+                    $"RPC authentication method 2: The RPC cookiefile (default: using cookie auth from default network folder)")
+                    {
+                        Argument = new Argument<FileInfo>
+                        {
+                            Arity = ArgumentArity.ExactlyOne
+                        }
+                    }
+                );
+                options.Add(new Option($"--{crypto}.rpcauth",
+                    $"RPC authentication method 3: user:password or cookiefile=path (default: using cookie auth from default network folder)")
+                    {
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ExactlyOne
+                        }
+                    }
+                );
+                options.Add(new Option($"--{crypto}.rpcurl",
+                    $"The RPC server url (default: rpc server depended on the network)")
+                    {
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ExactlyOne
+                        }
+                    }
+                );
             }
 
             return options.ToArray();

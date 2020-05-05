@@ -38,10 +38,14 @@ namespace NRustLightning.Server.Configuration
         {
             if (commandline is null)
                 throw new ArgumentNullException(nameof(commandline));
-            
-            return config.AddInMemoryCollection(CommandLine.GetOptions().Select(op =>
-                new KeyValuePair<string, string>(op.Name, commandline.CommandResult.ValueForOption<string>(op.Name))
-            ));
+
+            var dict = new Dictionary<string, string>();
+            foreach (var op in CommandLine.GetOptions())
+            {
+                var s = op.Name.Replace(".", ":");
+                dict.Add(s, commandline.CommandResult.ValueForOption<string>(op.Name));
+            }
+            return config.AddInMemoryCollection(dict);
         }   
     }
 }
