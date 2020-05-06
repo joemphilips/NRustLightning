@@ -121,9 +121,18 @@ services:
       dockerfile: src/NRustLightning.Server/Dockerfile
       args:
         CONFIGURATION: "Debug"
+    command:
+      - dotnet
+      - NRustLightning.Server.dll
+      - --https.cert="/root/.aspnet/https/aspnetapp.pfx"
+      - --https.certpass=ssa0022nb
+      - --https.port=443
+      - --httpport=80
     ports:
       - "9735:9735"
       - "5001:5001"
+      - "443:443"
+      - "480:80"
     expose:
       - "9735"
     environment:
