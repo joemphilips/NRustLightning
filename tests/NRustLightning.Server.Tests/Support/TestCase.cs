@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using NRustLightning.Client;
 using NRustLightning.Server.Tests.Api;
 
 namespace NRustLightning.Server.Tests.Support
@@ -8,9 +9,9 @@ namespace NRustLightning.Server.Tests.Support
     {
         private readonly ITestCase _test;
         private readonly DockerComposeProcess dockerCompose;
-        private readonly Client _client;
+        private readonly NRustLightningClient _client;
         
-        public TestCase(ITestCase test, DockerComposeProcess dockerCompose, Client client)
+        public TestCase(ITestCase test, DockerComposeProcess dockerCompose, NRustLightningClient client)
         {
             _test = test;
             this.dockerCompose = dockerCompose;

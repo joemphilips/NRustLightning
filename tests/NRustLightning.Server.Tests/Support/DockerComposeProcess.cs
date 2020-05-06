@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
+using NRustLightning.Client;
 using NRustLightning.Server.Tests.Api;
 
 namespace NRustLightning.Server.Tests.Support
@@ -16,11 +17,11 @@ namespace NRustLightning.Server.Tests.Support
         private readonly Process _process;
         
         private readonly object _sync = new object();
-        public Client Client;
+        public NRustLightningClient Client;
 
         public DockerComposeProcess(string composeFilePath, string listenUrl, string dataPath)
         {
-            Client = new Client(listenUrl);
+            Client = new NRustLightningClient(listenUrl);
             var startInfo = new ProcessStartInfo()
             {
                 StandardOutputEncoding = new UTF8Encoding(false),

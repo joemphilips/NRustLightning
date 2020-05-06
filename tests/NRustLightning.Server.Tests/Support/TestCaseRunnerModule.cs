@@ -1,6 +1,7 @@
 using Autofac;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using NRustLightning.Client;
 using NRustLightning.Server.Tests.Api;
 
 namespace NRustLightning.Server.Tests.Support
@@ -29,12 +30,12 @@ namespace NRustLightning.Server.Tests.Support
                     .As<DockerComposeProcess>()
                     .InstancePerOwned<TestCase>();
     
-                builder.Register(ctx => new Client(ctx.Resolve<ListenUrl>()))
-                    .As<Client>()
+                builder.Register(ctx => new NRustLightningClient(ctx.Resolve<ListenUrl>()))
+                    .As<NRustLightningClient>()
                     .InstancePerOwned<TestCase>();
     
                 builder.RegisterAdapter<ITestCase, TestCase>((ctx, test) =>
-                    new TestCase(test, ctx.Resolve<DockerComposeProcess>(), ctx.Resolve<Client>()));
+                    new TestCase(test, ctx.Resolve<DockerComposeProcess>(), ctx.Resolve<NRustLightningClient>()));
         }
     }
 }
