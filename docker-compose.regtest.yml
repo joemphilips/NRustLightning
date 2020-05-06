@@ -76,7 +76,7 @@ services:
     volumes:
       - "./data/.lnd:/data"
       - "./data/.bitcoin:/deps/.bitcoin"
-    links:
+    depends_on:
       - bitcoind
     networks:
       main:
@@ -106,6 +106,8 @@ services:
       - "0.0.0.0:9999:9735"
       - "0.0.0.0:9835:9835"
       - "0.0.0.0:9900:9900"
+    depends_on:
+      - bitcoind
     networks:
       main:
         aliases:
