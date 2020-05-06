@@ -50,7 +50,7 @@ namespace NRustLightning.Server
             var readResult = await transport.Input.ReadAsync(ct).ConfigureAwait(false);
             var buf = readResult.Buffer;
             if (buf.IsEmpty)
-                return false;
+                throw new OperationCanceledException("Socket disconnected");
             foreach (var r in buf)
             {
                 logger.LogTrace($"Received {Hex.Encode(r.Span)}");
