@@ -83,10 +83,15 @@ namespace NRustLightning
             Interop.new_inbound_connection(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, Handle);
         }
 
-        public void NewOutboundConnection(ISocketDescriptor descriptor, FFIPublicKey theirNodeId)
+        public unsafe void NewOutboundConnection(ISocketDescriptor descriptor, Span<byte> theirNodeId)
         {
-            
-            Interop.new_outbound_connection(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref theirNodeId, Handle);
+
+            fixed (byte* p = theirNodeId)
+            {
+                var pk = new FFIPublicKey((IntPtr)p, (UIntPtr)theirNodeId.Length);
+                Interop.new_outbound_connection(descriptor.Index, ref descriptor.SendData,
+                    ref descriptor.DisconnectSocket, ref pk, Handle);
+            }
         }
         public void WriteBufferSpaceAvail(ISocketDescriptor descriptor)
         {
