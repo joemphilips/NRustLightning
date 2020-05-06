@@ -14,6 +14,7 @@ namespace NRustLightning.Server
         public static string HomeDirectoryName = ".nrustlightning";
         public static string HomeDirectoryPath = Path.Join(HomePath, HomeDirectoryName);
         public static string DataDirectoryPath = Path.Join(HomeDirectoryPath, "data");
+        public static string DefaultCertFile = Path.Join(HomePath, ".aspnet", "https", "ssl.cert");
         public static string DefaultP2PHost = "127.0.0.1";
         public static int DefaultP2PPort = 9735;
         public static int DefaultHttpPort = 80;

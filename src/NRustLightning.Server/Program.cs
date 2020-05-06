@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NRustLightning.Server.Configuration;
+using NRustLightning.Server.P2P;
 
 namespace NRustLightning.Server
 {
@@ -82,11 +83,11 @@ namespace NRustLightning.Server
                         {
                             var https = new HttpsConfig();
                             httpsConf.Bind(https);
-                            logger.LogDebug($"https config is port: {https.Port}. cert: {https.CertName}. pass: {https.CertPass}");
+                            logger.LogDebug($"https config is port: {https.Port}. cert: {https.Cert}. pass: {https.CertPass}");
                             options.ListenAnyIP(https.Port, listenOptions =>
                             {
                                 listenOptions.UseConnectionLogging();
-                                listenOptions.UseHttps(https.CertName, https.CertPass);
+                                listenOptions.UseHttps(https.Cert, https.CertPass);
                             });
                         }
 

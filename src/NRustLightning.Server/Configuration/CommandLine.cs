@@ -32,9 +32,35 @@ namespace NRustLightning.Server.Configuration
                     },
 
                     // connection options
-                    new Option<string>("--bind", "Bind to given address and always listen on it. (default: any ip)"),
-                    new Option<int>(new []{"--port", "-p"}, $"Local p2p port to bind (default: {Constants.DefaultP2PPort})"),
+                    new Option<string>("--bind", "Bind to given address and always listen on it. (default: any ip)")
+                    {
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ZeroOrMore
+                        }
+                    },
+                    new Option<int>(new []{"--port", "-p"}, $"Local p2p port to bind (default: {Constants.DefaultP2PPort})")
+                    {
+                        Argument = new Argument<int>
+                        {
+                            Arity = ArgumentArity.ZeroOrOne
+                        }
+                    },
                     new Option<string>("--httpport", $"port for listening http request: (default: {Constants.DefaultHttpPort})")
+                    {
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ZeroOrOne
+                        }
+                    },
+                    new Option<string>("--https.port", $"port for listening HTTPs request: (default: {Constants.DefaultHttpsPort})")
+                    {
+                        Argument = new Argument<string> { Arity = ArgumentArity.ZeroOrOne }
+                    },
+                    new Option<string>("--https.cert", $"path to the https certification file. (default: {new HttpsConfig().Cert})")
+                        {Argument = new Argument<string> {Arity =  ArgumentArity.ZeroOrOne}},
+                    new Option<string>("--https.certpass", $"pass to open https certification file. (default: \"\")")
+                        {Argument = new Argument<string> {Arity =  ArgumentArity.ZeroOrOne }}
                 };
             options.AddRange(op);
             var provider = new NRustLightningNetworkProvider(NetworkType.Mainnet);
