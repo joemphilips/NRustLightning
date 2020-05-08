@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-#
+# 
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D70FE7F4-3514-42E1-AEB0-1FF6B6FDCE0A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRustLightning", "src\NRustLightning\NRustLightning.csproj", "{718AEAA4-9B05-4467-8543-7C860A0CDC3C}"
@@ -20,6 +20,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRustLightning.CLI", "src\NRustLightning.CLI\NRustLightning.CLI.csproj", "{913C7835-984E-47B8-A820-7D98F9B1E6EA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRustLightning.Client", "src\NRustLightning.Client\NRustLightning.Client.csproj", "{26AEF956-106E-45A8-90CF-DC6267DF46CE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DockerComposeFixture", "DockerComposeFixture", "{18D0D5EF-5563-479C-8ED9-A9F836D3112B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DockerComposeFixture", "tests\DockerComposeFixture\DockerComposeFixture\DockerComposeFixture.csproj", "{EF9A7E5A-04C1-4DF7-8551-019E42C8F39A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,6 +63,10 @@ Global
 		{26AEF956-106E-45A8-90CF-DC6267DF46CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26AEF956-106E-45A8-90CF-DC6267DF46CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26AEF956-106E-45A8-90CF-DC6267DF46CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF9A7E5A-04C1-4DF7-8551-019E42C8F39A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF9A7E5A-04C1-4DF7-8551-019E42C8F39A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF9A7E5A-04C1-4DF7-8551-019E42C8F39A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF9A7E5A-04C1-4DF7-8551-019E42C8F39A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{718AEAA4-9B05-4467-8543-7C860A0CDC3C} = {D70FE7F4-3514-42E1-AEB0-1FF6B6FDCE0A}
@@ -69,5 +77,7 @@ Global
 		{29A92026-BF0A-41ED-A171-D2E1D6A37AE9} = {CA473E93-5BB0-42CE-996A-1BC7136541CD}
 		{913C7835-984E-47B8-A820-7D98F9B1E6EA} = {D70FE7F4-3514-42E1-AEB0-1FF6B6FDCE0A}
 		{26AEF956-106E-45A8-90CF-DC6267DF46CE} = {D70FE7F4-3514-42E1-AEB0-1FF6B6FDCE0A}
+		{18D0D5EF-5563-479C-8ED9-A9F836D3112B} = {CA473E93-5BB0-42CE-996A-1BC7136541CD}
+		{EF9A7E5A-04C1-4DF7-8551-019E42C8F39A} = {18D0D5EF-5563-479C-8ED9-A9F836D3112B}
 	EndGlobalSection
 EndGlobal

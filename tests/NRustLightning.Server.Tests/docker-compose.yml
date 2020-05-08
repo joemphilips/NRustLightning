@@ -13,9 +13,9 @@ services:
       - bitcoind
       - -regtest
       - -datadir=/data
-      - -rpcauth=${BITCOIND_RPC_AUTH}
-      - -rpcport=43782
-      - -rpcbind=0.0.0.0:43782
+      - -rpcauth=${BITCOIND_RPC_AUTH:?no_bitcoind_rpc_auth_set}
+      - -rpcport=${BITCOIND_RPC_PORT:?no_bitcoind_rpc_port_set}
+      - -rpcbind=0.0.0.0:${BITCOIND_RPC_PORT}
       - -rpcallowip=0.0.0.0/0
       - -port=39388
       - -txindex=1
@@ -24,9 +24,9 @@ services:
       - -deprecatedrpc=signrawtransaction
       - -assumevalid=00000000000000000012d0c0982d818aa909d78e54525b10563c698d89997632
     ports:
-      - "43782:43782"
+      - "${BITCOIND_RPC_PORT}:${BITCOIND_RPC_PORT}"
     expose:
-      - "43782" # RPC
+      - "${BITCOIND_RPC_PORT}" # RPC
       - "39388" # P2P
       - "28332" # ZMQ
       - "28333" # ZMQ
@@ -46,13 +46,12 @@ services:
     environment:
       NETWORK: regtest
     command:
-      - --restlisten=0.0.0.0:32736
-      - --rpclisten=0.0.0.0:32777
+      - --restlisten=0.0.0.0:${LND_REST_PORT:?no_lnd_rest_port}
       - --bitcoin.regtest
       - --bitcoin.node=bitcoind
-      - --bitcoind.rpchost=bitcoind:43782
-      - --bitcoind.rpcuser=${BITCOIND_RPC_USER}
-      - --bitcoind.rpcpass=${BITCOIND_RPC_PASS}
+      - --bitcoind.rpchost=bitcoind:${BITCOIND_RPC_PORT}
+      - --bitcoind.rpcuser=${BITCOIND_RPC_USER:?no_bitcoind_rpc_user_set}
+      - --bitcoind.rpcpass=${BITCOIND_RPC_PASS:?no_bitcoind_rpc_pass_set}
       - --bitcoind.zmqpubrawblock=tcp://bitcoind:28332
       - --bitcoind.zmqpubrawtx=tcp://bitcoind:28333
       - --trickledelay=1000
@@ -67,16 +66,14 @@ services:
       - --tlsextradomain=lnd
     ports:
       - "9888:9888"
-      - "32736:32736"
-      - "32777:32777"
+      - "${LND_REST_PORT}:${LND_REST_PORT}"
     expose:
       - "9888"
-      - "32736"
-      - "32777"
+      - "${LND_REST_PORT}"
     volumes:
       - "${DATA_PATH}/.lnd:/data"
       - "${DATA_PATH}/.bitcoin:/deps/.bitcoin"
-    links:
+    depends_on:
       - bitcoind
     networks:
       main:
@@ -89,23 +86,20 @@ services:
       - --bitcoin-rpcconnect=bitcoind
       - --bitcoin-rpcuser=${BITCOIND_RPC_USER}
       - --bitcoin-rpcpassword=${BITCOIND_RPC_PASS}
-      - --bitcoin-rpcport=43782
-      # - --network=bitcoin
+      - --bitcoin-rpcport=${BITCOIND_RPC_PORT}
       - --network=regtest
-      - --plugin-dir=/usr/local/bin/plugins
-      - --alias=jem2323-lighningd1
+      - --alias=regtest-lighningd1
       - --log-level=debug
       - --lightning-dir=/root/.lightning
     environment:
       EXPOSE_TCP: "true"
     expose:
-      - "9735" # server port
-      - "9835" # api port
-      - "9900" # prometheus plugin
+      - "9735" # p2p port
+      - "9835" # rpc port
     ports:
-      - "0.0.0.0:9999:9735"
-      - "0.0.0.0:9835:9835"
-      - "0.0.0.0:9900:9900"
+      - "0.0.0.0:${LIGHTNINGD_RPC_PORT:?no_lightningd_rpc_port_set}:9835"
+    depends_on:
+      - bitcoind
     networks:
       main:
         aliases:
@@ -121,9 +115,17 @@ services:
       dockerfile: src/NRustLightning.Server/Dockerfile
       args:
         CONFIGURATION: "Debug"
+    command:
+      - dotnet
+      - NRustLightning.Server.dll
+      - --https.cert="/root/.aspnet/https/aspnetapp.pfx"
+      - --https.certpass=ssa0022nb
+      - --https.port=443
+      - --httpport=80
     ports:
       - "9735:9735"
-      - "5001:5001"
+      - "${HTTPS_PORT:?ho_https_port_set}:443"
+      - "${HTTP_PORT:?ho_http_port_set}:80"
     expose:
       - "9735"
     environment:

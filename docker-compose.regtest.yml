@@ -93,7 +93,7 @@ services:
       # - --network=bitcoin
       - --network=regtest
       - --plugin-dir=/usr/local/bin/plugins
-      - --alias=jem2323-lighningd1
+      - --alias=regtest-lighningd1
       - --log-level=debug
       - --lightning-dir=/root/.lightning
     environment:

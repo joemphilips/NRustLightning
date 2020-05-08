@@ -2,3 +2,6 @@
 	path = rust-lightning
 	url = https://github.com/joemphilips/rust-lightning
 	branch = ffi_build_scripts
+[submodule "tests/DockerComposeFixture"]
+	path = tests/DockerComposeFixture
+	url = https://github.com/joemphilips/DockerComposeFixture

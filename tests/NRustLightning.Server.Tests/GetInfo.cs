@@ -1,16 +1,29 @@
-using System.Threading.Tasks;
-using NRustLightning.Client;
-using NRustLightning.Server.Tests.Api;
+using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using DockerComposeFixture;
+using DockerComposeFixture.Compose;
+using DockerComposeFixture.Exceptions;
+using Xunit;
 using Xunit.Abstractions;
-using ITestCase = NRustLightning.Server.Tests.Support.ITestCase;
 
 namespace NRustLightning.Server.Tests
 {
-    public class GetInfo : ITestCase
+    public class GetInfo : IClassFixture<DockerFixture>
     {
-        public Task Execute(NRustLightningClient client)
+        private readonly ITestOutputHelper output;
+
+        public GetInfo(DockerFixture dockerFixture, ITestOutputHelper output)
         {
-            throw new System.NotImplementedException();
+            this.output = output;
+            dockerFixture.StartLNTestFixture(output, nameof(GetInfo));
+        }
+
+        [Fact]
+        public void GetInfoTest()
+        {
+            
         }
     }
 }

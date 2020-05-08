@@ -8,15 +8,20 @@
 
   <ItemGroup>
     <PackageReference Include="AutoFac" Version="5.1.4" />
-    <PackageReference Include="Microsoft.AspNetcore.Mvc.Testing" Version="3.1.3" />
+    <PackageReference Include="Microsoft.AspNetcore.Mvc.Testing" Version="3.1.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
-    <PackageReference Include="xunit" Version="2.4.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
+    <PackageReference Include="xunit" Version="2.4.*" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.*" />
     <PackageReference Include="coverlet.collector" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\NRustLightning.Client\NRustLightning.Client.csproj" />
+    <ProjectReference Include="..\DockerComposeFixture\DockerComposeFixture\DockerComposeFixture.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

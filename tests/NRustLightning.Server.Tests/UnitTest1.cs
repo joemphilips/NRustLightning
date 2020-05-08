@@ -16,12 +16,6 @@ namespace NRustLightning.Server.Tests
     {
         public IServiceProvider sp;
 
-        public UnitTest1()
-        {
-            var service = new ServiceCollection();
-            service.AddDockerComposeService("docker-compose.yml");
-            sp = service.BuildServiceProvider();
-        }
         [Fact]
         public async Task Test1()
         {
@@ -33,12 +27,6 @@ namespace NRustLightning.Server.Tests
             });
 
             var host = await hostBuilder.StartAsync();
-        }
-
-        [Fact]
-        public void RunRegisteredTests()
-        {
-            using var process = sp.GetRequiredService<DockerComposeProcess>();
         }
     }
 }
