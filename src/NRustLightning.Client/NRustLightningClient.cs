@@ -23,7 +23,7 @@ namespace NRustLightning.Client
             _client.Dispose();
         }
 
-        public async Task<NodeInfo> GetInfo()
+        public async Task<NodeInfo> GetInfoAsync()
         {
             var resp = await _client.GetAsync(new Uri(_baseUri, "/api/v1/info")).ConfigureAwait(false);
             resp.EnsureSuccessStatusCode();
