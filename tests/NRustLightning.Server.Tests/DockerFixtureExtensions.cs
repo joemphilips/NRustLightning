@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using BTCPayServer.Lightning;
 using BTCPayServer.Lightning.CLightning;
 using BTCPayServer.Lightning.LND;
@@ -14,12 +16,25 @@ using NBitcoin.RPC;
 using NRustLightning.Adaptors;
 using NRustLightning.Client;
 using NRustLightning.Server.Tests.Support;
+using NRustLightning.Utils;
 using Xunit.Abstractions;
 
 namespace NRustLightning.Server.Tests
 {
     public static class DockerFixtureExtensions
     {
+        private static byte[] GetCertificateFingerPrint(string filePath)
+        {
+            X509Certificate2 cert = new X509Certificate2(filePath);
+            using var hashAlg = SHA256.Create();
+            return hashAlg.ComputeHash(cert.RawData);
+        }
+
+        private static string GetCertificateFingerPrintHex(string filepath)
+        {
+            return Hex.Encode(GetCertificateFingerPrint(filepath));
+        }
+        
         public static Clients StartLNTestFixture(this DockerFixture dockerFixture, ITestOutputHelper output, [CallerMemberName]string caller = null)
         {
             var ports = new int[5];
@@ -27,12 +42,6 @@ namespace NRustLightning.Server.Tests
             var dataPath = Path.GetFullPath(caller);
             if (!Directory.Exists(dataPath))
                 Directory.CreateDirectory(dataPath);
-            var clients = new Clients(
-                new RPCClient($"{Constants.BitcoindRPCUser}:{Constants.BitcoindRPCPass}", new Uri($"http://localhost:{ports[0]}"), NBitcoin.Network.RegTest),
-            (LndClient)LightningClientFactory.CreateClient($"type=lnd-rest;allowinsecure=true;server=http://localhost:{ports[1]}", NBitcoin.Network.RegTest),
-                (CLightningClient)LightningClientFactory.CreateClient($"type=clightning;server=tcp://localhost:{ports[2]}", NBitcoin.Network.RegTest), 
-                new NRustLightningClient($"https://localhost{ports[4]}")
-                );
             var env = new Dictionary<string, object>()
             {
                 {
@@ -55,7 +64,13 @@ namespace NRustLightning.Server.Tests
                     DockerComposeFiles = new[] {"docker-compose.yml"},
                     EnvironmentVariables = env,
                     DockerComposeDownArgs = "--remove-orphans --volumes",
-                    CustomUpTest = o => o.Any(x => x.Contains("Content root path: /app"))
+                    CustomUpTest = o =>
+                    {
+                        return
+                            o.Any(x => x.Contains("Content root path: /app")) // nrustlightning is up
+                            && o.Any(x => x.Contains("Server started with public key")) // lightningd is up
+                            && o.Any(x => x.Contains("gRPC proxy started at")); // lnd is up
+                    }
                 });
             }
             catch (DockerComposeException ex)
@@ -66,7 +81,15 @@ namespace NRustLightning.Server.Tests
                     throw;
                 }
             }
-
+            
+            var lndMacaroonPath = Path.Join(dataPath, ".lnd", "chain", "bitcoin", "regtest", "admin.macaroon");
+            var lndTlsCertThumbPrint = GetCertificateFingerPrintHex(Path.Join(dataPath, ".lnd", "tls.cert"));
+            var clients = new Clients(
+                new RPCClient($"{Constants.BitcoindRPCUser}:{Constants.BitcoindRPCPass}", new Uri($"http://localhost:{ports[0]}"), NBitcoin.Network.RegTest),
+                (LndClient)LightningClientFactory.CreateClient($"type=lnd-rest;macaroonfilepath={lndMacaroonPath};certthumbprint={lndTlsCertThumbPrint};server=https://localhost:{ports[1]}", NBitcoin.Network.RegTest),
+                (CLightningClient)LightningClientFactory.CreateClient($"type=clightning;server=tcp://127.0.0.1:{ports[2]}", NBitcoin.Network.RegTest), 
+                new NRustLightningClient($"https://localhost{ports[4]}")
+                );
             return clients;
         }
     }
