@@ -54,6 +54,7 @@ namespace NRustLightning.Server.Tests
                 {
                     DockerComposeFiles = new[] {"docker-compose.yml"},
                     EnvironmentVariables = env,
+                    DockerComposeDownArgs = "--remove-orphans --volumes",
                     CustomUpTest = o => o.Any(x => x.Contains("Content root path: /app"))
                 });
             }

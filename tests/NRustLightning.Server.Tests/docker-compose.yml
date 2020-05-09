@@ -57,7 +57,7 @@ services:
       - --trickledelay=1000
       - --externalip=lnd:9888
       - --debuglevel=trace
-        #- --no-macaroons
+      # - --no-macaroons
       - --datadir=/data
       - --debuglevel=debug
       - --noseedbackup
@@ -80,6 +80,7 @@ services:
         aliases:
           - lnd
   lightningd:
+    restart: "unless-stopped"
     image: blockstream/lightningd:prom
     command:
       - lightningd
@@ -97,15 +98,17 @@ services:
       - "9735" # p2p port
       - "9835" # rpc port
     ports:
-      - "0.0.0.0:${LIGHTNINGD_RPC_PORT:?no_lightningd_rpc_port_set}:9835"
+      - 0.0.0.0:${LIGHTNINGD_RPC_PORT:?no_lightningd_rpc_port_set}:9835
     depends_on:
       - bitcoind
     networks:
       main:
         aliases:
           - lightningd
+    # We wanted to use bind mount here, but sometimes socket name becomes
+    # Too long and lightningd cannot bind rpc socket.
     volumes:
-      - "${DATA_PATH}/.lightningd:/root/.lightning"                                                                                 
+      - "lightningd_dir:/root/.lightning"
 
   nrustlightning:
     restart: "unless-stopped"
@@ -145,5 +148,9 @@ services:
         aliases:
           - nrustlightning
  
+
+volumes:
+  lightningd_dir:
+
 networks:
   main:
