@@ -23,7 +23,7 @@ namespace NRustLightning.Server.Tests
             {
                 webHost.UseTestServer();
                 webHost.UseEnvironment("Test");
-                webHost.Configure(async ctx => {});
+                webHost.Configure(ctx => {});
             });
 
             var host = await hostBuilder.StartAsync();

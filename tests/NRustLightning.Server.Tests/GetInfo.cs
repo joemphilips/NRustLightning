@@ -26,9 +26,15 @@ namespace NRustLightning.Server.Tests
         [Fact]
         public async Task CanPingClients()
         {
-            await Clients.BitcoinRPCClient.GetBlockchainInfoAsync();
-            await Clients.LndClient.SwaggerClient.GetInfoAsync();
-            await Clients.CLightningClient.GetInfoAsync();
+            var blockchainInfo = await Clients.BitcoinRPCClient.GetBlockchainInfoAsync();
+            Assert.NotNull(blockchainInfo);
+            var lndInfo = await Clients.LndClient.SwaggerClient.GetInfoAsync();
+            Assert.NotNull(lndInfo.Version);
+            var clightningInfo = await Clients.CLightningClient.GetInfoAsync();
+            Assert.NotEmpty(clightningInfo.Address);
+            Assert.NotNull(clightningInfo.Network);
+            Assert.NotNull(clightningInfo.Id);
+            Assert.NotNull(clightningInfo.Version);
             await Clients.Client.GetInfoAsync();
         }
     }

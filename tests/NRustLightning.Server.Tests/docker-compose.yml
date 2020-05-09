@@ -132,15 +132,14 @@ services:
       - --httpport=80
     ports:
       - "9735:9735"
-      - "${HTTPS_PORT:?ho_https_port_set}:443"
-      - "${HTTP_PORT:?ho_http_port_set}:80"
+      - "${HTTPS_PORT:?no_https_port_set}:443"
+      - "${HTTP_PORT:?no_http_port_set}:80"
     expose:
       - "9735"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - RUST_BACKTRACE=1
       #- ASPNETCORE_URLS="https://+;http://+"
-      - ASPNETCORE_HTTPS_PORT=5001
     links:
       - bitcoind
       - lnd

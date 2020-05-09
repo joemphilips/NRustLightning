@@ -4,11 +4,11 @@ using NRustLightning.Server.Models.Response;
 
 namespace NRustLightning.Server.Controllers
 {
-    [Authorize]
     [ApiController]
-    [Route("[controller]")]
+    [Route("/v1/[controller]")]
     public class InfoController : ControllerBase
     {
+        [HttpGet]
         public NodeInfo Get()
         {
             return new NodeInfo();

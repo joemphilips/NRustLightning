@@ -9,7 +9,6 @@ using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class PeerController : ControllerBase

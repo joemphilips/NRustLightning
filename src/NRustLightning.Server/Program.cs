@@ -9,6 +9,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -87,6 +88,7 @@ namespace NRustLightning.Server
                             {
                                 listenOptions.UseConnectionLogging();
                                 listenOptions.UseHttps(https.Cert, https.CertPass);
+                                listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
                             });
                         }
 
