@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NRustLightning.Server.Configuration;
+using NRustLightning.Server.Configuration.SubConfiguration;
 
 namespace NRustLightning.Server
 {
@@ -38,24 +39,15 @@ namespace NRustLightning.Server
                     builder.SetBasePath(Directory.GetCurrentDirectory());
                     Directory.CreateDirectory(Constants.HomeDirectoryPath);
                     var iniFile = Path.Join(Constants.HomeDirectoryPath, "nrustlightning.conf");
-                    if (!File.Exists(iniFile))
+                    if (File.Exists(iniFile))
                     {
-                        File.Create(iniFile);
+                        builder.AddIniFile(iniFile);
                     }
-                    builder.AddIniFile(iniFile);
                     builder.AddEnvironmentVariables(prefix: "NRUSTLIGHTNING_");
                     return builder.AddCommandLineOptions(parseResult);
                 };
 
-            Action<ILoggingBuilder> configureLogging = builder =>
-            {
-                builder.AddConsole();
-                builder.AddDebug();
-                builder.SetMinimumLevel(LogLevel.Debug);
-            };
-            var s = new ServiceCollection();
-            s.AddLogging(configureLogging);
-            var logger = s.BuildServiceProvider().GetService<ILoggerFactory>().CreateLogger<Program>();
+            var logger = Startup.GetStartupLoggerFactory().CreateLogger<Program>();
             
             var config = configureConfig(new ConfigurationBuilder()).Build();
             

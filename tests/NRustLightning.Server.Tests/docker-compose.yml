@@ -65,7 +65,6 @@ services:
       - --tlskeypath=/data/tls.key
       - --tlsextradomain=lnd
     ports:
-      - "9888:9888"
       - "${LND_REST_PORT}:${LND_REST_PORT}"
     expose:
       - "9888"
@@ -130,6 +129,7 @@ services:
       - --https.certpass=ssa0022nb
       - --https.port=443
       - --httpport=80
+      - --externalip="nrustlightning:9735"
     ports:
       - "9735:9735"
       - "${HTTPS_PORT:?no_https_port_set}:443"

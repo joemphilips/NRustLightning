@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Hosting;
 using NBitcoin;
+using NRustLightning.Adaptors;
+using NRustLightning.Server.Configuration.SubConfiguration;
 using NRustLightning.Server.Networks;
 
 namespace NRustLightning.Server.Configuration
@@ -46,6 +48,15 @@ namespace NRustLightning.Server.Configuration
                             Arity = ArgumentArity.ZeroOrOne
                         }
                     },
+                    
+                    new Option<string>("--externalip", $"address:port that we claim to listen on to peers.")
+                    {
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ZeroOrOne
+                        }
+                    }, 
+                    
                     new Option<string>("--httpport", $"port for listening http request: (default: {Constants.DefaultHttpPort})")
                     {
                         Argument = new Argument<string>
@@ -67,11 +78,11 @@ namespace NRustLightning.Server.Configuration
             var allCryptoCodes = provider.GetAll().Select(n => n.CryptoCode.ToLowerInvariant()).ToArray();
             options.Add(
                 new Option("--chain",
-                $"Chains to support. You can specify this multiple times (default: btc)")
-                { Argument = new Argument{ Arity =  ArgumentArity.ZeroOrMore}.FromAmong(allCryptoCodes)});
+                $"Chains to support. You can specify more than one chain by passing values delimited by ','. (default: btc)")
+                { Argument = new Argument{ Arity =  ArgumentArity.ZeroOrOne}.FromAmong(allCryptoCodes)});
             foreach (var crypto in allCryptoCodes)
             {
-                options.Add(new Option($"--{crypto}.rpcuser",
+                options.Add(new Option($"--{crypto}.rpc.user",
                     "RPC authentication method 1: The RPC user (default: using cookie auth from default network folder)")
                     {
                         Argument = new Argument<string>
@@ -80,7 +91,7 @@ namespace NRustLightning.Server.Configuration
                         }
                     }
                 );
-                options.Add(new Option($"--{crypto}.rpcpassword",
+                options.Add(new Option($"--{crypto}.rpc.password",
                     "RPC authentication method 1: The RPC password (default: using cookie auth from default network folder)"
                     )
                     {
@@ -90,7 +101,7 @@ namespace NRustLightning.Server.Configuration
                         }
                     }
                 );
-                options.Add(new Option($"--{crypto}.rpccookiefile",
+                options.Add(new Option($"--{crypto}.rpc.cookiefile",
                     $"RPC authentication method 2: The RPC cookiefile (default: using cookie auth from default network folder)")
                     {
                         Argument = new Argument<FileInfo>
@@ -99,7 +110,7 @@ namespace NRustLightning.Server.Configuration
                         }
                     }
                 );
-                options.Add(new Option($"--{crypto}.rpcauth",
+                options.Add(new Option($"--{crypto}.rpc.auth",
                     $"RPC authentication method 3: user:password or cookiefile=path (default: using cookie auth from default network folder)")
                     {
                         Argument = new Argument<string>
@@ -108,7 +119,7 @@ namespace NRustLightning.Server.Configuration
                         }
                     }
                 );
-                options.Add(new Option($"--{crypto}.rpcurl",
+                options.Add(new Option($"--{crypto}.rpc.url",
                     $"The RPC server url (default: rpc server depended on the network)")
                     {
                         Argument = new Argument<string>
@@ -118,7 +129,40 @@ namespace NRustLightning.Server.Configuration
                     }
                 );
             }
+            
+            // rust-lightning specific options
+            var uc = UserConfig.GetDefault();
+            options.Add(new Option("--ln.own_channel_config.minimum_depth", 
+                $"Confirmation we will wait for before considering the channel locked in. (default: {uc.own_channel_config.minimum_depth})")
+            {
+                Argument = new Argument<uint> { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option("--ln.own_channel_config.our_to_self_delay", 
+                $"Set to the amount of time we require our counterparty to wait to claim their money.  (default: {uc.own_channel_config.our_to_self_delay})")
+            {
+                Argument = new Argument<ushort> { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option("--ln.own_channel_config.our_htlc_minimum_msat", 
+                $"Set to the smallest value HTLC we will accept to process. (default: {uc.own_channel_config.our_htlc_minimum_msat})")
+            {
+                Argument = new Argument<ulong> { Arity = ArgumentArity.ZeroOrOne }
+            });
 
+            options.Add(new Option("--ln.channel_options.fee_proportional_millionths", 
+                $"Amount (in millionths of satoshi) our channels will charge per transferred satoshi (default: {uc.channel_options.fee_proportional_millionths})")
+            {
+                Argument = new Argument<uint> { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option("--ln.channel_options.announced_channel", 
+                $"Set this to announce the channel publicly and notify all nodes that they can route via our channels. (default: {uc.channel_options.announced_channel == 1})")
+            {
+                Argument = new Argument<bool> { Arity = ArgumentArity.Zero }
+            });
+            options.Add(new Option("--ln.channel_options.commit_upfront_shutdown_pubkey", 
+                $"When set, we commit to an upfront shutdown_pubkey at channel open. (default: {uc.channel_options.commit_upfront_shutdown_pubkey == 1})")
+            {
+                Argument = new Argument<bool> { Arity = ArgumentArity.ZeroOrOne }
+            });
             return options.ToArray();
         }
         /// <summary>

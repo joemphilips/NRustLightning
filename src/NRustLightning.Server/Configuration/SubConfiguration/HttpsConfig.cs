@@ -1,6 +1,6 @@
 using System;
 
-namespace NRustLightning.Server.Configuration
+namespace NRustLightning.Server.Configuration.SubConfiguration
 {
     public class HttpsConfig
     {

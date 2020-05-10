@@ -130,6 +130,7 @@ services:
       - --https.certpass=ssa0022nb
       - --https.port=443
       - --httpport=80
+      - --externalip="nrustlightning:9735"
     ports:
       - "9735:9735"
       - "5001:5001"

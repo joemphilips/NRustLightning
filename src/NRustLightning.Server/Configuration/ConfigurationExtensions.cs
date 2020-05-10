@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine.Parsing;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Net;
 using Microsoft.Extensions.Configuration;
+using NBitcoin;
 
 namespace NRustLightning.Server.Configuration
 {
@@ -43,9 +46,64 @@ namespace NRustLightning.Server.Configuration
             foreach (var op in CommandLine.GetOptions())
             {
                 var s = op.Name.Replace(".", ":");
-                dict.Add(s, commandline.CommandResult.ValueForOption<string>(op.Name));
+                var name = commandline.CommandResult.ValueForOption<string>(op.Name);
+                dict.Add(s, name);
             }
             return config.AddInMemoryCollection(dict);
-        }   
+        }
+        
+        public static string GetDefaultDataDir(this IConfiguration conf)
+        {
+            return GetDefaultSettings(conf).DefaultDataDir;
+        }
+        
+        public static string GetDefaultConfigurationFile(this IConfiguration conf)
+        {
+            var network = GetDefaultSettings(conf);
+            var dataDir = conf["datadir"];
+            if (dataDir is null)
+                return network.DefaultConfigurationFile;
+            var fileName = Path.GetFileName(network.DefaultConfigurationFile);
+            var chainDir = Path.GetFileName(Path.GetDirectoryName(network.DefaultConfigurationFile));
+            chainDir = Path.Combine(dataDir, chainDir);
+            try
+            {
+                if (!Directory.Exists(chainDir))
+                    Directory.CreateDirectory(chainDir);
+            }
+            catch
+            {
+                // ignored
+            }
+
+            return Path.Combine(chainDir, fileName);
+        }
+
+        public static IPEndPoint GetDefaultEndpoint(this IConfiguration conf)
+        {
+            return new IPEndPoint(IPAddress.Parse("127.0.0.1"), GetDefaultSettings(conf).DefaultPort);
+        }
+        
+        private static NRustLightningDefaultSettings GetDefaultSettings(this IConfiguration conf) => NRustLightningDefaultSettings.GetDefaultSettings(GetNetworkType(conf));
+
+        public static NetworkType GetNetworkType(this IConfiguration conf)
+        {
+            var network = conf.GetOrDefault<string>("network", null);
+            if (!(network is null))
+            {
+                var n = Network.GetNetwork(network);
+                if (n is null)
+                    throw new ConfigException($"Invalid network parameter '{network}'");
+
+                return n.NetworkType;
+            }
+
+            return
+                conf.GetOrDefault("regtest", false) ? NetworkType.Regtest :
+                conf.GetOrDefault("testnet", false) ? NetworkType.Testnet :
+                NetworkType.Mainnet;
+        }
+        public static string EnvironmentVariablePrefix => "_NRUSTLIGHTNING";
+
     }
 }

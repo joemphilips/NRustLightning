@@ -14,6 +14,11 @@ namespace NRustLightning.Client
         private HttpClient _client;
         private Uri _baseUri;
 
+        private JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
         public NRustLightningClient(string baseUrl) : this(baseUrl, null) {}
         public NRustLightningClient(string baseUrl, X509Certificate2? certificate)
         {
@@ -40,13 +45,7 @@ namespace NRustLightning.Client
             using var resp = await _client.GetAsync(new Uri(_baseUri, "/v1/info")).ConfigureAwait(false);
             resp.EnsureSuccessStatusCode();
             var content = await resp.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<NodeInfo>(content);
-        }
-
-        private async Task<T> SendAsync<T>(HttpMethod method, object body, string relativePath, object[] parameters,
-            CancellationToken ct = default)
-        {
-            throw new NotImplementedException();
+            return JsonSerializer.Deserialize<NodeInfo>(content, jsonSerializerOptions);
         }
     }
 }

@@ -30,7 +30,7 @@ namespace NRustLightning.Server.Controllers
         {
             var peer = PeerManagerProvider.GetPeerManager(cryptoCode) ?? throw new NotSupportedException(cryptoCode);
             var conn = await connectionFactory.ConnectAsync(connectionString.EndPoint);
-            peer.NewOutboundConnection(SocketDescriptorFactory.GetNewSocket(conn.Transport.Output), connectionString.NodeId.Value.ToBytes());
+            peer.NewOutboundConnection(SocketDescriptorFactory.GetNewSocket(conn.Transport.Output), connectionString.NodeId.ToBytes());
             throw new NotImplementedException();
         }
     }

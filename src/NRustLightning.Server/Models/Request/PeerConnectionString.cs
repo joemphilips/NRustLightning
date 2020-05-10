@@ -1,16 +1,19 @@
 using System;
 using System.Net;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
+using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.ModelBinders;
 using static DotNetLightning.Utils.Primitives;
 
 namespace NRustLightning.Server.Models.Request
 {
     [ModelBinder(BinderType = typeof(PeerConnectionStringModelBinders))]
+    [JsonConverter(typeof(PeerConnectionStringConverter))]
     public class PeerConnectionString
     {
-        public PeerConnectionString(NodeId nodeId, EndPoint endPoint)
+        public PeerConnectionString(PubKey nodeId, EndPoint endPoint)
         {
             EndPoint = endPoint;
             NodeId = nodeId;
@@ -30,7 +33,7 @@ namespace NRustLightning.Server.Models.Request
             var s = str.Split("@");
             if (s.Length != 2)
                 return false;
-            var nodeId = NodeId.NewNodeId(new PubKey(s[0]));
+            var nodeId = new PubKey(s[0]);
             var addrAndPort = s[1].Split(":");
             if (addrAndPort.Length != 2)
                 return false;
@@ -47,9 +50,9 @@ namespace NRustLightning.Server.Models.Request
             result = new PeerConnectionString(nodeId, endPoint);
             return true;
         }
-        public NodeId NodeId { get; }
-        public EndPoint EndPoint { get; }
+        public PubKey NodeId { get; set; }
+        public EndPoint EndPoint { get; set; }
 
-        public override string ToString() => $"{NodeId.Value.ToHex()}@{EndPoint}";
+        public override string ToString() => $"{NodeId.ToHex()}@{EndPoint.ToEndpointString()}";
     }
 }

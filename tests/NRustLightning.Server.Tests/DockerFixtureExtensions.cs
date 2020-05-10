@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -10,10 +9,8 @@ using BTCPayServer.Lightning;
 using BTCPayServer.Lightning.CLightning;
 using BTCPayServer.Lightning.LND;
 using DockerComposeFixture;
-using DockerComposeFixture.Compose;
 using DockerComposeFixture.Exceptions;
 using NBitcoin.RPC;
-using NRustLightning.Adaptors;
 using NRustLightning.Client;
 using NRustLightning.Server.Tests.Support;
 using NRustLightning.Utils;
@@ -53,8 +50,8 @@ namespace NRustLightning.Server.Tests
                 {"BITCOIND_RPC_PORT", ports[0]},
                 {"LND_REST_PORT", ports[1]},
                 {"LIGHTNINGD_RPC_PORT", ports[2]},
-                {"HTTPS_PORT", ports[3]},
-                {"HTTP_PORT", ports[4]},
+                {"HTTP_PORT", ports[3]},
+                {"HTTPS_PORT", ports[4]},
                 {"DATA_PATH", dataPath }
             };
             try
@@ -88,7 +85,8 @@ namespace NRustLightning.Server.Tests
                 new RPCClient($"{Constants.BitcoindRPCUser}:{Constants.BitcoindRPCPass}", new Uri($"http://localhost:{ports[0]}"), NBitcoin.Network.RegTest),
                 (LndClient)LightningClientFactory.CreateClient($"type=lnd-rest;macaroonfilepath={lndMacaroonPath};certthumbprint={lndTlsCertThumbPrint};server=https://localhost:{ports[1]}", NBitcoin.Network.RegTest),
                 (CLightningClient)LightningClientFactory.CreateClient($"type=clightning;server=tcp://127.0.0.1:{ports[2]}", NBitcoin.Network.RegTest), 
-                new NRustLightningClient($"http://localhost:{ports[4]}")
+                new NRustLightningClient($"http://localhost:{ports[3]}"),
+                new NRustLightningClient($"https://localhost:{ports[4]}")
                 );
             return clients;
         }

@@ -16,8 +16,18 @@ namespace NRustLightning.Server
 {
     public class Startup
     {
+        private readonly ILogger<Startup> logger;
+
+        internal static ILoggerFactory GetStartupLoggerFactory()
+            => LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+                builder.AddDebug();
+                builder.SetMinimumLevel(LogLevel.Debug);
+            });
         public Startup(IConfiguration configuration)
         {
+            this.logger = GetStartupLoggerFactory().CreateLogger<Startup>();
             Configuration = configuration;
         }
 
@@ -29,7 +39,7 @@ namespace NRustLightning.Server
             services.AddControllers();
             services.AddHttpClient();
             services.AddNRustLightning();
-            services.ConfigureNRustLightning(Configuration);
+            services.ConfigureNRustLightning(Configuration, logger);
             services.AddMvc();
             services.AddAuthorization();
         }

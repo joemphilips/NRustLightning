@@ -24,6 +24,7 @@ namespace NRustLightning.Server.Configuration
                 settings.DefaultConfigurationFile = Path.Combine(settings.DefaultDataDir, "nrustlightning.conf");
                 settings.DefaultCookieFile = Path.Combine(settings.DefaultDataDir, ".cookie");
                 settings.NBXplorerSettings = NBXplorerDefaultSettings.GetDefaultSettings(nType);
+                settings.DefaultPort = Constants.DefaultP2PPort;
                 settings.RustLightningConfig = new UserConfig();
             }
         }
@@ -42,6 +43,7 @@ namespace NRustLightning.Server.Configuration
         public string DefaultConfigurationFile { get; private set; } = "nrustlightning.conf";
         public string DefaultDataDir { get;  private set; } = Constants.DataDirectoryPath;
         public string DefaultCookieFile { get;  private set; }
+        public int DefaultPort { get; set; }
         
         public UserConfig RustLightningConfig { get; private set; }
         public static NRustLightningDefaultSettings GetDefaultSettings(NetworkType nType) => _Settings[nType];

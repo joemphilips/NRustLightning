@@ -21,6 +21,8 @@ namespace NRustLightning.Server.Networks
         public Network NBitcoinNetwork { get; }
         public string CryptoCode { get; }
 
+        public bool SupportCookieAuthentication { get; internal set; } = true;
+
         internal FFINetwork FFINetwork => NBitcoinNetwork.NetworkType switch
             {
                 NetworkType.Mainnet => FFINetwork.MainNet,

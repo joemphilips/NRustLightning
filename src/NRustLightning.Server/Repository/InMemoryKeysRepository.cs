@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NBitcoin;
 using NBitcoin.DataEncoders;
+using NBitcoin.Protocol;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Interfaces;
 
@@ -28,5 +29,9 @@ namespace NRustLightning.Server.Repository
         }
 
         public Key GetNodeSecret() => Secret;
-   }
+        public PubKey GetNodeId()
+        {
+            return NodeId;
+        }
+    }
 }
