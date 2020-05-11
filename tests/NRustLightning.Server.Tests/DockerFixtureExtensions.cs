@@ -32,7 +32,7 @@ namespace NRustLightning.Server.Tests
             return Hex.Encode(GetCertificateFingerPrint(filepath));
         }
         
-        public static Clients StartLNTestFixture(this DockerFixture dockerFixture, ITestOutputHelper output, [CallerMemberName]string caller = null)
+        public static Clients StartLNTestFixture(this DockerFixture dockerFixture, ITestOutputHelper output, string caller)
         {
             var ports = new int[5];
             Support.Utils.FindEmptyPort(ports);
