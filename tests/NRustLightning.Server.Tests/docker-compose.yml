@@ -119,14 +119,11 @@ services:
     command:
       - dotnet
       - NRustLightning.Server.dll
-      - --https.cert="/root/.aspnet/https/aspnetapp.pfx"
-      - --https.certpass=ssa0022nb
-      - --https.port=443
+      - --nohttps
       - --httpport=80
       - --externalip="nrustlightning:9735"
     ports:
       - "9735:9735"
-      - "${HTTPS_PORT:?no_https_port_set}:443"
       - "${HTTP_PORT:?no_http_port_set}:80"
     expose:
       - "9735"

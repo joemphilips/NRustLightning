@@ -35,7 +35,7 @@ namespace NRustLightning.Server.Tests
         
         public static async Task<Clients> StartLNTestFixtureAsync(this DockerFixture dockerFixture, ITestOutputHelper output, string caller)
         {
-            var ports = new int[5];
+            var ports = new int[4];
             Support.Utils.FindEmptyPort(ports);
             var dataPath = Path.GetFullPath(caller);
             if (!Directory.Exists(dataPath))
@@ -52,7 +52,6 @@ namespace NRustLightning.Server.Tests
                 {"LND_REST_PORT", ports[1]},
                 {"LIGHTNINGD_RPC_PORT", ports[2]},
                 {"HTTP_PORT", ports[3]},
-                {"HTTPS_PORT", ports[4]},
                 {"DATA_PATH", dataPath }
             };
             try
@@ -87,8 +86,7 @@ namespace NRustLightning.Server.Tests
                 new RPCClient($"{Constants.BitcoindRPCUser}:{Constants.BitcoindRPCPass}", new Uri($"http://localhost:{ports[0]}"), NBitcoin.Network.RegTest),
                 (LndClient)LightningClientFactory.CreateClient($"type=lnd-rest;macaroonfilepath={lndMacaroonPath};certthumbprint={lndTlsCertThumbPrint};server=https://localhost:{ports[1]}", NBitcoin.Network.RegTest),
                 (CLightningClient)LightningClientFactory.CreateClient($"type=clightning;server=tcp://127.0.0.1:{ports[2]}", NBitcoin.Network.RegTest), 
-                new NRustLightningClient($"http://localhost:{ports[3]}"),
-                new NRustLightningClient($"https://localhost:{ports[4]}")
+                new NRustLightningClient($"http://localhost:{ports[3]}")
                 );
             return clients;
         }

@@ -7,18 +7,16 @@ namespace NRustLightning.Server.Tests.Support
 {
     public class Clients
     {
-        public Clients(RPCClient bitcoinRPCClient, LndClient lndClient, CLightningClient cLightningClient, NRustLightningClient httpClient, NRustLightningClient httpsClient)
+        public Clients(RPCClient bitcoinRPCClient, LndClient lndClient, CLightningClient cLightningClient, NRustLightningClient httpClient)
         {
             BitcoinRPCClient = bitcoinRPCClient;
             LndClient = lndClient;
             CLightningClient = cLightningClient;
             HttpClient = httpClient;
-            HttpsClient = httpsClient;
         }
         public readonly RPCClient BitcoinRPCClient;
         public readonly LndClient LndClient;
         public readonly CLightningClient CLightningClient;
         public readonly NRustLightningClient HttpClient;
-        public readonly NRustLightningClient HttpsClient;
     }
 }

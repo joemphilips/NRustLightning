@@ -54,7 +54,4 @@ jobs:
       - name: Run integration tests ${{ matrix.os }}
         if: startsWith(matrix.dotnet, '3.1') && startsWith(matrix.os, 'ubuntu') # docker-compose is installed only in ubuntu
         run: |
-          dotnet dev-certs https --clean
-          dotnet dev-certs https -ep  ~/.aspnet/https/aspnetapp.pfx -p ssa0022nb
-          dotnet dev-certs https --trust
           dotnet test tests/NRustLightning.Server.Tests
