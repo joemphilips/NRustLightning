@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using BTCPayServer.Lightning;
 using BTCPayServer.Lightning.CLightning;
 using BTCPayServer.Lightning.LND;
@@ -32,7 +33,7 @@ namespace NRustLightning.Server.Tests
             return Hex.Encode(GetCertificateFingerPrint(filepath));
         }
         
-        public static Clients StartLNTestFixture(this DockerFixture dockerFixture, ITestOutputHelper output, string caller)
+        public static async Task<Clients> StartLNTestFixtureAsync(this DockerFixture dockerFixture, ITestOutputHelper output, string caller)
         {
             var ports = new int[5];
             Support.Utils.FindEmptyPort(ports);
@@ -56,7 +57,7 @@ namespace NRustLightning.Server.Tests
             };
             try
             {
-                dockerFixture.InitOnce(() => new DockerFixtureOptions
+                await dockerFixture.InitOnceAsync(() => new DockerFixtureOptions
                 {
                     DockerComposeFiles = new[] {"docker-compose.yml"},
                     EnvironmentVariables = env,
