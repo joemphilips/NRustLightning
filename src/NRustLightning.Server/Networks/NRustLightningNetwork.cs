@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using NBitcoin;
 using NBitcoin.Altcoins;
@@ -28,6 +29,7 @@ namespace NRustLightning.Server.Networks
                 NetworkType.Mainnet => FFINetwork.MainNet,
                 NetworkType.Regtest => FFINetwork.RegTest,
                 NetworkType.Testnet => FFINetwork.TestNet,
+                _ => throw new Exception($"Unreachable!")
             };
     }
 
