@@ -20,3 +20,7 @@ docker-compose up
 docker-compose down -v --remove-orphans
 ```
 
+## CI
+
+We wanted to run this test in CI. But lnd behaves wanky and it returns code 500 sometimes, so we are not doing CI for now.
+
