@@ -16,7 +16,7 @@ RUN apt-get update \
 # Install Rust
 RUN curl https://sh.rustup.rs -sSf > /tmp/rustup-init.sh \
     && chmod +x /tmp/rustup-init.sh \
-    && sh /tmp/rustup-init.sh -y \
+    && sh /tmp/rustup-init.sh -y --default-toolchain none \
     && rm -rf /tmp/rustup-init.sh
 ENV PATH "$PATH:/root/.cargo/bin"
 RUN which cargo
@@ -28,14 +28,14 @@ ARG CONFIGURATION="Release"
 RUN echo "building with configuration: ${CONFIGURATION}"
 
 # --- workaround to restore only deps for caching. -- 
+WORKDIR /src/rust-lightning
 RUN USER=root cargo new --lib lightning
 RUN USER=root cargo new --lib bindings
-RUN USER=root cargo new --bin lightning-net-tokio
+RUN USER=root cargo new --bin lightning-net-tokio # without this, workspace complains that the pacakge does not exist.
 COPY rust-lightning/Cargo* ./
-COPY rust-lightning/bindings/Cargo.toml ./bindings/
-COPY rust-lightning/lightning/Cargo.toml ./lightning/
-COPY rust-lightning/lightning-net-tokio/Cargo.toml ./lightning-net-tokio/
-RUN bash -c 'if [[ $CONFIGURATION == "Release" ]]; then cargo build --release; else cargo build; fi' && rm -rf bindings lightning lightning-net-tokio
+COPY rust-lightning/bindings/Cargo.toml ./bindings/Cargo.toml
+COPY rust-lightning/lightning/Cargo.toml ./lightning/Cargo.toml
+RUN bash -c 'if [[ $CONFIGURATION == "Release" ]]; then cargo build --release; else cargo build; fi' && rm -rf bindings lightning
 # -- --
 
 COPY rust-lightning/lightning ./lightning/

@@ -37,7 +37,7 @@ namespace NRustLightning.Server
             {
                 logger.LogTrace($"Writing: {Hex.Encode(data.AsSpan())}");
                 Output.Write(data.AsSpan());
-                var _ = Output.FlushAsync().Result;
+                var _ = Output.FlushAsync().GetAwaiter().GetResult();
                 return Disconnected ? (UIntPtr)0 : data.len;
             };
             disconnectSocket = () =>

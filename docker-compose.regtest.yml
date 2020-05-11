@@ -5,7 +5,7 @@ services:
     build:
       context: ./Dockerfiles
       dockerfile: bitcoin
-    image: joemphilips/bitcoind
+    image: joemphilips/bitcoind:0.19.1
     environment:
       BITCOIN_NETWORK: regtest
     user: root:root
@@ -38,10 +38,12 @@ services:
       - "./data/.bitcoin:/data"
   lnd:
     restart: unless-stopped
-    image: joemphilips/lnd
+    image: joemphilips/lnd:v0.9.0-beta
     build:
       context: ./Dockerfiles
       dockerfile: lnd
+      args:
+        LND_VERSION: v0.9.0-beta
     entrypoint: ["./start-lnd.sh"]
     environment:
       NETWORK: regtest
@@ -76,7 +78,7 @@ services:
     volumes:
       - "./data/.lnd:/data"
       - "./data/.bitcoin:/deps/.bitcoin"
-    links:
+    depends_on:
       - bitcoind
     networks:
       main:
@@ -93,7 +95,7 @@ services:
       # - --network=bitcoin
       - --network=regtest
       - --plugin-dir=/usr/local/bin/plugins
-      - --alias=jem2323-lighningd1
+      - --alias=regtest-lighningd1
       - --log-level=debug
       - --lightning-dir=/root/.lightning
     environment:
@@ -106,6 +108,8 @@ services:
       - "0.0.0.0:9999:9735"
       - "0.0.0.0:9835:9835"
       - "0.0.0.0:9900:9900"
+    depends_on:
+      - bitcoind
     networks:
       main:
         aliases:
@@ -121,9 +125,19 @@ services:
       dockerfile: src/NRustLightning.Server/Dockerfile
       args:
         CONFIGURATION: "Debug"
+    command:
+      - dotnet
+      - NRustLightning.Server.dll
+      - --https.cert="/root/.aspnet/https/aspnetapp.pfx"
+      - --https.certpass=ssa0022nb
+      - --https.port=443
+      - --httpport=80
+      - --externalip="nrustlightning:9735"
     ports:
       - "9735:9735"
       - "5001:5001"
+      - "443:443"
+      - "480:80"
     expose:
       - "9735"
     environment:
@@ -138,6 +152,7 @@ services:
       - "${HOME}/.aspnet/:/root/.aspnet/"
       - "${HOME}/.microsoft/usersecrets/:/root/.microsoft/usersecrets"
       - "./data/nrustlightning/:/root/.nrustlightning"
+      - ~/.vsdbg:/remote_debugger:rw
     networks:
       main:
         aliases:

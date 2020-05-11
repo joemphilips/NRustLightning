@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 
 namespace NRustLightning.Adaptors
@@ -37,6 +38,16 @@ namespace NRustLightning.Adaptors
 		///
 		/// Default value: true.
 		public byte commit_upfront_shutdown_pubkey;
+
+		public static ChannelConfig GetDefault()
+		{
+			return new ChannelConfig
+			{
+				fee_proportional_millionths = 0,
+				announced_channel = 0,
+				commit_upfront_shutdown_pubkey = 1,
+			};
+		}
 	}
 	[StructLayout(LayoutKind.Sequential)]
     public struct ChannelHandshakeConfig
@@ -61,6 +72,7 @@ namespace NRustLightning.Adaptors
         /// Default value: BREAKDOWN_TIMEOUT (currently 144), we enforce it as a minimum at channel
         /// opening so you can tweak config to ask for more security, not less.
         public ushort our_to_self_delay;
+        
         /// Set to the smallest value HTLC we will accept to process.
         ///
         /// This value is sent to our counterparty on channel-open and we close the channel any time
@@ -69,6 +81,16 @@ namespace NRustLightning.Adaptors
         /// Default value: 1. If the value is less than 1, it is ignored and set to 1, as is required
         /// by the protocol.
         public ulong our_htlc_minimum_msat;
+
+        public static ChannelHandshakeConfig GetDefault()
+        {
+	        return new ChannelHandshakeConfig
+	        {
+		        minimum_depth = 6,
+		        our_to_self_delay = 6 * 24,
+		        our_htlc_minimum_msat = 1,
+	        };
+        }
     }
 
 	[StructLayout(LayoutKind.Sequential)]
@@ -146,6 +168,23 @@ namespace NRustLightning.Adaptors
 	    /// Default value: MAX_LOCAL_BREAKDOWN_TIMEOUT (1008), which we also enforce as a maximum value
 	    /// so you can tweak config to reduce the loss of having useless locked funds (if your peer accepts)
 	    public ushort their_to_self_delay;
+
+	    public static ChannelHandshakeLimits GetDefault()
+	    {
+		    return new ChannelHandshakeLimits
+		    {
+			    min_funding_satoshis = 0,
+			    max_htlc_minimum_msat = UInt64.MaxValue,
+			    min_max_htlc_value_in_flight_msat = 0,
+			    max_channel_reserve_satoshis = UInt64.MaxValue,
+			    min_max_accepted_htlcs = 0,
+			    min_dust_limit_satoshis = 546,
+			    max_dust_limit_satoshis = UInt64.MaxValue,
+			    max_minimum_depth = 144,
+			    force_announced_channel_preference = 1,
+			    their_to_self_delay = 6 * 24 * 7
+		    };
+	    }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -159,5 +198,15 @@ namespace NRustLightning.Adaptors
 
 	    /// Channel config which affects behavior during channel lifetime.
 	    public ChannelConfig channel_options;
+
+	    public static UserConfig GetDefault()
+	    {
+		    return new UserConfig
+		    {
+			    own_channel_config =  ChannelHandshakeConfig.GetDefault(),
+			    peer_channel_config_limits = ChannelHandshakeLimits.GetDefault(),
+			    channel_options = ChannelConfig.GetDefault()
+		    };
+	    }
     }
 }

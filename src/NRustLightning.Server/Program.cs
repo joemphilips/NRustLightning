@@ -1,27 +1,37 @@
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NRustLightning.Server.Configuration;
+using NRustLightning.Server.Configuration.SubConfiguration;
 
 namespace NRustLightning.Server
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            var command = Configuration.CommandLine.GetRootCommand();
+            command.Handler = CommandHandler.Create((ParseResult parseResult) =>
+            {
+                CreateHostBuilder(args, parseResult).Build().Run();
+            });
+            await command.InvokeAsync(args);
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args)
+        public static IHostBuilder CreateHostBuilder(string[] args, ParseResult parseResult)
         {
             Func<IConfigurationBuilder, IConfigurationBuilder> configureConfig =
                 builder =>
@@ -29,34 +39,24 @@ namespace NRustLightning.Server
                     builder.SetBasePath(Directory.GetCurrentDirectory());
                     Directory.CreateDirectory(Constants.HomeDirectoryPath);
                     var iniFile = Path.Join(Constants.HomeDirectoryPath, "nrustlightning.conf");
-                    if (!File.Exists(iniFile))
+                    if (File.Exists(iniFile))
                     {
-                        File.Create(iniFile);
+                        builder.AddIniFile(iniFile);
                     }
-
-                    builder.AddIniFile(iniFile);
                     builder.AddEnvironmentVariables(prefix: "NRUSTLIGHTNING_");
-                    return builder.AddCommandLine(args);
+                    return builder.AddCommandLineOptions(parseResult);
                 };
 
-            Action<ILoggingBuilder> configureLogging = builder =>
-            {
-                builder.AddConsole();
-                builder.AddDebug();
-                builder.SetMinimumLevel(LogLevel.Debug);
-            };
-            var s = new ServiceCollection();
-            s.AddLogging(configureLogging);
-            var logger = s.BuildServiceProvider().GetService<ILoggerFactory>().CreateLogger<Program>();
+            var logger = Startup.GetStartupLoggerFactory().CreateLogger<Program>();
             
             var config = configureConfig(new ConfigurationBuilder()).Build();
-            var v = config.GetValue<string>("P2PAllowIp");
-            var isListenAllIp = (v is null) || v == "*";
-            var maybeP2PPort = config.GetValue<int>("P2Port");
-            var p2pPort = maybeP2PPort == 0 ? Constants.DefaultP2PPort : maybeP2PPort;
+            
+            var v = config.GetValue("bind", "*");
+            var isListenAllIp = v == "*";
+            
+            var p2pPort = config.GetValue("port", Constants.DefaultP2PPort);
 
-            var maybeHttpPort = config.GetValue<int>("HTTPPort");
-            var httpPort = maybeHttpPort == 0 ? Constants.DefaultHttpPort : maybeHttpPort;
+            var httpPort = config.GetValue("httpport", Constants.DefaultHttpPort);
 
             return
                 Host.CreateDefaultBuilder(args)
@@ -69,16 +69,19 @@ namespace NRustLightning.Server
                         {
                             listenOptions.UseConnectionLogging();
                         });
+                        
                         var httpsConf = config.GetSection("https");
-                        if (httpsConf.Exists())
+                        var noHttps = config.GetValue<bool>("nohttps");
+                        if (!noHttps && httpsConf.Exists())
                         {
                             var https = new HttpsConfig();
                             httpsConf.Bind(https);
-                            logger.LogDebug($"https config is port: {https.Port}. cert: {https.CertName}. pass: {https.CertPass}");
+                            logger.LogDebug($"https config is port: {https.Port}. cert: {https.Cert}. pass: {https.CertPass}");
                             options.ListenAnyIP(https.Port, listenOptions =>
                             {
                                 listenOptions.UseConnectionLogging();
-                                listenOptions.UseHttps(https.CertName, https.CertPass);
+                                listenOptions.UseHttps(https.Cert, https.CertPass);
+                                listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
                             });
                         }
 
@@ -93,7 +96,7 @@ namespace NRustLightning.Server
                         }
                         else
                         {
-                            var allowedIpEndPoint = IPEndPoint.Parse(v);
+                            var allowedIpEndPoint = new IPEndPoint(IPAddress.Parse(v), p2pPort);
                             logger.LogInformation($"Listening for P2P message from {allowedIpEndPoint}");
                             options.Listen(allowedIpEndPoint, listenOptions =>
                             {

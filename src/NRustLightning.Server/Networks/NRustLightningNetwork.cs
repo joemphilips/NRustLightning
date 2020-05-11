@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using NBitcoin;
 using NBitcoin.Altcoins;
@@ -21,11 +22,14 @@ namespace NRustLightning.Server.Networks
         public Network NBitcoinNetwork { get; }
         public string CryptoCode { get; }
 
+        public bool SupportCookieAuthentication { get; internal set; } = true;
+
         internal FFINetwork FFINetwork => NBitcoinNetwork.NetworkType switch
             {
                 NetworkType.Mainnet => FFINetwork.MainNet,
                 NetworkType.Regtest => FFINetwork.RegTest,
                 NetworkType.Testnet => FFINetwork.TestNet,
+                _ => throw new Exception($"Unreachable!")
             };
     }
 

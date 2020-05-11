@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Options;
 using NBXplorer;
 using NRustLightning.Server.Configuration;
+using NRustLightning.Server.Configuration.SubConfiguration;
 using NRustLightning.Server.Networks;
 
 namespace NRustLightning.Server.Services

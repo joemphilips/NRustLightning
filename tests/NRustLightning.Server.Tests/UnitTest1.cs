@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Autofac;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -13,6 +14,8 @@ namespace NRustLightning.Server.Tests
 {
     public class UnitTest1
     {
+        public IServiceProvider sp;
+
         [Fact]
         public async Task Test1()
         {
@@ -20,17 +23,10 @@ namespace NRustLightning.Server.Tests
             {
                 webHost.UseTestServer();
                 webHost.UseEnvironment("Test");
-                webHost.Configure(async ctx => {});
+                webHost.Configure(ctx => {});
             });
 
             var host = await hostBuilder.StartAsync();
-        }
-
-        [Fact]
-        public void RunRegisteredTests()
-        {
-            var service = new ServiceCollection();
-            service.AddTestCaseRunnerModule("tmp");
         }
     }
 }

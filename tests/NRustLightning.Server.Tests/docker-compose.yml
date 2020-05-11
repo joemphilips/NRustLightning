@@ -1,0 +1,151 @@
+version: "3"
+services:
+  bitcoind:
+    restart: unless-stopped
+    image: joemphilips/bitcoind:0.19.1
+    environment:
+      BITCOIN_NETWORK: regtest
+    user: root:root
+    command:
+      - bitcoind
+      - -regtest
+      - -datadir=/data
+      - -rpcauth=${BITCOIND_RPC_AUTH:?no_bitcoind_rpc_auth_set}
+      - -rpcport=${BITCOIND_RPC_PORT:?no_bitcoind_rpc_port_set}
+      - -rpcbind=0.0.0.0:${BITCOIND_RPC_PORT}
+      - -rpcallowip=0.0.0.0/0
+      - -port=39388
+      - -txindex=1
+      - -zmqpubrawblock=tcp://0.0.0.0:28332
+      - -zmqpubrawtx=tcp://0.0.0.0:28333
+      - -deprecatedrpc=signrawtransaction
+      - -assumevalid=00000000000000000012d0c0982d818aa909d78e54525b10563c698d89997632
+    ports:
+      - "${BITCOIND_RPC_PORT}:${BITCOIND_RPC_PORT}"
+    expose:
+      - "${BITCOIND_RPC_PORT}" # RPC
+      - "39388" # P2P
+      - "28332" # ZMQ
+      - "28333" # ZMQ
+    networks:
+      main:
+        aliases:
+          - bitcoind
+    volumes:
+      - "${DATA_PATH:?datapath_not_set}/.bitcoin:/data"
+  lnd:
+    restart: unless-stopped
+    image: joemphilips/lnd:v0.9.0-beta
+    entrypoint: ["./start-lnd.sh"]
+    environment:
+      NETWORK: regtest
+    command:
+      - --restlisten=0.0.0.0:${LND_REST_PORT:?no_lnd_rest_port}
+      - --bitcoin.regtest
+      - --bitcoin.node=bitcoind
+      - --bitcoind.rpchost=bitcoind:${BITCOIND_RPC_PORT}
+      - --bitcoind.rpcuser=${BITCOIND_RPC_USER:?no_bitcoind_rpc_user_set}
+      - --bitcoind.rpcpass=${BITCOIND_RPC_PASS:?no_bitcoind_rpc_pass_set}
+      - --bitcoind.zmqpubrawblock=tcp://bitcoind:28332
+      - --bitcoind.zmqpubrawtx=tcp://bitcoind:28333
+      - --trickledelay=1000
+      - --externalip=lnd:9888
+      - --debuglevel=trace
+      # - --no-macaroons
+      - --datadir=/data
+      - --debuglevel=debug
+      - --noseedbackup
+      - --tlscertpath=/data/tls.cert
+      - --tlskeypath=/data/tls.key
+      - --tlsextradomain=lnd
+    ports:
+      - "${LND_REST_PORT}:${LND_REST_PORT}"
+    expose:
+      - "9888"
+      - "${LND_REST_PORT}"
+    volumes:
+      - "${DATA_PATH}/.lnd:/data"
+      - "${DATA_PATH}/.bitcoin:/deps/.bitcoin"
+    depends_on:
+      - bitcoind
+    networks:
+      main:
+        aliases:
+          - lnd
+  lightningd:
+    restart: "unless-stopped"
+    stop_signal: SIGKILL
+    image: btcpayserver/lightning:v0.8.2-dev
+    environment:
+      EXPOSE_TCP: "true"
+      LIGHTNINGD_NETWORK: regtest
+      LIGHTNINGD_CHAIN: btc
+      LIGHTNINGD_OPT: |
+        bitcoin-datadir=/etc/bitcoin
+        bitcoin-rpcconnect=bitcoind
+        bitcoin-rpcuser=${BITCOIND_RPC_USER}
+        bitcoin-rpcpassword=${BITCOIND_RPC_PASS}
+        bitcoin-rpcport=${BITCOIND_RPC_PORT}
+        network=regtest
+        announce-addr=lightningd
+        log-level=debug
+        dev-fast-gossip
+        dev-bitcoind-poll=1
+    expose:
+      - "9735" # p2p port
+      - "9835" # rpc port
+    ports:
+      - 0.0.0.0:${LIGHTNINGD_RPC_PORT:?no_lightningd_rpc_port_set}:9835
+    depends_on:
+      - bitcoind
+    networks:
+      main:
+        aliases:
+          - lightningd
+    # We wanted to use bind mount here, but sometimes socket name becomes
+    # Too long and lightningd cannot bind rpc socket.
+    volumes:
+      - "lightningd_dir:/root/.lightning"
+      - "${DATA_PATH}/.bitcoin:/etc/bitcoin"
+
+  nrustlightning:
+    restart: "unless-stopped"
+    image: joemphilips/nrustlightning
+    build:
+      context: ../..
+      dockerfile: src/NRustLightning.Server/Dockerfile
+      args:
+        CONFIGURATION: "Debug"
+    command:
+      - dotnet
+      - NRustLightning.Server.dll
+      - --nohttps
+      - --httpport=80
+      - --externalip="nrustlightning:9735"
+    ports:
+      - "9735:9735"
+      - "${HTTP_PORT:?no_http_port_set}:80"
+    expose:
+      - "9735"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - RUST_BACKTRACE=1
+      #- ASPNETCORE_URLS="https://+;http://+"
+    links:
+      - bitcoind
+      - lnd
+    volumes:
+      - "${HOME}/.aspnet/:/root/.aspnet/"
+      - "${HOME}/.microsoft/usersecrets/:/root/.microsoft/usersecrets"
+      - "${DATA_PATH}/nrustlightning/:/root/.nrustlightning"
+    networks:
+      main:
+        aliases:
+          - nrustlightning
+ 
+
+volumes:
+  lightningd_dir:
+
+networks:
+  main:
