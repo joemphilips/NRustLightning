@@ -46,8 +46,10 @@ namespace NRustLightning.Server.Configuration
             foreach (var op in CommandLine.GetOptions())
             {
                 var s = op.Name.Replace(".", ":");
-                var name = commandline.CommandResult.ValueForOption<string>(op.Name);
-                dict.Add(s, name);
+                var v = commandline.CommandResult.ValueForOption<object>(op.Name);
+                if (v != null){
+                    dict.Add(s, v.ToString());
+                }
             }
             return config.AddInMemoryCollection(dict);
         }

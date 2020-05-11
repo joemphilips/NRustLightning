@@ -71,7 +71,8 @@ namespace NRustLightning.Server
                         });
                         
                         var httpsConf = config.GetSection("https");
-                        if (httpsConf.Exists())
+                        var noHttps = config.GetValue<bool>("nohttps");
+                        if (!noHttps && httpsConf.Exists())
                         {
                             var https = new HttpsConfig();
                             httpsConf.Bind(https);

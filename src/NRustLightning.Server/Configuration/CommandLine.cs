@@ -64,6 +64,14 @@ namespace NRustLightning.Server.Configuration
                             Arity = ArgumentArity.ZeroOrOne
                         }
                     },
+                    
+                    new Option<string>("--nohttps", $"do not run https")
+                    {
+                        Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ZeroOrOne
+                        }
+                    },
                     new Option<string>("--https.port", $"port for listening HTTPs request: (default: {Constants.DefaultHttpsPort})")
                     {
                         Argument = new Argument<string> { Arity = ArgumentArity.ZeroOrOne }
