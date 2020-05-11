@@ -2,9 +2,6 @@ version: "3"
 services:
   bitcoind:
     restart: unless-stopped
-    build:
-      context: ../../Dockerfiles
-      dockerfile: bitcoin
     image: joemphilips/bitcoind:0.19.1
     environment:
       BITCOIN_NETWORK: regtest
@@ -39,9 +36,6 @@ services:
   lnd:
     restart: unless-stopped
     image: joemphilips/lnd:v0.9.0-beta
-    build:
-      context: ../../Dockerfiles
-      dockerfile: lnd
     entrypoint: ["./start-lnd.sh"]
     environment:
       NETWORK: regtest
