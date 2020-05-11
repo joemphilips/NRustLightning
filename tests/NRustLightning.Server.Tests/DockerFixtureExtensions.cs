@@ -61,7 +61,7 @@ namespace NRustLightning.Server.Tests
                     DockerComposeFiles = new[] {"docker-compose.yml"},
                     EnvironmentVariables = env,
                     DockerComposeDownArgs = "--remove-orphans --volumes",
-                    StartupTimeoutSecs = 600,
+                    StartupTimeoutSecs = 400,
                     CustomUpTest = o =>
                     {
                         return
@@ -80,7 +80,6 @@ namespace NRustLightning.Server.Tests
                 }
             }
             
-            await Task.Delay(4000);
             var lndMacaroonPath = Path.Join(dataPath, ".lnd", "chain", "bitcoin", "regtest", "admin.macaroon");
             var lndTlsCertThumbPrint = GetCertificateFingerPrintHex(Path.Join(dataPath, ".lnd", "tls.cert"));
             var clients = new Clients(
