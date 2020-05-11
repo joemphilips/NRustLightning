@@ -56,12 +56,12 @@ namespace NRustLightning.Server.Tests
             };
             try
             {
-                await dockerFixture.InitOnceAsync(() => new DockerFixtureOptions
+                await dockerFixture.InitWithRetry(() => new DockerFixtureOptions
                 {
                     DockerComposeFiles = new[] {"docker-compose.yml"},
                     EnvironmentVariables = env,
                     DockerComposeDownArgs = "--remove-orphans --volumes",
-                    StartupTimeoutSecs = 600,
+                    StartupTimeoutSecs = 400,
                     CustomUpTest = o =>
                     {
                         return
@@ -69,7 +69,7 @@ namespace NRustLightning.Server.Tests
                             && o.Any(x => x.Contains("Server started with public key")) // lightningd is up
                             && o.Any(x => x.Contains("BTCN: Server listening on")); // lnd is up
                     }
-                });
+                }, 4);
             }
             catch (DockerComposeException ex)
             {
@@ -80,7 +80,8 @@ namespace NRustLightning.Server.Tests
                 }
             }
             
-            await Task.Delay(4000);
+            // Without this, lnd behaves wacky in low CPU environment (e.g. CI env)
+            await Task.Delay(3000);
             var lndMacaroonPath = Path.Join(dataPath, ".lnd", "chain", "bitcoin", "regtest", "admin.macaroon");
             var lndTlsCertThumbPrint = GetCertificateFingerPrintHex(Path.Join(dataPath, ".lnd", "tls.cert"));
             var clients = new Clients(

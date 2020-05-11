@@ -41,6 +41,7 @@ services:
       NETWORK: regtest
     command:
       - --restlisten=0.0.0.0:${LND_REST_PORT:?no_lnd_rest_port}
+      - --rpclisten=0.0.0.0:32777
       - --bitcoin.regtest
       - --bitcoin.node=bitcoind
       - --bitcoind.rpchost=bitcoind:${BITCOIND_RPC_PORT}
