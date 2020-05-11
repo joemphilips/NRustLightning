@@ -61,7 +61,7 @@ namespace NRustLightning.Server.Tests
                     DockerComposeFiles = new[] {"docker-compose.yml"},
                     EnvironmentVariables = env,
                     DockerComposeDownArgs = "--remove-orphans --volumes",
-                    StartupTimeoutSecs = 200,
+                    StartupTimeoutSecs = 400,
                     CustomUpTest = o =>
                     {
                         return
