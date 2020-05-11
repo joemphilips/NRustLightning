@@ -67,7 +67,7 @@ namespace NRustLightning.Server.Tests
                         return
                             o.Any(x => x.Contains("Content root path: /app")) // nrustlightning is up
                             && o.Any(x => x.Contains("Server started with public key")) // lightningd is up
-                            && o.Any(x => x.Contains("gRPC proxy started at")); // lnd is up
+                            && o.Any(x => x.Contains("BTCN: Server listening on")); // lnd is up
                     }
                 });
             }
