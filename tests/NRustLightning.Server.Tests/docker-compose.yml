@@ -5,7 +5,7 @@ services:
     build:
       context: ../../Dockerfiles
       dockerfile: bitcoin
-    image: joemphilips/bitcoind
+    image: joemphilips/bitcoind:0.19.1
     environment:
       BITCOIN_NETWORK: regtest
     user: root:root
@@ -38,7 +38,7 @@ services:
       - "${DATA_PATH:?datapath_not_set}/.bitcoin:/data"
   lnd:
     restart: unless-stopped
-    image: joemphilips/lnd
+    image: joemphilips/lnd:v0.9.0-beta
     build:
       context: ../../Dockerfiles
       dockerfile: lnd
