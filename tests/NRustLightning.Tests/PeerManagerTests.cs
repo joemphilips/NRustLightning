@@ -46,6 +46,9 @@ namespace NRustLightning.Tests
             using var peerMan = getTestPeerManager();
             var socket1 = socketFactory.GetNewSocket();
             peerMan.NewInboundConnection(socket1);
+            var socket2 = socketFactory.GetNewSocket();
+            var theirNodeId = _pubKeys[1];
+            peerMan.NewOutboundConnection(socket2, theirNodeId.ToBytes());
             peerMan.Dispose();
         }
     }
