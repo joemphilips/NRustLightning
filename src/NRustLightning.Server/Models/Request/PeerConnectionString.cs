@@ -9,7 +9,7 @@ using static DotNetLightning.Utils.Primitives;
 
 namespace NRustLightning.Server.Models.Request
 {
-    [ModelBinder(BinderType = typeof(PeerConnectionStringModelBinders))]
+    
     [JsonConverter(typeof(PeerConnectionStringConverter))]
     public class PeerConnectionString
     {

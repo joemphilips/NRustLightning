@@ -1,37 +1,46 @@
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Mvc;
 using NRustLightning.Server.Interfaces;
+using NRustLightning.Server.ModelBinders;
 using NRustLightning.Server.Models.Request;
+using NRustLightning.Server.P2P;
 using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("/v1/[controller]")]
     public class PeerController : ControllerBase
     {
-        private readonly IConnectionFactory connectionFactory;
+        private readonly P2PConnectionHandler _connectionHandler;
         public PeerManagerProvider PeerManagerProvider { get; }
         public ISocketDescriptorFactory SocketDescriptorFactory { get; }
 
-        public PeerController(PeerManagerProvider peerManagerProvider, ISocketDescriptorFactory socketDescriptorFactory, IConnectionFactory connectionFactory)
+        public PeerController(PeerManagerProvider peerManagerProvider, ISocketDescriptorFactory socketDescriptorFactory, P2PConnectionHandler connectionHandler)
         {
-            this.connectionFactory = connectionFactory;
+            _connectionHandler = connectionHandler;
             PeerManagerProvider = peerManagerProvider;
             SocketDescriptorFactory = socketDescriptorFactory;
         }
         
         [HttpPost]
-        [Route("{cryptoCode}/connect")]
-        public async Task<bool> Connect(string cryptoCode, PeerConnectionString connectionString)
+        [Route("connect")]
+        public async Task<bool> Connect(
+            //[ModelBinder(BinderType = typeof(PeerConnectionStringModelBinders))]
+            [FromBody]string connectionString)
         {
-            var peer = PeerManagerProvider.GetPeerManager(cryptoCode) ?? throw new NotSupportedException(cryptoCode);
-            var conn = await connectionFactory.ConnectAsync(connectionString.EndPoint);
-            peer.NewOutboundConnection(SocketDescriptorFactory.GetNewSocket(conn.Transport.Output), connectionString.NodeId.ToBytes());
-            throw new NotImplementedException();
+            if (PeerConnectionString.TryCreate(connectionString, out var conn))
+            {
+                var isNewPeer =
+                    await _connectionHandler.NewOutbound(conn.EndPoint, conn.NodeId);
+                return isNewPeer;
+            }
+
+            throw new HttpRequestException($"Invalid connection string {connectionString}");
         }
     }
 }

@@ -30,21 +30,26 @@ namespace NRustLightning.Server.Tests
             var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(StatelessDockerComposeTests));
             var blockchainInfo = await clients.BitcoinRPCClient.GetBlockchainInfoAsync();
             Assert.NotNull(blockchainInfo);
-            var lndInfo = await clients.LndClient.SwaggerClient.GetInfoAsync();
-            Assert.NotNull(lndInfo.Version);
+            var lndInfo = await clients.LndLNClient.GetInfo();
+            Assert.NotEmpty(lndInfo.NodeInfoList);
             var clightningInfo = await clients.CLightningClient.GetInfoAsync();
             Assert.NotEmpty(clightningInfo.Address);
             Assert.NotNull(clightningInfo.Network);
             Assert.NotNull(clightningInfo.Id);
             Assert.NotNull(clightningInfo.Version);
-            var info = await clients.HttpClient.GetInfoAsync();
+            var info = await clients.NRustLightningHttpClient.GetInfoAsync();
             Assert.NotNull(info.ConnectionString);
             
-            var ourInfo = await clients.HttpClient.GetInfoAsync();
+            var ourInfo = await clients.NRustLightningHttpClient.GetInfoAsync();
             NodeInfo.TryParse(ourInfo.ConnectionString.ToString(), out var nodeInfo);
-            await ((ILightningClient)clients.LndClient).ConnectTo(nodeInfo);
+            await clients.LndLNClient.ConnectTo(nodeInfo);
+
+            await Task.Delay(1000);
+            
             var lndPeerInfo = await clients.LndClient.SwaggerClient.ListPeersAsync();
             Assert.Single(lndPeerInfo.Peers);
+
+            // await clients.NRustLightningHttpClient.ConnectAsync(lndInfo.NodeInfoList.FirstOrDefault().ToConnectionString());
         }
     }
 }

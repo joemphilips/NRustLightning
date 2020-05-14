@@ -16,6 +16,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Configuration.SubConfiguration;
+using NRustLightning.Server.P2P;
 
 namespace NRustLightning.Server
 {
