@@ -32,11 +32,8 @@ namespace NRustLightning.Server.Tests
             Assert.NotNull(blockchainInfo);
             var lndInfo = await clients.LndLNClient.GetInfo();
             Assert.NotEmpty(lndInfo.NodeInfoList);
-            var clightningInfo = await clients.CLightningClient.GetInfoAsync();
-            Assert.NotEmpty(clightningInfo.Address);
-            Assert.NotNull(clightningInfo.Network);
-            Assert.NotNull(clightningInfo.Id);
-            Assert.NotNull(clightningInfo.Version);
+            var clightningInfo = await clients.ClightningLNClient.GetInfo();
+            Assert.NotNull(clightningInfo);
             var info = await clients.NRustLightningHttpClient.GetInfoAsync();
             Assert.NotNull(info.ConnectionString);
             
@@ -44,12 +41,18 @@ namespace NRustLightning.Server.Tests
             NodeInfo.TryParse(ourInfo.ConnectionString.ToString(), out var nodeInfo);
             await clients.LndLNClient.ConnectTo(nodeInfo);
 
-            await Task.Delay(1000);
+            await Task.Delay(200);
             
             var lndPeerInfo = await clients.LndClient.SwaggerClient.ListPeersAsync();
             Assert.Single(lndPeerInfo.Peers);
+            
+            await clients.NRustLightningHttpClient.ConnectAsync(clightningInfo.NodeInfoList.FirstOrDefault().ToConnectionString());
 
-            // await clients.NRustLightningHttpClient.ConnectAsync(lndInfo.NodeInfoList.FirstOrDefault().ToConnectionString());
+            await Task.Delay(200);
+            var clightningPeerInfo = await clients.CLightningClient.ListPeersAsync();
+            Assert.Single(clightningPeerInfo);
+            Assert.Equal(clightningPeerInfo.First().Id, ourInfo.ConnectionString.NodeId.ToHex());
+            // Assert.Equal(clightningInfo.NodeInfoList.First().ToConnectionString(), ourInfo.ConnectionString);
         }
     }
 }
