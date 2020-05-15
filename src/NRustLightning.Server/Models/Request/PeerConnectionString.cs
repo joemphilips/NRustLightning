@@ -53,6 +53,13 @@ namespace NRustLightning.Server.Models.Request
         public PubKey NodeId { get; set; }
         public EndPoint EndPoint { get; set; }
 
+        public override bool Equals(object? obj)
+        {
+            return (obj != null && obj is PeerConnectionString other && other.ToString() == this.ToString());
+        }
+
+        public override int GetHashCode() => this.ToString().GetHashCode();
+
         public override string ToString() => $"{NodeId.ToHex()}@{EndPoint.ToEndpointString()}";
     }
 }
