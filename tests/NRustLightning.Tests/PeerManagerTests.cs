@@ -48,7 +48,8 @@ namespace NRustLightning.Tests
             peerMan.NewInboundConnection(socket1);
             var socket2 = socketFactory.GetNewSocket();
             var theirNodeId = _pubKeys[1];
-            peerMan.NewOutboundConnection(socket2, theirNodeId.ToBytes());
+            var actOne = peerMan.NewOutboundConnection(socket2, theirNodeId.ToBytes());
+            Assert.Equal(50, actOne.Length);
             peerMan.Dispose();
         }
     }

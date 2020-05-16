@@ -103,7 +103,8 @@ namespace NRustLightning
             ref SendData sendData,
             ref DisconnectSocket disconnectSocket,
             ref FFIPublicKey theirNodeId,
-            PeerManagerHandle handle
+            PeerManagerHandle handle,
+            out FFIBytes initialSend
             );
 
         internal static FFIResult new_outbound_connection(
@@ -112,8 +113,9 @@ namespace NRustLightning
             ref DisconnectSocket disconnectSocket,
             ref FFIPublicKey theirNodeId,
             PeerManagerHandle handle,
+            out FFIBytes initialSend,
             bool check = true
-        ) => MaybeCheck(_new_outbound_connection(index, ref sendData, ref disconnectSocket, ref theirNodeId, handle), check);
+        ) => MaybeCheck(_new_outbound_connection(index, ref sendData, ref disconnectSocket, ref theirNodeId, handle, out initialSend), check);
 
         [DllImport(RustLightning, EntryPoint = "write_buffer_space_avail", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _write_buffer_space_avail(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket, PeerManagerHandle handle);
