@@ -73,7 +73,9 @@ namespace NRustLightning.Server.P2P
             {
                 var connectionContext = await _connectionFactory.ConnectAsync(remoteEndPoint, ct);
                 var descriptor = descriptorFactory.GetNewSocket(connectionContext.Transport.Output);
-                PeerManager.NewOutboundConnection(descriptor, pubkey.ToBytes());
+                var initialSend = PeerManager.NewOutboundConnection(descriptor, pubkey.ToBytes());
+                await connectionContext.Transport.Output.WriteAsync(initialSend, ct);
+                await connectionContext.Transport.Output.FlushAsync(ct);
                 var conn = new ConnectionLoop(connectionContext.Transport, descriptor, PeerManager,
                     _loggerFactory.CreateLogger<ConnectionLoop>());
                 _connectionLoops.Add(remoteEndPoint, conn);
@@ -81,7 +83,7 @@ namespace NRustLightning.Server.P2P
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.ConnectionRefused)
             {
-                _logger.LogError($"{ex.Message}");
+                _logger.LogError($"{ex.Message}:{Environment.NewLine}{ex.StackTrace}");
                 return false;
             }
 
