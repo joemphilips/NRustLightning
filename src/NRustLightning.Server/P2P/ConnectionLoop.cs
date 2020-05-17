@@ -34,6 +34,7 @@ namespace NRustLightning.Server.P2P
             _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             _logger.LogTrace($"Starting connection loop: {_id}");
             ExecutionTask = StartLoop(_cts.Token);
+            _logger.LogTrace($"Finish starting loop");
         }
 
         

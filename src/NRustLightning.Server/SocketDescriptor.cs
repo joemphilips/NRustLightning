@@ -10,7 +10,7 @@ using NRustLightning.Utils;
 
 namespace NRustLightning.Server
 {
-    public class DuplexPipeSocketDescriptor : ISocketDescriptor
+    public class SocketDescriptor : ISocketDescriptor
     {
         public UIntPtr Index { get; }
 
@@ -23,6 +23,7 @@ namespace NRustLightning.Server
         private DisconnectSocket disconnectSocket;
 
         public PipeWriter Output;
+        private readonly ILogger<SocketDescriptor> _logger;
 
         /// <summary>
         /// If this is true, that means rust-lightning has told us
@@ -30,15 +31,21 @@ namespace NRustLightning.Server
         /// </summary>
         public bool Disconnected { get; set; } = false;
         
-        public DuplexPipeSocketDescriptor(UIntPtr index,  PipeWriter output, ILogger<DuplexPipeSocketDescriptor> logger)
+        public SocketDescriptor(UIntPtr index,  PipeWriter output, ILogger<SocketDescriptor> logger)
         {
             Index = index;
             Output = output ?? throw new ArgumentNullException(nameof(output));
+            _logger = logger;
             sendData = (data, resumeRead) =>
             {
                 Debug.Assert(data.AsSpan().SequenceEqual(data.AsArray()), "Span and memory must be same inside a delegate", $"span: {Hex.Encode(data.AsSpan())}, array: {Hex.Encode(data.AsArray())}");
+                _logger.LogTrace($"sending {Hex.Encode(data.AsSpan())}");
                 Output.Write(data.AsSpan());
-                var r = Output.FlushAsync().GetAwaiter().GetResult();
+                var flushTask = Output.FlushAsync();
+                if (!flushTask.IsCompleted)
+                {
+                    flushTask.ConfigureAwait(false).GetAwaiter().GetResult();
+                }
                 return Disconnected ? (UIntPtr)0 : data.len;
             };
             disconnectSocket = () =>

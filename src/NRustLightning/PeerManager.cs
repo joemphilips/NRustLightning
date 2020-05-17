@@ -4,6 +4,7 @@ using System.Threading;
 using NRustLightning.Adaptors;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
+using NRustLightning.Utils;
 
 namespace NRustLightning
 {
@@ -88,15 +89,14 @@ namespace NRustLightning
         /// </summary>
         /// <param name="descriptor"></param>
         /// <param name="theirNodeId"></param>
-        /// <param name="initialSend"></param>
         public unsafe byte[] NewOutboundConnection(ISocketDescriptor descriptor, Span<byte> theirNodeId)
         {
             fixed (byte* p = theirNodeId)
             {
                 var pk = new FFIPublicKey((IntPtr)p, (UIntPtr)theirNodeId.Length);
                 Interop.new_outbound_connection(descriptor.Index, ref descriptor.SendData,
-                    ref descriptor.DisconnectSocket, ref pk, _handle, out var ffiBytes);
-                return ffiBytes.AsArray();
+                    ref descriptor.DisconnectSocket, ref pk, _handle, out var initialSend);
+                return initialSend.AsArray();
             }
         }
         public void WriteBufferSpaceAvail(ISocketDescriptor descriptor)

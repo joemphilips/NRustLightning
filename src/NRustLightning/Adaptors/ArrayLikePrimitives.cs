@@ -119,6 +119,7 @@ namespace NRustLightning.Adaptors
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFIBytes
     {
         internal readonly IntPtr ptr;
@@ -129,26 +130,6 @@ namespace NRustLightning.Adaptors
             this.len = len;
         }
         
-        public Span<byte> AsSpan()
-        {
-            var size = (int) len;
-            unsafe
-            {
-                return new Span<byte>(ptr.ToPointer(), size);
-            }
-        }
-        public byte[] AsArray()
-        {
-            var arr = new byte[(int)len];
-            var span = ptr.AsSpan();
-            span.CopyTo(arr);
-            return arr;
-        }
-
-        public Memory<byte> AsMemory()
-        {
-            return new Memory<byte>(this.AsArray());
-        }
     }
     
     # endregion

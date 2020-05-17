@@ -24,9 +24,9 @@ namespace NRustLightning.Tests.Utils
         {
             Index = index;
             Output = output ?? throw new ArgumentNullException(nameof(output));
-            _sendData = (ref FFIBytes data, byte resumeRead) =>
+            _sendData = (data, resumeRead) =>
             {
-                Debug.Assert(data.AsSpan().SequenceEqual(data.AsArray()), "Span and memory must be same inside delgate");
+                Debug.Assert(data.AsSpan().SequenceEqual(data.AsArray()), "Span and memory must be same inside a delegate");
                 Output.Write(data.AsSpan());
                 return Disconnected ? (UIntPtr)0 : data.len;
             };

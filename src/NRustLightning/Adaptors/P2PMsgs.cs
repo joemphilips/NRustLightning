@@ -8,10 +8,18 @@ namespace NRustLightning.Adaptors
         internal readonly IntPtr ptr;
         internal readonly UIntPtr len;
 
+        public Span<byte> AsSpan()
+        {
+            var size = (int) len;
+            unsafe
+            {
+                return new Span<byte>(ptr.ToPointer(), size);
+            }
+        }
         public byte[] AsArray()
         {
             var arr = new byte[(int)len];
-            var span = ptr.AsSpan();
+            var span = AsSpan();
             span.CopyTo(arr);
             return arr;
         }

@@ -21,7 +21,7 @@ namespace NRustLightning.Server.Services
         public ISocketDescriptor GetNewSocket(PipeWriter writer)
         {
             Interlocked.Add(ref CurrentNum, 1);
-            Sockets[CurrentNum] = new DuplexPipeSocketDescriptor((UIntPtr)CurrentNum, writer, loggerFactory.CreateLogger<DuplexPipeSocketDescriptor>());
+            Sockets[CurrentNum] = new SocketDescriptor((UIntPtr)CurrentNum, writer, loggerFactory.CreateLogger<SocketDescriptor>());
             return Sockets[(int)CurrentNum];
         }
     }

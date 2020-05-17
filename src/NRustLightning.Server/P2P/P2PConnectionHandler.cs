@@ -76,8 +76,11 @@ namespace NRustLightning.Server.P2P
                 var descriptor = descriptorFactory.GetNewSocket(connectionContext.Transport.Output);
                 var initialSend = PeerManager.NewOutboundConnection(descriptor, pubkey.ToBytes());
                 await connectionContext.Transport.Output.WriteAsync(initialSend, ct);
-                var _ = await connectionContext.Transport.Output.FlushAsync(ct);
-                connectionContext.Transport.Output.Advance(initialSend.Length);
+                var flushResult = connectionContext.Transport.Output.FlushAsync(ct);
+                if (!flushResult.IsCompleted)
+                {
+                    await flushResult.ConfigureAwait(false);
+                }
                 var conn = new ConnectionLoop(connectionContext.Transport, descriptor, PeerManager,
                     _loggerFactory.CreateLogger<ConnectionLoop>());
                 _connectionLoops.Add(remoteEndPoint, conn);
