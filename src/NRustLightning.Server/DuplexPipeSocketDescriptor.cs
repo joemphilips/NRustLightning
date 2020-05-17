@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
@@ -35,9 +36,9 @@ namespace NRustLightning.Server
             Output = output ?? throw new ArgumentNullException(nameof(output));
             sendData = (ref FFIBytes data, byte resumeRead) =>
             {
-                logger.LogTrace($"Writing: {Hex.Encode(data.AsSpan())}");
+                Debug.Assert(data.AsSpan().SequenceEqual(data.AsArray()), "Span and memory must be same inside a delegate");
                 Output.Write(data.AsSpan());
-                var _ = Output.FlushAsync().GetAwaiter().GetResult();
+                var r = Output.FlushAsync().GetAwaiter().GetResult();
                 return Disconnected ? (UIntPtr)0 : data.len;
             };
             disconnectSocket = () =>

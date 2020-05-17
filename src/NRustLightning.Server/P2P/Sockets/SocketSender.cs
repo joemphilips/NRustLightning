@@ -53,7 +53,6 @@ namespace NRustLightning.Server.P2P.Sockets
                 _eventArgs.BufferList = null;
             }
             _eventArgs.SetBuffer(MemoryMarshal.AsMemory(memory));
-
             if (!_socket.SendAsync(_eventArgs))
             {
                 _awaitable.Complete(_eventArgs.BytesTransferred, _eventArgs.SocketError);

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using NRustLightning.Utils;
 
 namespace NRustLightning.Server.P2P.Sockets
 {
@@ -213,7 +214,7 @@ namespace NRustLightning.Server.P2P.Sockets
                 var isCompleted = result.IsCompleted;
                 if (!buffer.IsEmpty)
                 {
-                    await _sender.SendAsync(buffer);
+                    var bytesSend = await _sender.SendAsync(buffer);
                 }
                 
                 _application.Input.AdvanceTo(end);

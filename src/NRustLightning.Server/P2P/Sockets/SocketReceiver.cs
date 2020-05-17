@@ -14,14 +14,14 @@ namespace NRustLightning.Server.P2P.Sockets
         {
             _socket = socket;
             _awaitable = new SocketAwaitable(scheduler);
+            _eventArgs.UserToken = _awaitable;
+            _eventArgs.Completed += (_, e) => { ((SocketAwaitable)e.UserToken).Complete(e.BytesTransferred, e.SocketError);};
         }
 
         public SocketAwaitable ReceiveAsync(Memory<byte> buffer)
         {
             _eventArgs.SetBuffer(buffer);
-            var segment = buffer.GetArray();
             
-            _eventArgs.SetBuffer(segment.Array, segment.Offset, segment.Count);
             if (!_socket.ReceiveAsync(_eventArgs))
             {
                 _awaitable.Complete(_eventArgs.BytesTransferred, _eventArgs.SocketError);

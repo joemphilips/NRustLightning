@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NRustLightning.Interfaces;
@@ -75,7 +76,8 @@ namespace NRustLightning.Server.P2P
                 var descriptor = descriptorFactory.GetNewSocket(connectionContext.Transport.Output);
                 var initialSend = PeerManager.NewOutboundConnection(descriptor, pubkey.ToBytes());
                 await connectionContext.Transport.Output.WriteAsync(initialSend, ct);
-                await connectionContext.Transport.Output.FlushAsync(ct);
+                var _ = await connectionContext.Transport.Output.FlushAsync(ct);
+                connectionContext.Transport.Output.Advance(initialSend.Length);
                 var conn = new ConnectionLoop(connectionContext.Transport, descriptor, PeerManager,
                     _loggerFactory.CreateLogger<ConnectionLoop>());
                 _connectionLoops.Add(remoteEndPoint, conn);
