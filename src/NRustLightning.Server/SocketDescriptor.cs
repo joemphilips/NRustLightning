@@ -34,9 +34,9 @@ namespace NRustLightning.Server
         {
             Index = index;
             Output = output ?? throw new ArgumentNullException(nameof(output));
-            sendData = (ref FFIBytes data, byte resumeRead) =>
+            sendData = (data, resumeRead) =>
             {
-                Debug.Assert(data.AsSpan().SequenceEqual(data.AsArray()), "Span and memory must be same inside a delegate");
+                Debug.Assert(data.AsSpan().SequenceEqual(data.AsArray()), "Span and memory must be same inside a delegate", $"span: {Hex.Encode(data.AsSpan())}, array: {Hex.Encode(data.AsArray())}");
                 Output.Write(data.AsSpan());
                 var r = Output.FlushAsync().GetAwaiter().GetResult();
                 return Disconnected ? (UIntPtr)0 : data.len;
