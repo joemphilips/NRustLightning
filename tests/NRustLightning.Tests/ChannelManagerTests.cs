@@ -57,7 +57,7 @@ namespace NRustLightning.Tests
             var routes = new RoutesWithFeature(route1);
             
             var paymentHash = new uint256();
-            var e = Assert.Throws<Exception>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
+            var e = Assert.Throws<FFIException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
             Assert.Equal("FFI against rust-lightning failed (InternalError), Error: AllFailedRetrySafe([No channel available with first hop!])", e.Message);
             channelManager.Dispose();
         }

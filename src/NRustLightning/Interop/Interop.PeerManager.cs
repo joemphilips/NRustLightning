@@ -104,7 +104,7 @@ namespace NRustLightning
             ref DisconnectSocket disconnectSocket,
             ref FFIPublicKey theirNodeId,
             PeerManagerHandle handle,
-            out FFIBytes initialSend
+            out ActOne initialSend
             );
 
         internal static FFIResult new_outbound_connection(
@@ -113,7 +113,7 @@ namespace NRustLightning
             ref DisconnectSocket disconnectSocket,
             ref FFIPublicKey theirNodeId,
             PeerManagerHandle handle,
-            out FFIBytes initialSend,
+            out ActOne initialSend,
             bool check = true
         ) => MaybeCheck(_new_outbound_connection(index, ref sendData, ref disconnectSocket, ref theirNodeId, handle, out initialSend), check);
 

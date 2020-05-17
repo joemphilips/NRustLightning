@@ -36,9 +36,19 @@ namespace NRustLightning.Adaptors
             // We need to use both because successful results won't
             // bother setting the id (it avoids some synchronization)
             if (lastResult._kind == _kind && lastResult._id == _id)
-                throw new Exception($"FFI against rust-lightning failed ({_kind}), {msg?.TrimEnd()}");
+                throw new FFIException($"FFI against rust-lightning failed ({_kind}), {msg?.TrimEnd()}", lastResult);
 
-            throw new Exception($"FFI against rust-lightning failed with {_kind}");
+            throw new FFIException($"FFI against rust-lightning failed with {_kind}", lastResult);
+        }
+    }
+
+    public class FFIException : Exception
+    {
+        public FFIResult Result { get; }
+
+        public FFIException(string msg, FFIResult result) : base(msg)
+        {
+            Result = result;
         }
     }
 }

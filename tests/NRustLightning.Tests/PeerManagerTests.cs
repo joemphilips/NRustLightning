@@ -5,12 +5,14 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using NRustLightning.Tests.Utils;
 using Xunit;
+using Xunit.Abstractions;
 using Network = NRustLightning.Adaptors.Network;
 
 namespace NRustLightning.Tests
 {
     public class PeerManagerTests
     {
+        private readonly ITestOutputHelper _output;
         private static HexEncoder Hex = new NBitcoin.DataEncoders.HexEncoder();
         private static Key[] _keys =
         {
@@ -20,6 +22,11 @@ namespace NRustLightning.Tests
 
         private static PubKey[] _pubKeys = _keys.Select(k => k.PubKey).ToArray();
         private static Primitives.NodeId[] _nodeIds = _pubKeys.Select(x => Primitives.NodeId.NewNodeId(x)).ToArray();
+        
+        public PeerManagerTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         private PeerManager getTestPeerManager()
         {
@@ -50,6 +57,7 @@ namespace NRustLightning.Tests
             var theirNodeId = _pubKeys[1];
             var actOne = peerMan.NewOutboundConnection(socket2, theirNodeId.ToBytes());
             Assert.Equal(50, actOne.Length);
+            // Console.WriteLine($"actOne in C# is {Hex.EncodeData(actOne)}");
             peerMan.Dispose();
         }
     }
