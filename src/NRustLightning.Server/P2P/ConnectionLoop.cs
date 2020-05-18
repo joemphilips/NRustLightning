@@ -1,5 +1,6 @@
 using System;
 using System.IO.Pipelines;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using NRustLightning.Interfaces;
@@ -16,7 +17,7 @@ namespace NRustLightning.Server.P2P
         private readonly ISocketDescriptor _socketDescriptor;
         private readonly ILogger<ConnectionLoop> _logger;
         private readonly Guid _id;
-        public Task ExecutionTask { get; private set; }
+        public ConfiguredTaskAwaitable ExecutionTask { get; private set; }
 
         private CancellationTokenSource _cts;
 
@@ -33,11 +34,9 @@ namespace NRustLightning.Server.P2P
         {
             _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             _logger.LogTrace($"Starting connection loop: {_id}");
-            ExecutionTask = StartLoop(_cts.Token);
-            _logger.LogTrace($"Finish starting loop");
+            ExecutionTask = StartLoop(_cts.Token).ConfigureAwait(false);
         }
 
-        
         public async ValueTask DisposeAsync()
         {
             _cts.Cancel();
@@ -45,7 +44,7 @@ namespace NRustLightning.Server.P2P
             await ExecutionTask;
         }
 
-        public Task GetAwaiter() => this.ExecutionTask;
+        public ConfiguredTaskAwaitable GetAwaiter() => this.ExecutionTask;
         
         private async Task StartLoop(CancellationToken ct)
         {
@@ -100,6 +99,7 @@ namespace NRustLightning.Server.P2P
                 foreach (var r in buf)
                 {
                     _logger.LogTrace($"Received {Hex.Encode(r.Span)}");
+                    // TODO: pause the reading correctly when the lr requested (for DoS protection)
                     var _shouldPause = PeerManager.ReadEvent(_socketDescriptor, r.Span);
                 }
                 PeerManager.ProcessEvents();

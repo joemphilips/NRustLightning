@@ -38,12 +38,12 @@ namespace NRustLightning.Server.P2P
             _logger.LogWarning("WARNING: it only supports BTC");
         }
 
-        public override Task OnConnectedAsync(ConnectionContext connection)
+        public override async Task OnConnectedAsync(ConnectionContext connection)
         {
             if (_connectionLoops.ContainsKey(connection.RemoteEndPoint))
             {
                 _logger.LogDebug($"connection from known peer: {connection.RemoteEndPoint}");
-                return Task.CompletedTask;
+                return;
             }
             
             _logger.LogDebug($"New inbound connection from {connection.RemoteEndPoint}");
@@ -52,7 +52,7 @@ namespace NRustLightning.Server.P2P
             var conn = new ConnectionLoop(connection.Transport, descriptor, PeerManager, _loggerFactory.CreateLogger<ConnectionLoop>());
             _connectionLoops.Add(connection.RemoteEndPoint, conn);
             conn.Start(connection.ConnectionClosed);
-            return conn.GetAwaiter();
+            await conn.GetAwaiter();
         }
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace NRustLightning.Server.P2P
                 var conn = new ConnectionLoop(connectionContext.Transport, descriptor, PeerManager,
                     _loggerFactory.CreateLogger<ConnectionLoop>());
                 _connectionLoops.Add(remoteEndPoint, conn);
-                conn.Start(ct);
+                Task.Run(() => conn.Start(ct));
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.ConnectionRefused)
             {

@@ -52,7 +52,6 @@ namespace NRustLightning.Server.Tests
             var clightningPeerInfo = await clients.CLightningClient.ListPeersAsync();
             Assert.Single(clightningPeerInfo);
             Assert.Equal(clightningPeerInfo.First().Id, ourInfo.ConnectionString.NodeId.ToHex());
-            // Assert.Equal(clightningInfo.NodeInfoList.First().ToConnectionString(), ourInfo.ConnectionString);
         }
     }
 }
