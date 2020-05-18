@@ -1,5 +1,15 @@
 ﻿using System;
+using System.CommandLine;
+using System.CommandLine.Binding;
+using System.CommandLine.Builder;
+using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
+using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+using NBitcoin;
+using NRustLightning.Client;
+using NRustLightning.Server.Models.Request;
 
 namespace NRustLightning.CLI
 {
@@ -7,7 +17,15 @@ namespace NRustLightning.CLI
     {
         static async Task Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            var command = CommandLine.GetRootCommand();
+            command.Handler = CommandHandler.Create((ParseResult pr) =>
+            {
+                throw new NotImplementedException();
+                return;
+            });
+            var commandLine = new CommandLineBuilder(command).UseDefaults()
+                .Build();
+            await commandLine.InvokeAsync(args);
         }
     }
 }

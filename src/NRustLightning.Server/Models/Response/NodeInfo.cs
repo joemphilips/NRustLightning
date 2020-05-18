@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
+using Newtonsoft.Json;
+using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Models.Request;
 
 namespace NRustLightning.Server.Models.Response

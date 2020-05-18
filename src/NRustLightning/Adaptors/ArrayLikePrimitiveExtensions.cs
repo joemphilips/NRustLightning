@@ -154,5 +154,20 @@ namespace NRustLightning.Adaptors
             return arr;
         }
 
+        public static Span<byte> AsSpan(this FFIBytes ffi)
+        {
+            var size = (int) ffi.len;
+            unsafe
+            {
+                return new Span<byte>(ffi.ptr.ToPointer(), size);
+            }
+        }
+        public static byte[] AsArray(this FFIBytes ffi)
+        {
+            var arr = new byte[(int)ffi.len];
+            var span = ffi.AsSpan();
+            span.CopyTo(arr);
+            return arr;
+        }
     }
 }

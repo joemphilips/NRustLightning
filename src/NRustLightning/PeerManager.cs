@@ -4,12 +4,13 @@ using System.Threading;
 using NRustLightning.Adaptors;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
+using NRustLightning.Utils;
 
 namespace NRustLightning
 {
     public class PeerManager : IDisposable
     {
-        internal readonly PeerManagerHandle Handle;
+        private readonly PeerManagerHandle _handle;
         private readonly object[] _deps;
         private readonly Timer tick;
         
@@ -21,7 +22,7 @@ namespace NRustLightning
         {
             _deps = deps;
             tick = new Timer(_ => Tick(), null, tickInterval, tickInterval);
-            Handle = handle ?? throw new ArgumentNullException(nameof(handle));
+            _handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
 
         public static PeerManager Create(
@@ -75,32 +76,37 @@ namespace NRustLightning
         
         private void Tick()
         {
-            Interop.timer_tick_occured(Handle);
+            Interop.timer_tick_occured(_handle);
         }
 
         public void NewInboundConnection(ISocketDescriptor descriptor)
         {
-            Interop.new_inbound_connection(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, Handle);
+            Interop.new_inbound_connection(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, _handle);
         }
 
-        public unsafe void NewOutboundConnection(ISocketDescriptor descriptor, Span<byte> theirNodeId)
+        /// <summary>
+        /// Returns noise act one (50 bytes)
+        /// </summary>
+        /// <param name="descriptor"></param>
+        /// <param name="theirNodeId"></param>
+        public unsafe byte[] NewOutboundConnection(ISocketDescriptor descriptor, Span<byte> theirNodeId)
         {
-
             fixed (byte* p = theirNodeId)
             {
                 var pk = new FFIPublicKey((IntPtr)p, (UIntPtr)theirNodeId.Length);
                 Interop.new_outbound_connection(descriptor.Index, ref descriptor.SendData,
-                    ref descriptor.DisconnectSocket, ref pk, Handle);
+                    ref descriptor.DisconnectSocket, ref pk, _handle, out var initialSend);
+                return initialSend.AsArray();
             }
         }
         public void WriteBufferSpaceAvail(ISocketDescriptor descriptor)
         {
-            Interop.write_buffer_space_avail(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, Handle);
+            Interop.write_buffer_space_avail(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, _handle);
         }
 
         public void SocketDisconnected(ISocketDescriptor descriptor)
         {
-            Interop.socket_disconnected(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, Handle);
+            Interop.socket_disconnected(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, _handle);
         }
 
         /// <summary>
@@ -115,20 +121,20 @@ namespace NRustLightning
             {
                 var bytes = new FFIBytes((IntPtr)d, (UIntPtr)data.Length);
                 Interop.read_event(
-                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, out var shouldPause, Handle);
+                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, out var shouldPause, _handle);
                 return shouldPause == 1;
             }
         }
 
         public void ProcessEvents()
         {
-            Interop.process_events(Handle);
+            Interop.process_events(_handle);
         }
 
         public void Dispose()
         {
             tick.Dispose();
-            Handle.Dispose();
+            _handle.Dispose();
         }
     }
 }

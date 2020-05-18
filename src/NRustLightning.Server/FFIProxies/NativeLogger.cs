@@ -19,7 +19,7 @@ namespace NRustLightning.Server.FFIProxies
             {
                 if (record.level == FFILogLevel.Off) return;
                 var msg =
-                    $"log in rust-lightning: {record.Args}. module path: {record.ModulePath}. file: {record.File}. line: {record.level}";
+                    $"log in rust-lightning: {record.Args}. module path: {record.ModulePath}. file: {record.File}. line: {record.line} level: {record.level}";
                 
                 logInternal.Log(record.level.AsLogLevel(), msg);
             };

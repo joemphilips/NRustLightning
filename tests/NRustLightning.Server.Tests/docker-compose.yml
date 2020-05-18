@@ -41,6 +41,8 @@ services:
       NETWORK: regtest
     command:
       - --restlisten=0.0.0.0:${LND_REST_PORT:?no_lnd_rest_port}
+      # for debugging with cli.
+      - --rpclisten=0.0.0.0:32777
       - --bitcoin.regtest
       - --bitcoin.node=bitcoind
       - --bitcoind.rpchost=bitcoind:${BITCOIND_RPC_PORT}
@@ -61,7 +63,8 @@ services:
     ports:
       - "${LND_REST_PORT}:${LND_REST_PORT}"
     expose:
-      - "9888"
+      - "9888" # p2p
+      - "32777" # rpc
       - "${LND_REST_PORT}"
     volumes:
       - "${DATA_PATH}/.lnd:/data"
