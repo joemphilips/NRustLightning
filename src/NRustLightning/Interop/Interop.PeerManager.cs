@@ -143,5 +143,15 @@ namespace NRustLightning
 
         internal static FFIResult socket_disconnected(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket, PeerManagerHandle handle, bool check = true) =>
             MaybeCheck(_socket_disconnected(index, ref sendData, ref disconnectSocket, handle), check);
+        
+        
+        [DllImport(RustLightning, EntryPoint = "get_peer_node_ids", ExactSpelling = true,
+            CallingConvention = CallingConvention.Cdecl)]
+        private static extern unsafe FFIResult _get_peer_node_ids(byte* bufOut, UIntPtr bufLen, out UIntPtr actualNodeIdsLength, PeerManagerHandle handle);
+
+        internal static unsafe FFIResult get_peer_node_ids(byte* bufOut, UIntPtr bufLen, out UIntPtr actualNodeIdsLength, PeerManagerHandle handle, bool check = true)
+        {
+            return MaybeCheck(_get_peer_node_ids(bufOut, bufLen, out actualNodeIdsLength, handle), check);
+        }
     }
 }

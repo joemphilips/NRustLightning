@@ -38,13 +38,11 @@ namespace NRustLightning.Server
             _logger = logger;
             sendData = (data, resumeRead) =>
             {
-                Debug.Assert(data.AsSpan().SequenceEqual(data.AsArray()), "Span and memory must be same inside a delegate", $"span: {Hex.Encode(data.AsSpan())}, array: {Hex.Encode(data.AsArray())}");
-                _logger.LogTrace($"sending {Hex.Encode(data.AsSpan())}");
                 Output.Write(data.AsSpan());
                 var flushTask = Output.FlushAsync();
                 if (!flushTask.IsCompleted)
                 {
-                    flushTask.ConfigureAwait(false).GetAwaiter().GetResult();
+                    flushTask.GetAwaiter().GetResult();
                 }
                 return Disconnected ? (UIntPtr)0 : data.len;
             };

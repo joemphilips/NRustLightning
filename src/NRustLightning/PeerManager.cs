@@ -1,15 +1,23 @@
 using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Net.Http.Headers;
 using System.Threading;
+using NBitcoin;
 using NRustLightning.Adaptors;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
 using NRustLightning.Utils;
+using Network = NRustLightning.Adaptors.Network;
 
 namespace NRustLightning
 {
     public class PeerManager : IDisposable
     {
+        private const int BUFFER_SIZE_UNIT = 1024;
+        private const int MAX_BUFFER_SIZE = 65536;
         private readonly PeerManagerHandle _handle;
         private readonly object[] _deps;
         private readonly Timer tick;
@@ -129,6 +137,57 @@ namespace NRustLightning
         public void ProcessEvents()
         {
             Interop.process_events(_handle);
+        }
+
+        public unsafe PubKey[] GetPeerNodeIds(MemoryPool<byte> pool)
+        {
+            var currentBufferSize = BUFFER_SIZE_UNIT;
+
+            while (true)
+            {
+                using var memoryOwner = pool.Rent(currentBufferSize);
+                var span = memoryOwner.Memory.Span;
+                fixed (byte* ptr = span)
+                {
+                    var result = Interop.get_peer_node_ids(ptr, (UIntPtr) span.Length, out var actualNodeIdsLength,
+                        _handle);
+                    if (currentBufferSize > MAX_BUFFER_SIZE)
+                    {
+                        throw new FFIException(
+                            $"Tried to return too long buffer form rust {currentBufferSize}. This should never happen.",
+                            result);
+                    }
+
+                    if (result.IsSuccess)
+                    {
+                        var arr = span.Slice(0, (int)actualNodeIdsLength).ToArray();
+                        return DecodePubKeyArray(arr);
+                    }
+
+                    if (result.IsBufferTooSmall)
+                    {
+                        currentBufferSize += BUFFER_SIZE_UNIT;
+                        continue;
+                    }
+
+                    result.Check();
+                }
+            }
+        }
+
+        private static PubKey[] DecodePubKeyArray(byte[] arr)
+        {
+            var nPubKey = arr[0..2].ToUInt16BE();
+            var result = new PubKey[nPubKey];
+            arr = arr[2..];
+            Debug.Assert(nPubKey * 33 == arr.Length, $"Length must be multiple of 33. it was {arr.Length}. but length was {nPubKey}");
+            for (int i = 0; i < nPubKey; i++)
+            {
+                var s = arr[(i * 33)..((i + 1) * 33)];
+                result[i] = new PubKey(s);
+            }
+
+            return result;
         }
 
         public void Dispose()
