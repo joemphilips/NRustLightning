@@ -1,7 +1,9 @@
 using System;
 using System.IO.Pipelines;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using NRustLightning.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -14,41 +16,47 @@ namespace NRustLightning.Server.P2P
     {
         public PeerManager PeerManager { get; }
         private readonly IDuplexPipe _transport;
-        private readonly ISocketDescriptor _socketDescriptor;
+        private readonly SocketDescriptor _socketDescriptor;
         private readonly ILogger<ConnectionLoop> _logger;
+        private readonly ChannelReader<byte> _writeAvailReceiver;
+        private readonly Action? _cleanup;
         private readonly Guid _id;
-        public ConfiguredTaskAwaitable ExecutionTask { get; private set; }
+        public Task? ExecutionTask { get; private set; }
 
         private CancellationTokenSource _cts;
 
-        public ConnectionLoop(IDuplexPipe transport, ISocketDescriptor socketDescriptor, PeerManager peerManager, ILogger<ConnectionLoop> logger)
+        public ConnectionLoop(IDuplexPipe transport, SocketDescriptor socketDescriptor, PeerManager peerManager,
+            ILogger<ConnectionLoop> logger, ChannelReader<byte> writeAvailReceiver, Action cleanup = null)
         {
             PeerManager = peerManager;
             _transport = transport;
             _socketDescriptor = socketDescriptor;
             _logger = logger;
+            _writeAvailReceiver = writeAvailReceiver;
+            _cleanup = cleanup;
             _id = Guid.NewGuid();
         }
 
-        public void Start(CancellationToken ct = default)
+        public ConnectionLoop Start(CancellationToken ct = default)
         {
             _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             _logger.LogTrace($"Starting connection loop: {_id}");
-            ExecutionTask = StartLoop(_cts.Token).ConfigureAwait(false);
+            ExecutionTask = StartLoop(_cts.Token);
+            return this;
         }
 
         public async ValueTask DisposeAsync()
         {
+            _cleanup?.Invoke();
             _cts.Cancel();
             _logger.LogTrace($"Disposing connection loop: {_id}");
-            await ExecutionTask;
+            if (ExecutionTask != null)
+                await ExecutionTask;
         }
 
-        public ConfiguredTaskAwaitable GetAwaiter() => this.ExecutionTask;
-        
         private async Task StartLoop(CancellationToken ct)
         {
-            
+
             try
             {
                 var readTask = DoRead(ct).ConfigureAwait(false);
@@ -58,49 +66,66 @@ namespace NRustLightning.Server.P2P
             }
             catch (FFIException ex)
             {
-                _logger.LogInformation($"rust-lightning returned error when calling write_buffer_space_avail. disconnecting");
+                _logger.LogInformation(
+                    $"rust-lightning returned error. disconnecting");
                 _logger.LogError($"{ex.Message}: {ex.StackTrace}");
                 // we don't have to call `PeerManager.SocketDisconnected` here Since rust-lightning already knows the peer
                 // is disconnected.
+            }
+            catch (RLDisconnectedException)
+            {
             }
             catch (OperationCanceledException)
             {
                 _logger.LogWarning($"Disconnecting peer since the socket is disconnected");
                 PeerManager.SocketDisconnected(_socketDescriptor);
             }
-        }
-
-        private async Task DoRead(CancellationToken ct)
-        {
-            try
+            catch (Exception ex)
             {
-                await ReadLoop(ct).ConfigureAwait(false);
+                _logger.LogWarning($"error while processing connection {_id}. Closing");
+                _logger.LogError($"{ex.Message}: {ex.StackTrace}");
+                PeerManager.SocketDisconnected(_socketDescriptor);
             }
             finally
             {
                 await _transport.Output.CompleteAsync();
+                await _transport.Input.CompleteAsync();
+                _cleanup?.Invoke();
             }
+        }
+
+        private async Task DoRead(CancellationToken ct)
+        {
+            await ReadLoop(ct).ConfigureAwait(false);
         }
         
         private async Task ReadLoop(CancellationToken ct)
         {
             while (true)
             {
-                if (_socketDescriptor.Disconnected)
+                if (_socketDescriptor.ReadPaused)
                 {
-                    _logger.LogInformation("Disconnecting peer since rust-lightning has requested");
-                    return;
+                    await Task.Delay(10, ct);
+                    continue;
                 }
-
+                ct.ThrowIfCancellationRequested();
                 var readResult = await _transport.Input.ReadAsync(ct).ConfigureAwait(false);
                 var buf = readResult.Buffer;
                 if (buf.IsEmpty)
-                    throw new OperationCanceledException("Socket disconnected");
+                    throw new OperationCanceledException("socket disconnected");
                 foreach (var r in buf)
                 {
-                    _logger.LogTrace($"Received {Hex.Encode(r.Span)}");
-                    // TODO: pause the reading correctly when the lr requested (for DoS protection)
-                    var _shouldPause = PeerManager.ReadEvent(_socketDescriptor, r.Span);
+                    PrepareReadWriteCall();
+                    if (PeerManager.TryReadEvent(_socketDescriptor, r.Span, out var shouldPause, out var ffiResult))
+                    {
+                        _socketDescriptor.ReadPaused = shouldPause;
+                    }
+                    else
+                    {
+                        _logger.LogError($"read_event call to rust-lightning failed. closing connection. {ffiResult}");
+                        throw new RLDisconnectedException();
+                    }
+                    _socketDescriptor.BlockDisconnectSocket = false;
                 }
                 PeerManager.ProcessEvents();
 
@@ -115,19 +140,33 @@ namespace NRustLightning.Server.P2P
         
         private async Task WriteLoop(CancellationToken ct)
         {
-            while (true)
+            while (await _writeAvailReceiver.WaitToReadAsync(ct))
             {
-                if (_socketDescriptor.Disconnected)
-                {
-                    _logger.LogInformation("Disconnecting peer since rust-lightning has requested");
-                    break;
-                }
-
-                // We don't have to do anything besides calling this (i.e. we don't have to
-                // do anything with _transport.Output, like writing or flushing.)
-                // because this will call into `SocketDescriptor.SendData` and do those works.
+                _writeAvailReceiver.TryRead(out _);
+                ct.ThrowIfCancellationRequested();
+                PrepareReadWriteCall();
                 PeerManager.WriteBufferSpaceAvail(_socketDescriptor);
+                _socketDescriptor.BlockDisconnectSocket = false;
             }
+        }
+        /// <summary>
+        /// When the socket is disconnected internally, we throw this to do cleanup
+        /// without calling `PeerManager.SocketDisconnected`
+        /// </summary>
+        private class RLDisconnectedException : Exception
+        {
+        }
+        /// <summary>
+        /// </summary>
+        /// <returns>should we shutdown this connection or not</returns>
+        private void PrepareReadWriteCall()
+        {
+            if (_socketDescriptor.Disconnected)
+            {
+                _logger.LogInformation("Disconnecting peer since rust-lightning has requested");
+                throw new RLDisconnectedException();
+            }
+            _socketDescriptor.BlockDisconnectSocket = true;
         }
 
     }

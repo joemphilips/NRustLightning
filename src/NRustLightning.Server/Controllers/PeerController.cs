@@ -46,12 +46,11 @@ namespace NRustLightning.Server.Controllers
 
         [HttpDelete]
         [Route("disconnect")]
-        public async Task Disconnect([FromBody] string connectionString)
+        public async Task<bool> Disconnect([FromBody] string connectionString)
         {
             if (PeerConnectionString.TryCreate(connectionString, out var conn))
             {
-                await _connectionHandler.DisconnectPeer(conn.EndPoint);
-                return;
+                return await _connectionHandler.DisconnectPeer(conn.EndPoint);
             }
             throw new HttpRequestException($"Invalid connection string {connectionString}");
         }
