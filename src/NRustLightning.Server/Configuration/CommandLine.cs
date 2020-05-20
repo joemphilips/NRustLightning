@@ -138,7 +138,7 @@ namespace NRustLightning.Server.Configuration
                 );
             }
             
-            // rust-lightning specific options
+            #region rust-lightning specific options
             var uc = UserConfig.GetDefault();
             options.Add(new Option("--ln.own_channel_config.minimum_depth", 
                 $"Confirmation we will wait for before considering the channel locked in. (default: {uc.own_channel_config.minimum_depth})")
@@ -171,6 +171,18 @@ namespace NRustLightning.Server.Configuration
             {
                 Argument = new Argument<bool> { Arity = ArgumentArity.ZeroOrOne }
             });
+            
+            #endregion
+            
+            # region developer options
+            options.Add(new Option("--debug.http", "log every request-response in http")
+            {
+                Argument = new Argument<bool>
+                {
+                    Arity = ArgumentArity.ZeroOrOne
+                }
+            });
+            # endregion
             return options.ToArray();
         }
         /// <summary>
