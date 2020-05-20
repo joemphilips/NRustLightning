@@ -57,6 +57,11 @@ namespace NRustLightning.Client
             return RequestAsync<bool>("/v1/peer/connect", HttpMethod.Post, connectionString.ToString());
         }
 
+        public Task DisconnectAsync(PeerConnectionString connectionString)
+        {
+            return RequestAsync<object>("/v1/peer/disconnect", HttpMethod.Delete, connectionString.ToString());
+        }
+
         private async Task<T> RequestAsync<T>(string relativePath, HttpMethod method, object parameters = null)
         {
             using var msg = new HttpRequestMessage();
