@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Linq;
 using DotNetLightning.Utils;
 using NBitcoin;
@@ -22,10 +23,13 @@ namespace NRustLightning.Tests
 
         private static PubKey[] _pubKeys = _keys.Select(k => k.PubKey).ToArray();
         private static Primitives.NodeId[] _nodeIds = _pubKeys.Select(x => Primitives.NodeId.NewNodeId(x)).ToArray();
+
+        private MemoryPool<byte> _pool;
         
         public PeerManagerTests(ITestOutputHelper output)
         {
             _output = output;
+            _pool = MemoryPool<byte>.Shared;
         }
 
         private PeerManager getTestPeerManager()
@@ -55,9 +59,15 @@ namespace NRustLightning.Tests
             peerMan.NewInboundConnection(socket1);
             var socket2 = socketFactory.GetNewSocket();
             var theirNodeId = _pubKeys[1];
+            var theirNodeIds = peerMan.GetPeerNodeIds(_pool);
+            Assert.Empty(theirNodeIds);
             var actOne = peerMan.NewOutboundConnection(socket2, theirNodeId.ToBytes());
             Assert.Equal(50, actOne.Length);
             // Console.WriteLine($"actOne in C# is {Hex.EncodeData(actOne)}");
+
+            theirNodeIds = peerMan.GetPeerNodeIds(_pool);
+            // It does not count when handshake is not complete
+            Assert.Empty(theirNodeIds);
             peerMan.Dispose();
         }
     }

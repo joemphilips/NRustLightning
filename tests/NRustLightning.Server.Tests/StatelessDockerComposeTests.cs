@@ -52,6 +52,23 @@ namespace NRustLightning.Server.Tests
             var clightningPeerInfo = await clients.CLightningClient.ListPeersAsync();
             Assert.Single(clightningPeerInfo);
             Assert.Equal(clightningPeerInfo.First().Id, ourInfo.ConnectionString.NodeId.ToHex());
+
+            info = await clients.NRustLightningHttpClient.GetInfoAsync();
+            Assert.Equal(2,info.NumConnected);
+
+            // Can disconnect from inside.
+            await clients.NRustLightningHttpClient.DisconnectAsync(clightningInfo.NodeInfoList.FirstOrDefault().ToConnectionString());
+            info = await clients.NRustLightningHttpClient.GetInfoAsync();
+            Assert.Equal(1, info.NumConnected);
+            clightningPeerInfo = await clients.CLightningClient.ListPeersAsync();
+            Assert.Empty(clightningPeerInfo);
+
+            // Can disconnect from outside
+            await clients.LndClient.SwaggerClient.DisconnectPeerAsync(info.ConnectionString.NodeId.ToHex());
+            lndPeerInfo = await clients.LndClient.SwaggerClient.ListPeersAsync();
+            Assert.Empty(lndPeerInfo.Peers);
+            info = await clients.NRustLightningHttpClient.GetInfoAsync();
+            Assert.Equal(0, info.NumConnected);
         }
     }
 }

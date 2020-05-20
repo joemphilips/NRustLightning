@@ -40,6 +40,11 @@ namespace NRustLightning.Server.Tests
             var dataPath = Path.GetFullPath(caller);
             if (!Directory.Exists(dataPath))
                 Directory.CreateDirectory(dataPath);
+            else
+            {
+                Directory.Delete(dataPath, true);
+                Directory.CreateDirectory(dataPath);
+            }
             var env = new Dictionary<string, object>()
             {
                 {
