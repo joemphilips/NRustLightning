@@ -134,6 +134,20 @@ namespace NRustLightning
             }
         }
 
+        public unsafe bool TryReadEvent(ISocketDescriptor descriptor, ReadOnlySpan<byte> data, out bool shouldPause,
+            out FFIResult result)
+        {
+            fixed (byte* d = data)
+            {
+                var bytes = new FFIBytes((IntPtr)d, (UIntPtr)data.Length);
+                result =
+                Interop.read_event(
+                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, out var shouldPauseB, _handle, false); 
+                shouldPause = shouldPauseB == 1;
+            }
+            return result.IsSuccess;
+        }
+
         public void ProcessEvents()
         {
             Interop.process_events(_handle);
