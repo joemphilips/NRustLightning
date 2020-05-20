@@ -15,18 +15,16 @@ namespace NRustLightning
             UIntPtr seedLen,
             Network* n, 
             UserConfig* userConfig,
+            
+            ChannelManagerHandle channelManagerHandle,
             ref InstallWatchTx installWatchTx,
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
-            ref BroadcastTransaction broadcastTransaction,
             ref Log log,
-            ref GetEstSatPer1000Weight getEstSatPer1000Weight,
-            UIntPtr currentBlockHeight,
             
             ref FFISecretKey ourNodeSecret,
             ref FFIPublicKey ourNodeId,
-            
             out PeerManagerHandle handle
             );
 
@@ -35,14 +33,13 @@ namespace NRustLightning
             UIntPtr seedLen,
             Network* n, 
             UserConfig* userConfig,
+            
+            ChannelManagerHandle channelManagerHandle,
             ref InstallWatchTx installWatchTx,
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
-            ref BroadcastTransaction broadcastTransaction,
             ref Log log,
-            ref GetEstSatPer1000Weight getEstSatPer1000Weight,
-            UIntPtr currentBlockHeight,
             
             ref FFISecretKey ourNodeSecret,
             ref FFIPublicKey ourNodeId,
@@ -55,14 +52,12 @@ namespace NRustLightning
                 seedLen,
                 n,
                 userConfig,
+                channelManagerHandle,
                 ref installWatchTx,
                 ref installWatchOutPoint,
                 ref watchAllTxn,
                 ref getChainUtxo,
-                ref broadcastTransaction,
                 ref log,
-                ref getEstSatPer1000Weight,
-                currentBlockHeight,
                 ref ourNodeSecret,
                 ref ourNodeId,
                 out handle),

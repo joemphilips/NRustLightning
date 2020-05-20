@@ -21,9 +21,12 @@ namespace NRustLightning
         private readonly PeerManagerHandle _handle;
         private readonly object[] _deps;
         private readonly Timer tick;
+
+        public ChannelManager ChannelManager { get; }
         
         internal PeerManager(
             PeerManagerHandle handle,
+            ChannelManager channelManager,
             int tickInterval,
             object[] deps
             )
@@ -31,6 +34,7 @@ namespace NRustLightning
             _deps = deps;
             tick = new Timer(_ => Tick(), null, tickInterval, tickInterval);
             _handle = handle ?? throw new ArgumentNullException(nameof(handle));
+            ChannelManager = channelManager;
         }
 
         public static PeerManager Create(
@@ -50,6 +54,7 @@ namespace NRustLightning
             if (seed.Length != 32) throw new InvalidDataException($"seed must be 32 bytes! it was {seed.Length}");
             if (ourNodeSecret.Length != 32) throw new InvalidDataException($"ourNodeSecret must be 32 bytes! it was {seed.Length}");
             var ourNodeId = new NBitcoin.Key(ourNodeSecret.ToArray()).PubKey.ToBytes();
+            var chanMan = ChannelManager.Create(seed, in network, in config, chainWatchInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
             unsafe
             {
                 fixed (byte* seedPtr = seed)
@@ -65,19 +70,17 @@ namespace NRustLightning
                         (UIntPtr)(seed.Length),
                         n,
                         configPtr,
+                        chanMan.Handle,
                         ref chainWatchInterface.InstallWatchTx,
                         ref chainWatchInterface.InstallWatchOutPoint,
                         ref chainWatchInterface.WatchAllTxn,
                         ref chainWatchInterface.GetChainUtxo,
-                        ref broadcaster.BroadcastTransaction,
                         ref logger.Log,
-                        ref feeEstimator.getEstSatPer1000Weight,
-                        (UIntPtr)currentBlockHeight,
                         ref ffiOurNodeSecret,
                         ref ffiOurNodeId,
                         out var handle
                         );
-                    return new PeerManager(handle, tickIntervalMSec,new object[]{ chainWatchInterface, broadcaster, logger, feeEstimator, routingMsgHandler });
+                    return new PeerManager(handle, chanMan, tickIntervalMSec,new object[]{ chainWatchInterface, broadcaster, logger, feeEstimator, routingMsgHandler });
                 }
             }
         }
@@ -165,7 +168,7 @@ namespace NRustLightning
                 {
                     var result = Interop.get_peer_node_ids(ptr, (UIntPtr) span.Length, out var actualNodeIdsLength,
                         _handle);
-                    if (currentBufferSize > MAX_BUFFER_SIZE)
+                    if ((int)actualNodeIdsLength > MAX_BUFFER_SIZE)
                     {
                         throw new FFIException(
                             $"Tried to return too long buffer form rust {currentBufferSize}. This should never happen.",
@@ -180,7 +183,7 @@ namespace NRustLightning
 
                     if (result.IsBufferTooSmall)
                     {
-                        currentBufferSize += BUFFER_SIZE_UNIT;
+                        currentBufferSize = (int)actualNodeIdsLength;
                         continue;
                     }
 
@@ -208,6 +211,7 @@ namespace NRustLightning
         {
             tick.Dispose();
             _handle.Dispose();
+            ChannelManager.Dispose();
         }
     }
 }

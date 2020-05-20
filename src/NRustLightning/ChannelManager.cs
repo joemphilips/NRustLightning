@@ -15,12 +15,12 @@ namespace NRustLightning
     
     public sealed class ChannelManager : IDisposable
     {
-        private readonly ChannelManagerHandle _handle;
+        internal readonly ChannelManagerHandle Handle;
         private readonly object[] _deps;
-        internal ChannelManager(ChannelManagerHandle handle, object[] deps)
+        internal ChannelManager(ChannelManagerHandle handle, object[] deps = null)
         {
-            _deps = deps;
-            _handle = handle ?? throw new ArgumentNullException(nameof(handle));
+            _deps = deps ?? new object[] {};
+            Handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
         
         public static ChannelManager Create(
@@ -75,21 +75,21 @@ namespace NRustLightning
                     var route = new FFIRoute((IntPtr)r, (UIntPtr)routesInBytes.Length);
                     var ffiPaymentHash = new FFISha256dHash((IntPtr)p, (UIntPtr)paymentHash.Length);
                     var ffiPaymentSecret = new FFISecret((IntPtr)s, (UIntPtr)paymentSecret.Length);
-                    Interop.send_payment(_handle, ref route, ref ffiPaymentHash, ref ffiPaymentSecret);
+                    Interop.send_payment(Handle, ref route, ref ffiPaymentHash, ref ffiPaymentSecret);
                 }
             }
         }
 
         public Event[] GetAndClearPendingEvents()
         {
-            Interop.get_and_clear_pending_events(_handle, out var eventsBytes);
+            Interop.get_and_clear_pending_events(Handle, out var eventsBytes);
             return Event.ParseManyUnsafe(eventsBytes.AsArray());
         }
         
         
         public void Dispose()
         {
-            _handle.Dispose();
+            Handle.Dispose();
         }
     }
 }

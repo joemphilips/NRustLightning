@@ -1,9 +1,12 @@
 using System;
 using System.Buffers;
 using System.Linq;
+using DotNetLightning.Serialize;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NBitcoin.DataEncoders;
+using NRustLightning.Adaptors;
+using NRustLightning.Facades;
 using NRustLightning.Tests.Utils;
 using Xunit;
 using Xunit.Abstractions;
@@ -69,6 +72,24 @@ namespace NRustLightning.Tests
             // It does not count when handshake is not complete
             Assert.Empty(theirNodeIds);
             peerMan.Dispose();
+        }
+
+        [Fact]
+        public void CanCallChannelManagerThroughPeerManager()
+        {
+            using var peerMan = getTestPeerManager();
+            var channelManager = peerMan.ChannelManager;
+            var nodeFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
+            var channelFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
+            var hop1 = new RouteHopWithFeature(_nodeIds[0], nodeFeature, 1, channelFeature, 1000, 72);
+            var hop2 = new RouteHopWithFeature(_nodeIds[1], nodeFeature, 2, channelFeature, 1000, 72);
+            var route1 = new[] {hop1, hop2};
+            var routes = new RoutesWithFeature(route1);
+            
+            var paymentHash = new uint256();
+            var e = Assert.Throws<FFIException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
+            Assert.Equal("FFI against rust-lightning failed (InternalError), Error: AllFailedRetrySafe([No channel available with first hop!])", e.Message);
+            channelManager.Dispose();
         }
     }
 }
