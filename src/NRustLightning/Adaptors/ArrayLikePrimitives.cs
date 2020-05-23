@@ -19,70 +19,24 @@ namespace NRustLightning.Adaptors
         public Script ToScript()
             => Script.FromBytesUnsafe(this.AsArray());
     }
-    [StructLayout(LayoutKind.Sequential)]
-    public readonly ref struct FFISecretKey
-    {
-        internal readonly IntPtr ptr;
-        internal readonly UIntPtr len;
 
-        public FFISecretKey(IntPtr ptr, UIntPtr len)
-        {
-            this.ptr = ptr;
-            this.len = len;
-        }
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public readonly ref struct FFIPublicKey
+    [StructLayout(LayoutKind.Sequential, Size=34)]
+    public unsafe ref struct FFIOutPoint
     {
-        internal readonly IntPtr ptr;
-        internal readonly UIntPtr len;
-        public FFIPublicKey(IntPtr ptr, UIntPtr len)
-        {
-            this.ptr = ptr;
-            this.len = len;
-        }
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public readonly ref struct FFISha256dHash
-    {
-        internal readonly IntPtr ptr;
-        internal readonly UIntPtr len;
-
-        public FFISha256dHash(IntPtr ptr, UIntPtr len)
-        {
-            if (len != (UIntPtr) 32) throw new ArgumentException($"must be 32, it was {len}");
-            this.ptr = ptr;
-            this.len = len;
-        }
-
-        public uint256 ToUInt256() => new uint256(this.AsArray());
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public readonly ref struct FFISecret
-    {
-        internal readonly IntPtr ptr;
-        internal readonly UIntPtr len;
-
-        public FFISecret(IntPtr ptr, UIntPtr len)
-        {
-            this.ptr = ptr;
-            this.len = len;
-        }
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public readonly ref struct FFIOutPoint
-    {
-        internal readonly uint256 txid;
+        internal fixed byte txid[32];
         internal readonly ushort index;
 
-        public FFIOutPoint(uint256 txid, ushort index)
+        public FFIOutPoint(uint256 txId, ushort index)
         {
-            this.txid = txid ?? throw new ArgumentNullException(nameof(txid));
+            var bytes = txId.ToBytes();
+            for (int i = 0; i < 32; i++)
+            {
+                this.txid[i] = bytes[i];
+            }
             this.index = index;
         }
-
-        public (uint256, ushort) ToTuple() => (txid, index);
     }
+    
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFITxOut
     {

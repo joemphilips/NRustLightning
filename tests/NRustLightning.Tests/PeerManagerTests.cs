@@ -90,7 +90,7 @@ namespace NRustLightning.Tests
             var e = Assert.Throws<FFIException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
             Assert.Equal("FFI against rust-lightning failed (InternalError), Error: AllFailedRetrySafe([No channel available with first hop!])", e.Message);
 
-            var events= channelManager.GetAndClearPendingEvents();
+            // var events= channelManager.GetAndClearPendingEvents();
             
             peerMan.Dispose();
         }

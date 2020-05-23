@@ -63,11 +63,8 @@ namespace NRustLightning
                 fixed (byte* secretPtr = ourNodeSecret)
                 fixed (byte* pubkeyPtr = ourNodeId)
                 {
-                    var ffiOurNodeSecret  = new FFISecretKey((IntPtr)secretPtr, (UIntPtr)ourNodeSecret.Length);
-                    var ffiOurNodeId = new FFIPublicKey((IntPtr)pubkeyPtr, (UIntPtr)ourNodeId.Length);
                     Interop.create_peer_manager(
-                        seedPtr,
-                        (UIntPtr)(seed.Length),
+                        (IntPtr)seedPtr,
                         n,
                         configPtr,
                         chanMan.Handle,
@@ -76,8 +73,8 @@ namespace NRustLightning
                         ref chainWatchInterface.WatchAllTxn,
                         ref chainWatchInterface.GetChainUtxo,
                         ref logger.Log,
-                        ref ffiOurNodeSecret,
-                        ref ffiOurNodeId,
+                        (IntPtr)secretPtr,
+                        (IntPtr)pubkeyPtr,
                         out var handle
                         );
                     return new PeerManager(handle, chanMan, tickIntervalMSec,new object[]{ chainWatchInterface, broadcaster, logger, feeEstimator, routingMsgHandler });
@@ -105,9 +102,8 @@ namespace NRustLightning
         {
             fixed (byte* p = theirNodeId)
             {
-                var pk = new FFIPublicKey((IntPtr)p, (UIntPtr)theirNodeId.Length);
                 Interop.new_outbound_connection(descriptor.Index, ref descriptor.SendData,
-                    ref descriptor.DisconnectSocket, ref pk, _handle, out var initialSend);
+                    ref descriptor.DisconnectSocket, (IntPtr)p, _handle, out var initialSend);
                 return initialSend.AsArray();
             }
         }

@@ -44,8 +44,7 @@ namespace NRustLightning
                 fixed (UserConfig* configPtr = &config)
                 {
                     Interop.create_ffi_channel_manager(
-                        b,
-                        (UIntPtr)seed.Length,
+                        (IntPtr)b,
                         n,
                         configPtr,
                         ref chainWatchInterface.InstallWatchTx,
@@ -82,8 +81,7 @@ namespace NRustLightning
             var pk = theirNetworkKey.ToBytes();
             fixed (byte* b = pk)
             {
-                var ffiPk = new FFIPublicKey((IntPtr)b, (UIntPtr)pk.Length);
-                Interop.create_channel(ffiPk, channelValueSatoshis, pushMSat, userId, Handle, in overrideConfig);
+                Interop.create_channel((IntPtr)b, channelValueSatoshis, pushMSat, userId, Handle, in overrideConfig);
             }
         }
         public unsafe void CloseChannel(uint256 channelId)
@@ -91,7 +89,7 @@ namespace NRustLightning
             var bytes = channelId.ToBytes();
             fixed (byte* b = bytes)
             {
-                Interop.close_channel(b, Handle);
+                Interop.close_channel((IntPtr)b, Handle);
             }
         }
 
@@ -100,6 +98,7 @@ namespace NRustLightning
         
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash, Span<byte> paymentSecret)
         {
+            if (paymentHash.Length != 32) throw new ArgumentException($"{nameof(paymentHash)}.Length must be 32. it was {paymentHash.Length}");
             if (paymentSecret.Length != 0 && paymentSecret.Length != 32) throw new ArgumentException($"paymentSecret must be length of 32 or empty");
             unsafe
             {
@@ -110,9 +109,12 @@ namespace NRustLightning
                 fixed (byte* s = paymentSecret)
                 {
                     var route = new FFIRoute((IntPtr)r, (UIntPtr)routesInBytes.Length);
-                    var ffiPaymentHash = new FFISha256dHash((IntPtr)p, (UIntPtr)paymentHash.Length);
-                    var ffiPaymentSecret = new FFISecret((IntPtr)s, (UIntPtr)paymentSecret.Length);
-                    Interop.send_payment(Handle, ref route, ref ffiPaymentHash, ref ffiPaymentSecret);
+                    if (paymentSecret.Length == 32)
+                        Interop.send_payment(Handle, ref route, (IntPtr)p, (IntPtr)s);
+                    if (paymentSecret.Length == 0)
+                    {
+                        Interop.send_payment(Handle, ref route, (IntPtr)p);
+                    }
                 }
             }
         }

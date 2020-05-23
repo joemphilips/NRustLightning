@@ -19,8 +19,7 @@ namespace NRustLightning
             EntryPoint = "create_channel_manager",
             ExactSpelling = true)]
         private static unsafe extern FFIResult _create_ffi_channel_manager(
-            byte* seed_ptr,
-            UIntPtr seed_len,
+            IntPtr seed,
             Network* n,
             UserConfig* config,
             
@@ -36,8 +35,7 @@ namespace NRustLightning
             );
 
         internal static unsafe FFIResult create_ffi_channel_manager(
-            byte* seed_ptr,
-            UIntPtr seed_len,
+            IntPtr seed,
             Network* n,
             UserConfig* config,
             ref InstallWatchTx installWatchTx,
@@ -52,7 +50,7 @@ namespace NRustLightning
             bool check = true
         )
         {
-            return MaybeCheck(_create_ffi_channel_manager(seed_ptr, seed_len, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref broadcastTransaction, ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
+            return MaybeCheck(_create_ffi_channel_manager(seed, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref broadcastTransaction, ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
         }
         
         [DllImport(RustLightning,
@@ -69,15 +67,15 @@ namespace NRustLightning
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "create_channel",
             ExactSpelling = true)]
-        static extern FFIResult _create_channel(FFIPublicKey publicKey, ulong channelValueSatoshis, ulong pushMsat, ulong userId, ChannelManagerHandle handle);
+        static extern FFIResult _create_channel(IntPtr publicKey, ulong channelValueSatoshis, ulong pushMsat, ulong userId, ChannelManagerHandle handle);
         
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "create_channel_with_custom_config",
             ExactSpelling = true)]
-        static extern FFIResult _create_channel_with_custom_config(FFIPublicKey publicKey, ulong channelValueSatoshis, ulong pushMsat, ulong userId, in UserConfig config, ChannelManagerHandle handle);
+        static extern FFIResult _create_channel_with_custom_config(IntPtr publicKey, ulong channelValueSatoshis, ulong pushMsat, ulong userId, in UserConfig config, ChannelManagerHandle handle);
 
-        internal static FFIResult create_channel(FFIPublicKey publicKey, ulong channelValueSatoshis, ulong pushMsat,
+        internal static FFIResult create_channel(IntPtr publicKey, ulong channelValueSatoshis, ulong pushMsat,
             ulong userId, ChannelManagerHandle handle, in UserConfig? config = null)
         {
             if (config is null)
@@ -92,8 +90,8 @@ namespace NRustLightning
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "close_channel",
             ExactSpelling = true)]
-        static extern unsafe FFIResult _close_channel(byte* channelId, ChannelManagerHandle handle);
-        internal static unsafe FFIResult close_channel(byte* channelId, ChannelManagerHandle handle)
+        static extern unsafe FFIResult _close_channel(IntPtr channelId, ChannelManagerHandle handle);
+        internal static unsafe FFIResult close_channel(IntPtr channelId, ChannelManagerHandle handle)
         {
             return MaybeCheck(_close_channel(channelId, handle), true);
         }
@@ -125,19 +123,32 @@ namespace NRustLightning
         static extern FFIResult _send_payment(
             ChannelManagerHandle handle,
             ref FFIRoute route,
-            ref FFISha256dHash paymentHash,
-            ref FFISecret paymentSecret
+            IntPtr paymentHash,
+            IntPtr paymentSecret
             );
 
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "send_payment_without_secret",
+            ExactSpelling = true)]
+        static extern FFIResult _send_payment_without_secret(
+            ChannelManagerHandle handle,
+            ref FFIRoute route,
+            IntPtr paymentHash
+            );
         internal static FFIResult send_payment(
             ChannelManagerHandle handle,
             ref FFIRoute route,
-            ref FFISha256dHash paymentHash,
-            ref FFISecret paymentSecret,
+            IntPtr paymentHash,
+            IntPtr? paymentSecret = null,
             bool check = true
             )
         {
-            return MaybeCheck(_send_payment(handle, ref route, ref paymentHash, ref paymentSecret), check);
+            if (paymentSecret is null)
+            {
+                return MaybeCheck(_send_payment_without_secret(handle, ref route, paymentHash), check);
+            }
+            return MaybeCheck(_send_payment(handle, ref route, paymentHash, paymentSecret.Value), check);
         }
 
         [DllImport(RustLightning,
