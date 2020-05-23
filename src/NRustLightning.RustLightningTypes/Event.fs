@@ -1,4 +1,4 @@
-namespace DotNetLightning.Data.NRustLightningTypes
+namespace NRustLightning.RustLightningTypes
 
 open System
 open System.IO
@@ -10,12 +10,21 @@ open DotNetLightning.Utils
 open NBitcoin
 
 type FundingGenerationReadyData = {
+    /// The random channel_id we picked which you'll need to pass into
+    /// ChannelManager.FundingTransactionGenerated.
     TemporaryChannelId: ChannelId
+    /// The value, in satoshis, that the output should have.
     ChannelValueSatoshis: uint64
+    /// The script which should be used in the transaction output.
+    OutputScript: Script
+    /// The value passed in to ChannelManager::CreateChannel
+    UserChannelId: uint64
 }
 
 type FundingBroadcastSafeData = {
+    /// The output, which was passed to ChannelManager.FundingTransactionGenerated, which is now safe to broadcast.
     OutPoint: LNOutPoint
+    /// The value passed in to ChannelManager.CreateChannel .
     UserChannelId: ChannelId
 }
 
@@ -133,13 +142,42 @@ type SpendableOutputDescriptor =
         | Ok r -> r
         | Error e -> raise <| FormatException(e)
 
+/// An Event which you should probably take some action in response to.
 type Event =
+    /// Used to indicate that the client should generate a funding transaction with the given
+    /// parameters and then call ChannelManager::FundingTransactionGenerated .
+    /// Generated in ChannelManager message handling.
+    /// Note that *all inputs* in the funding transaction must spend SegWit outputs or your counterparty
+    /// can steal your funds!
     | FundingGenerationReady of FundingGenerationReadyData
+    /// Used to indicate that the client may now broadcast the funding tx it created for a channel.
+    /// Broadcasting such a tx prior to this event may lead to our counterparty
+    /// trivially stealing all funds in the funding tx
     | FundingBroadcastSafe of FundingBroadcastSafeData
+    /// Indicates we've received money! Just gotta dig out that payment preimage and feed it to
+    /// ChannelManager.ClaimFunds to get it...
+    /// Note that if the preimage is not known or hte amount paid is incorrect, you should cal
+    /// ChannelManager.FailHTLCBackwards to free up resources for this HTLC and avoid network congestion.
+    /// The amount paid should be considered 'incorrect' when it is less than or more than twice the amount expected.
+    /// If you fail to call either ChannelManager.ClaimFunds or ChannelManager.FailHTLCBackwards within the HTLC's
+    /// timeout, the HTLC will be automatically failed.
     | PaymentReceived of PaymentReceivedData
+    
+    /// Indicates an outbound payment we made succeeded (ie it made it all the way to its target
+    /// and we got back the payment preimage for it).
+    /// Note that duplicative PaymentSent Events may be generated - it is your responsibility to
+    /// deduplicate them by payment_preimage (which MUST be unique)!
     | PaymentSent of PaymentPreimage
+    /// Indicates an outbound payment we made succeeded (ie it made it all the way to its target
+    /// and we got back the payment preimage for it).
+    /// Note that duplicative PaymentSent Events may be generated - it is your responsibility to
+    /// deduplicate them by payment_preimage (which MUST be unique)!
     | PaymentFailed of PaymentFailedData
+    /// Used to indicate that ChannelManager::process_pending_htlc_forwards should be called at a
+    /// time in the future.
     | PendingHTLCsForwardable of Duration
+    /// Used to indicate that ChannelManager::process_pending_htlc_forwards should be called at a
+    /// time in the future.
     | SpendableOutputs of SpendableOutputDescriptor[]
     with
     
@@ -157,7 +195,7 @@ type Event =
         | 2uy ->
             {
                 PaymentReceivedData.PaymentHash = uint256(s.[1..32], false) |> PaymentHash
-                Amount = LNMoney.FromBytes(s.[33..40])
+                Amount = LNMoney.FromSpan(s.[33..40].AsSpan())
             }
             |> PaymentReceived
             |> Some |> Ok
@@ -181,7 +219,7 @@ type Event =
             |> PendingHTLCsForwardable
             |> Some |> Ok
         | 6uy ->
-            let len = UInt64.FromBytes(s.[1..8], false)
+            let len = UInt64.FromSpan(s.[1..8].AsSpan(), false)
             let outputs = ResizeArray()
             let mutable result = Ok()
             let mutable pos = 0

@@ -1,14 +1,16 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
-using DotNetLightning.Data.NRustLightningTypes;
+using System.Buffers;
+using System.IO;
+using NBitcoin;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
+using NRustLightning.NRustLightningTypes;
+using NRustLightning.RustLightningTypes;
 using NRustLightning.Utils;
+using Network = NRustLightning.Adaptors.Network;
+using static NRustLightning.Utils.Utils;
 
 namespace NRustLightning
 {
@@ -59,8 +61,42 @@ namespace NRustLightning
             }
         }
 
+        public ChannelDetails[] ListChannels(MemoryPool<byte> pool)
+        {
+            Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
+                (bufOut, bufLength, handle) =>
+                {
+                    var ffiResult = Interop.list_channels(bufOut, bufLength, out var actualChannelsLen, handle);
+                    return (ffiResult, actualChannelsLen);
+                };
+
+            var arr = WithVariableLengthReturnBuffer(pool, func, Handle);
+            return ChannelDetails.ParseManyUnsafe(arr);
+        }
+
+        public unsafe void CreateChannel(PubKey theirNetworkKey, ulong channelValueSatoshis, ulong pushMSat, ulong userId, in UserConfig? overrideConfig = null)
+        {
+            if (theirNetworkKey == null) throw new ArgumentNullException(nameof(theirNetworkKey));
+            if (!theirNetworkKey.IsCompressed) Errors.PubKeyNotCompressed(nameof(theirNetworkKey), theirNetworkKey);
+            var pk = theirNetworkKey.ToBytes();
+            fixed (byte* b = pk)
+            {
+                var ffiPk = new FFIPublicKey((IntPtr)b, (UIntPtr)pk.Length);
+                Interop.create_channel(ffiPk, channelValueSatoshis, pushMSat, userId, Handle, in overrideConfig);
+            }
+        }
+        public unsafe void CloseChannel(uint256 channelId)
+        {
+            var bytes = channelId.ToBytes();
+            fixed (byte* b = bytes)
+            {
+                Interop.close_channel(b, Handle);
+            }
+        }
+
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash)
             => SendPayment(routesWithFeature, paymentHash, new byte[0]);
+        
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash, Span<byte> paymentSecret)
         {
             if (paymentSecret.Length != 0 && paymentSecret.Length != 32) throw new ArgumentException($"paymentSecret must be length of 32 or empty");
@@ -85,7 +121,27 @@ namespace NRustLightning
             Interop.get_and_clear_pending_events(Handle, out var eventsBytes);
             return Event.ParseManyUnsafe(eventsBytes.AsArray());
         }
-        
+
+        public unsafe void FundingTransactionGenerated(Span<byte> temporaryChannelId, OutPoint fundingTxo)
+        {
+            if (temporaryChannelId.Length != 32) throw new InvalidDataException($"length for {nameof(temporaryChannelId)} must be 32! it was {temporaryChannelId.Length}");
+
+            fixed (byte* temporaryChannelIdPtr = temporaryChannelId)
+            {
+                var ffiOutPoint = new FFIOutPoint(fundingTxo.Hash, (ushort)fundingTxo.N);
+                Interop.funding_transaction_generated((IntPtr)temporaryChannelIdPtr, ffiOutPoint, Handle);
+            }
+        }
+
+        public void ProcessPendingHTLCForwards()
+        {
+            Interop.process_pending_htlc_forwards(Handle);
+        }
+
+        public void TimerChanFreshnessEveryMin()
+        {
+            Interop.timer_chan_freshness_every_min(Handle);
+        }
         
         public void Dispose()
         {

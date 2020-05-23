@@ -10,14 +10,13 @@ using NRustLightning.Adaptors;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
 using NRustLightning.Utils;
+using static NRustLightning.Utils.Utils;
 using Network = NRustLightning.Adaptors.Network;
 
 namespace NRustLightning
 {
     public class PeerManager : IDisposable
     {
-        private const int BUFFER_SIZE_UNIT = 1024;
-        private const int MAX_BUFFER_SIZE = 65536;
         private readonly PeerManagerHandle _handle;
         private readonly object[] _deps;
         private readonly Timer tick;
@@ -88,6 +87,7 @@ namespace NRustLightning
         private void Tick()
         {
             Interop.timer_tick_occured(_handle);
+            ChannelManager.TimerChanFreshnessEveryMin();
         }
 
         public void NewInboundConnection(ISocketDescriptor descriptor)

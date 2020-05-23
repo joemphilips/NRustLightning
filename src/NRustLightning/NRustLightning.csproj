@@ -23,6 +23,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DotNetLightning.Data\DotNetLightning.Data.fsproj" />
+      <ProjectReference Include="..\NRustLightning.RustLightningTypes\NRustLightning.RustLightningTypes.fsproj" />
     </ItemGroup>
 </Project>

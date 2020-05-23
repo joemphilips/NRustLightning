@@ -35,7 +35,7 @@ namespace NRustLightning.Tests
             _pool = MemoryPool<byte>.Shared;
         }
 
-        private PeerManager getTestPeerManager()
+        public static PeerManager getTestPeerManager()
         {
             
             var logger = new TestLogger();
@@ -89,7 +89,10 @@ namespace NRustLightning.Tests
             var paymentHash = new uint256();
             var e = Assert.Throws<FFIException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
             Assert.Equal("FFI against rust-lightning failed (InternalError), Error: AllFailedRetrySafe([No channel available with first hop!])", e.Message);
-            channelManager.Dispose();
+
+            var events= channelManager.GetAndClearPendingEvents();
+            
+            peerMan.Dispose();
         }
     }
 }

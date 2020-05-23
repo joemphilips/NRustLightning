@@ -6,7 +6,9 @@ using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
+using NRustLightning.RustLightningTypes;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -27,6 +29,11 @@ namespace NRustLightning.Server.P2P
         private readonly ILogger<P2PConnectionHandler> _logger;
         private readonly ConcurrentDictionary<EndPoint, ConnectionLoop> _connectionLoops = new ConcurrentDictionary<EndPoint, ConnectionLoop>();
         private readonly MemoryPool<byte> _pool;
+        
+        /// <summary>
+        /// If this ticks, we must call ChannelManager.GetAndClearPendingEvents, and react to it.
+        /// </summary>
+        public Channel<byte> EventNotify { get; }
  
         public P2PConnectionHandler(ISocketDescriptorFactory descriptorFactory, PeerManagerProvider peerManager,
             ILoggerFactory loggerFactory, P2PConnectionFactory connectionFactory)
@@ -40,6 +47,7 @@ namespace NRustLightning.Server.P2P
             PeerManager = pmProvider.GetPeerManager("BTC");
             _logger.LogWarning("WARNING: it only supports BTC");
             _pool = MemoryPool<byte>.Shared;
+            EventNotify = Channel.CreateBounded<byte>(new BoundedChannelOptions(100));
         }
 
         public override async Task OnConnectedAsync(ConnectionContext connection)
@@ -54,7 +62,7 @@ namespace NRustLightning.Server.P2P
             var (descriptor, writeReceiver) = descriptorFactory.GetNewSocket(connection.Transport.Output);
             PeerManager.NewInboundConnection(descriptor);
             Action cleanup = () => { _connectionLoops.TryRemove(connection.RemoteEndPoint, out _); };
-            var conn = new ConnectionLoop(connection.Transport, descriptor, PeerManager, _loggerFactory.CreateLogger<ConnectionLoop>(), writeReceiver, cleanup);
+            var conn = new ConnectionLoop(connection.Transport, descriptor, PeerManager, _loggerFactory.CreateLogger<ConnectionLoop>(), writeReceiver, EventNotify.Writer, cleanup);
             _connectionLoops.TryAdd(connection.RemoteEndPoint, conn);
             conn.Start(connection.ConnectionClosed);
             await conn.ExecutionTask;
@@ -89,10 +97,11 @@ namespace NRustLightning.Server.P2P
                 
                 Action cleanup = () => { _connectionLoops.TryRemove(connectionContext.RemoteEndPoint, out _); };
                 var conn = new ConnectionLoop(connectionContext.Transport, descriptor, PeerManager,
-                    _loggerFactory.CreateLogger<ConnectionLoop>(), writeReceiver, cleanup);
+                    _loggerFactory.CreateLogger<ConnectionLoop>(), writeReceiver, EventNotify.Writer, cleanup);
                 _connectionLoops.TryAdd(remoteEndPoint, conn);
                 Task.Run(() => conn.Start(ct));
             }
+            
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.ConnectionRefused)
             {
                 _logger.LogError($"{ex.Message}:{Environment.NewLine}{ex.StackTrace}");

@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using NBitcoin;
 using NRustLightning.Adaptors;
 namespace NRustLightning.Adaptors
@@ -72,9 +73,15 @@ namespace NRustLightning.Adaptors
     public readonly ref struct FFIOutPoint
     {
         internal readonly uint256 txid;
-        internal readonly uint index;
+        internal readonly ushort index;
 
-        public (uint256, uint) ToTuple() => (txid, index);
+        public FFIOutPoint(uint256 txid, ushort index)
+        {
+            this.txid = txid ?? throw new ArgumentNullException(nameof(txid));
+            this.index = index;
+        }
+
+        public (uint256, ushort) ToTuple() => (txid, index);
     }
     [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFITxOut

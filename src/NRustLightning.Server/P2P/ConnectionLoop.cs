@@ -19,6 +19,7 @@ namespace NRustLightning.Server.P2P
         private readonly SocketDescriptor _socketDescriptor;
         private readonly ILogger<ConnectionLoop> _logger;
         private readonly ChannelReader<byte> _writeAvailReceiver;
+        private readonly ChannelWriter<byte> _eventNotify;
         private readonly Action? _cleanup;
         private readonly Guid _id;
         public Task? ExecutionTask { get; private set; }
@@ -26,13 +27,14 @@ namespace NRustLightning.Server.P2P
         private CancellationTokenSource _cts;
 
         public ConnectionLoop(IDuplexPipe transport, SocketDescriptor socketDescriptor, PeerManager peerManager,
-            ILogger<ConnectionLoop> logger, ChannelReader<byte> writeAvailReceiver, Action cleanup = null)
+            ILogger<ConnectionLoop> logger, ChannelReader<byte> writeAvailReceiver, ChannelWriter<byte> eventNotify, Action cleanup = null)
         {
             PeerManager = peerManager;
             _transport = transport;
             _socketDescriptor = socketDescriptor;
             _logger = logger;
             _writeAvailReceiver = writeAvailReceiver;
+            _eventNotify = eventNotify;
             _cleanup = cleanup;
             _id = Guid.NewGuid();
         }
@@ -84,12 +86,14 @@ namespace NRustLightning.Server.P2P
             {
                 _logger.LogWarning($"error while processing connection {_id}. Closing");
                 _logger.LogError($"{ex.Message}: {ex.StackTrace}");
+                _eventNotify.TryWrite(1);
                 PeerManager.SocketDisconnected(_socketDescriptor);
             }
             finally
             {
                 await _transport.Output.CompleteAsync();
                 await _transport.Input.CompleteAsync();
+                _eventNotify.TryWrite(1);
                 _cleanup?.Invoke();
             }
         }
@@ -119,6 +123,7 @@ namespace NRustLightning.Server.P2P
                     if (PeerManager.TryReadEvent(_socketDescriptor, r.Span, out var shouldPause, out var ffiResult))
                     {
                         _socketDescriptor.ReadPaused = shouldPause;
+                        _eventNotify.TryWrite(1);
                     }
                     else
                     {

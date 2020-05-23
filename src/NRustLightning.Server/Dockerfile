@@ -43,8 +43,7 @@ COPY rust-lightning/bindings ./bindings/
 
 WORKDIR /src
 
-COPY ["src/DotNetLightning.Data/DotNetLightning.Data.fsproj", "src/DotNetLightning.Data/"]
-COPY ["src/ResultUtils/ResultUtils.fsproj", "src/ResultUtils/"]
+COPY ["src/NRustLightning.RustLightningTypes/NRustLightning.RustLightningTypes.fsproj", "src/NRustLightning.RustLightningTypes/"]
 COPY ["src/NRustLightning/NRustLightning.csproj", "src/NRustLightning/"]
 COPY ["src/NRustLightning.Server/NRustLightning.Server.csproj", "src/NRustLightning.Server/"]
 RUN dotnet restore "src/NRustLightning.Server/NRustLightning.Server.csproj"

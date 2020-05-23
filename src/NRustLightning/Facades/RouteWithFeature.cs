@@ -5,7 +5,7 @@ using DotNetLightning.Serialize;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
-using static DotNetLightning.Core.Utils.Extensions.PrimitiveExtensions;
+using static NRustLightning.RustLightningTypes.PrimitiveExtensions;
 
 namespace NRustLightning.Facades
 {

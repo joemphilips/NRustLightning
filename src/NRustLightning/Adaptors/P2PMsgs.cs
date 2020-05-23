@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using DotNetLightning.Serialize;
 using Msgs = DotNetLightning.Serialize.Msgs;
 
 namespace NRustLightning.Adaptors
@@ -25,7 +27,11 @@ namespace NRustLightning.Adaptors
         }
         public Msgs.NodeAnnouncement ParseArray()
         {
-            return Msgs.ILightningSerializable.fromBytes<Msgs.NodeAnnouncement>(this.AsArray());
+            using var ms = new MemoryStream(this.AsArray());
+            using var ls = new LightningReaderStream(ms);
+            var r = new Msgs.NodeAnnouncement();
+            ((Msgs.ILightningSerializable<Msgs.NodeAnnouncement>)r).Deserialize(ls);
+            return r;
         }
     }
 
