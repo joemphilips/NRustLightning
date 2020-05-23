@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using NRustLightning.RustLightningTypes;
@@ -22,16 +23,37 @@ namespace NRustLightning.Server.Services
         {
             while (await _connectionHandler.EventNotify.Reader.WaitToReadAsync(cancellationToken))
             {
-                var events = _peerManager.ChannelManager.GetAndClearPendingEvents();
+                var chanMan = _peerManager.ChannelManager;
+                var events = chanMan.GetAndClearPendingEvents();
                 foreach (var e in events)
                 {
                     if (e is Event.FundingGenerationReady f)
                     {
                         var d = f.Item;
+                        chanMan.FundingTransactionGenerated();
+                    }
+                    else if (e is Event.FundingBroadcastSafe fundingBroadcastSafe)
+                    {
+                    }
+                    else if (e is Event.PaymentReceived paymentReceived)
+                    {
+                    }
+                    else if (e is Event.PaymentSent paymentSent)
+                    {
+                    }
+                    else if (e is Event.PaymentFailed paymentFailed)
+                    {
                     }
                     else if (e is Event.PendingHTLCsForwardable _)
                     {
                         _peerManager.ChannelManager.ProcessPendingHTLCForwards();
+                    }
+                    else if (e is Event.SpendableOutputs spendableOutputs)
+                    {
+                    }
+                    else
+                    {
+                        throw new Exception("Unreachable!");
                     }
                 }
             }

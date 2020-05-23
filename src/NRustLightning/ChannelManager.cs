@@ -1,12 +1,12 @@
 using System;
 using System.Buffers;
 using System.IO;
+using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
-using NRustLightning.NRustLightningTypes;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Utils;
 using Network = NRustLightning.Adaptors.Network;
@@ -95,6 +95,21 @@ namespace NRustLightning
             }
         }
 
+        public unsafe void ForceCloseChannel(uint256 channelId)
+        {
+            if (channelId == null) throw new ArgumentNullException(nameof(channelId));
+            var bytes = channelId.ToBytes();
+            fixed (byte* b = bytes)
+            {
+                Interop.force_close_channel((IntPtr) b, Handle);
+            }
+        }
+
+        public void ForceCloseAllChannels()
+        {
+            Interop.force_close_all_channels(Handle);
+        }
+
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash)
             => SendPayment(routesWithFeature, paymentHash, new byte[0]);
         
@@ -121,12 +136,6 @@ namespace NRustLightning
             }
         }
 
-        public Event[] GetAndClearPendingEvents()
-        {
-            Interop.get_and_clear_pending_events(Handle, out var eventsBytes);
-            return Event.ParseManyUnsafe(eventsBytes.AsArray());
-        }
-
         public unsafe void FundingTransactionGenerated(Span<byte> temporaryChannelId, OutPoint fundingTxo)
         {
             if (fundingTxo == null) throw new ArgumentNullException(nameof(fundingTxo));
@@ -148,6 +157,57 @@ namespace NRustLightning
         {
             Interop.timer_chan_freshness_every_min(Handle);
         }
+
+        public unsafe bool FailHTLCBackwards(uint256 paymentHash, uint256 paymentSecret = null)
+        {
+            if (paymentHash == null) throw new ArgumentNullException(nameof(paymentHash));
+            var paymentHashBytes = paymentHash.ToBytes();
+            if (paymentSecret is null)
+            {
+                fixed (byte* p1 = paymentHashBytes)
+                {
+                    Interop.fail_htlc_backwards_without_secret((IntPtr) p1, Handle, out var result);
+                    return result == 1;
+                }
+            }
+            var paymentSecretBytes = paymentSecret.ToBytes();
+            fixed (byte* p1 = paymentHashBytes)
+            fixed (byte* p2 = paymentSecretBytes)
+            {
+                Interop.fail_htlc_backwards((IntPtr) p1,(IntPtr)p2, Handle, out var result);
+                return result == 1;
+            }
+        }
+
+        public unsafe bool ClaimFunds(uint256 paymentPreimage, uint256 paymentSecret, ulong expectedAmount)
+        {
+            if (paymentPreimage == null) throw new ArgumentNullException(nameof(paymentPreimage));
+            if (paymentSecret == null) throw new ArgumentNullException(nameof(paymentSecret));
+            var b1 = paymentPreimage.ToBytes();
+            var b2 = paymentSecret.ToBytes();
+            fixed(byte* p1 = b1)
+            fixed (byte* p2 = b2)
+            {
+                Interop.claim_funds((IntPtr) p1, (IntPtr) p2, expectedAmount, Handle, out var result);
+                return result == 1;
+            }
+        }
+
+        public unsafe void UpdateFee(uint256 channelId, ulong feeRatePerKw)
+        {
+            var b = channelId.ToBytes();
+            fixed (byte* c = b)
+            {
+                Interop.update_fee((IntPtr)c, feeRatePerKw, Handle, true);
+            }
+        }
+        
+        public Event[] GetAndClearPendingEvents()
+        {
+            Interop.get_and_clear_pending_events(Handle, out var eventsBytes);
+            return Event.ParseManyUnsafe(eventsBytes.AsArray());
+        }
+
         
         public void Dispose()
         {

@@ -100,10 +100,10 @@ namespace NRustLightning
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "foce_close_channel",
             ExactSpelling = true)]
-        static extern FFIResult _force_close_channel(ref Array32 channelId, ChannelManagerHandle handle);
-        internal static FFIResult force_close_channel(ref Array32 channelId, ChannelManagerHandle handle)
+        static extern FFIResult _force_close_channel(IntPtr channelId, ChannelManagerHandle handle);
+        internal static FFIResult force_close_channel(IntPtr channelId, ChannelManagerHandle handle)
         {
-            return MaybeCheck(_force_close_channel(ref channelId, handle), true);
+            return MaybeCheck(_force_close_channel(channelId, handle), true);
         }
         
         [DllImport(RustLightning,
@@ -189,22 +189,22 @@ namespace NRustLightning
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "fail_htlc_backwards",
             ExactSpelling = true)]
-        static extern FFIResult _fail_htlc_backwards(ref FFISha256dHash paymentHash, ref FFISecret paymentSecret, ChannelManagerHandle handle, out byte result);
+        static extern FFIResult _fail_htlc_backwards(IntPtr paymentHash, IntPtr paymentSecret, ChannelManagerHandle handle, out byte result);
 
-        internal static FFIResult fail_htlc_backwards(ref FFISha256dHash paymentHash, ref FFISecret paymentSecret, ChannelManagerHandle handle, out byte result)
+        internal static FFIResult fail_htlc_backwards(IntPtr paymentHash, IntPtr paymentSecret, ChannelManagerHandle handle, out byte result)
         {
-            return MaybeCheck(_fail_htlc_backwards(ref paymentHash, ref paymentSecret, handle, out result), true);
+            return MaybeCheck(_fail_htlc_backwards(paymentHash, paymentSecret, handle, out result), true);
         }
         
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "fail_htlc_backwards_without_secret",
             ExactSpelling = true)]
-        static extern FFIResult _fail_htlc_backwards_without_secret(ref FFISha256dHash paymentHash, ChannelManagerHandle handle, out byte result);
+        static extern FFIResult _fail_htlc_backwards_without_secret(IntPtr paymentHash, ChannelManagerHandle handle, out byte result);
 
-        internal static FFIResult fail_htlc_backwards_without_secret(ref FFISha256dHash paymentHash, ChannelManagerHandle handle, out byte result)
+        internal static FFIResult fail_htlc_backwards_without_secret(IntPtr paymentHash, ChannelManagerHandle handle, out byte result)
         {
-            return MaybeCheck(_fail_htlc_backwards_without_secret(ref paymentHash, handle, out result), true);
+            return MaybeCheck(_fail_htlc_backwards_without_secret(paymentHash, handle, out result), true);
         }
         
         
@@ -212,11 +212,23 @@ namespace NRustLightning
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "claim_funds",
             ExactSpelling = true)]
-        static extern FFIResult _claim_funds(ref Array32 paymentPreimage, ref Array32 paymentSecret, ulong expectedAmount, ChannelManagerHandle handle, out byte result);
+        static extern FFIResult _claim_funds(IntPtr paymentPreimage, IntPtr paymentSecret, ulong expectedAmount, ChannelManagerHandle handle, out byte result);
 
-        internal static FFIResult claim_funds(ref Array32 paymentPreimage, ref Array32 paymentSecret, ulong expectedAmount, ChannelManagerHandle handle, out byte result)
+        internal static FFIResult claim_funds(IntPtr paymentPreimage, IntPtr paymentSecret, ulong expectedAmount, ChannelManagerHandle handle, out byte result)
         {
-            return MaybeCheck(_claim_funds(ref paymentPreimage, ref paymentSecret, expectedAmount, handle, out result), true);
+            return MaybeCheck(_claim_funds(paymentPreimage, paymentSecret, expectedAmount, handle, out result), true);
+        }
+        
+        
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "update_fee",
+            ExactSpelling = true)]
+        static extern FFIResult _update_fee(IntPtr channelId, ulong feeratePerkw, ChannelManagerHandle handle);
+
+        internal static FFIResult update_fee(IntPtr channelId, ulong feeratePerKw, ChannelManagerHandle handle, bool check = true)
+        {
+            return MaybeCheck(_update_fee(channelId, feeratePerKw, handle), check);
         }
         
         

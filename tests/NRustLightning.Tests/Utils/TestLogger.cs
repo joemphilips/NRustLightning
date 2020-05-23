@@ -18,7 +18,7 @@ namespace NRustLightning.Tests.Utils
             _log = (ref FFILogRecord record) =>
             {
                 Msgs.Add(record.Args);
-                Console.WriteLine($"message received from ffi is {record.Args}");
+                Console.WriteLine($"message received from ffi: \'{record.Args}\'");
             };
         }
 
