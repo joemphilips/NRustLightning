@@ -210,8 +210,10 @@ namespace NRustLightning
         public void Dispose()
         {
             tick.Dispose();
-            _handle.Dispose();
+            // An order is important here, we must first dispose inner handle.
+            // Otherwise ChannelManager._handle might point to Invalid reference and crashes by double freeing.
             ChannelManager.Dispose();
+            _handle.Dispose();
         }
     }
 }
