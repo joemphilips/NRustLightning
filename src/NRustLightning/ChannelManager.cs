@@ -37,6 +37,7 @@ namespace NRustLightning
             ulong currentBlockHeight
             )
         {
+            Errors.AssertDataLength(nameof(seed), seed.Length, 32);
             unsafe
             {
                 fixed (byte* b = seed)
@@ -86,6 +87,7 @@ namespace NRustLightning
         }
         public unsafe void CloseChannel(uint256 channelId)
         {
+            if (channelId == null) throw new ArgumentNullException(nameof(channelId));
             var bytes = channelId.ToBytes();
             fixed (byte* b = bytes)
             {
@@ -98,7 +100,7 @@ namespace NRustLightning
         
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash, Span<byte> paymentSecret)
         {
-            if (paymentHash.Length != 32) throw new ArgumentException($"{nameof(paymentHash)}.Length must be 32. it was {paymentHash.Length}");
+            Errors.AssertDataLength(nameof(paymentHash), paymentHash.Length, 32);
             if (paymentSecret.Length != 0 && paymentSecret.Length != 32) throw new ArgumentException($"paymentSecret must be length of 32 or empty");
             unsafe
             {
@@ -127,7 +129,8 @@ namespace NRustLightning
 
         public unsafe void FundingTransactionGenerated(Span<byte> temporaryChannelId, OutPoint fundingTxo)
         {
-            if (temporaryChannelId.Length != 32) throw new InvalidDataException($"length for {nameof(temporaryChannelId)} must be 32! it was {temporaryChannelId.Length}");
+            if (fundingTxo == null) throw new ArgumentNullException(nameof(fundingTxo));
+            Errors.AssertDataLength(nameof(temporaryChannelId), temporaryChannelId.Length, 32);
 
             fixed (byte* temporaryChannelIdPtr = temporaryChannelId)
             {

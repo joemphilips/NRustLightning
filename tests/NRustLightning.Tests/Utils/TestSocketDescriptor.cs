@@ -7,7 +7,7 @@ using NRustLightning.Interfaces;
 
 namespace NRustLightning.Tests.Utils
 {
-    public class DuplexPipeSocketDescriptor : ISocketDescriptor
+    public class TestSocketDescriptor : ISocketDescriptor
     {
         public UIntPtr Index { get; }
         private SendData _sendData;
@@ -20,7 +20,7 @@ namespace NRustLightning.Tests.Utils
         /// </summary>
         public bool Disconnected { get; set; }
 
-        public DuplexPipeSocketDescriptor(UIntPtr index, PipeWriter output)
+        public TestSocketDescriptor(UIntPtr index, PipeWriter output)
         {
             Index = index;
             Output = output ?? throw new ArgumentNullException(nameof(output));

@@ -26,6 +26,17 @@ namespace NRustLightning.Adaptors
         internal fixed byte txid[32];
         internal readonly ushort index;
 
+        public uint256 GetTxId()
+        {
+            var bytes = new byte[32];
+            for (int i = 0; i < 32; i++)
+            {
+                bytes[i] = this.txid[i];
+            }
+
+            return new uint256(bytes);
+        }
+
         public FFIOutPoint(uint256 txId, ushort index)
         {
             var bytes = txId.ToBytes();
@@ -34,6 +45,11 @@ namespace NRustLightning.Adaptors
                 this.txid[i] = bytes[i];
             }
             this.index = index;
+        }
+
+        public (uint256, ushort) ToTuple()
+        {
+            return (this.GetTxId(), this.index);
         }
     }
     

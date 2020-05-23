@@ -8,31 +8,6 @@ using NRustLightning.Utils;
 
 namespace NRustLightning.Tests.Utils
 {
-    public class Broadcaster : IDisposable
-    {
-        private readonly BroadcasterHandle _handle;
-
-        private Broadcaster(BroadcasterHandle handle)
-        {
-            _handle = handle ?? throw new ArgumentNullException(nameof(handle));
-        }
-
-        public static Broadcaster Create(IBroadcaster broadcaster)
-        {
-            Interop.create_broadcaster(ref broadcaster.BroadcastTransaction, out var handle);
-            return new Broadcaster(handle);
-        }
-
-        public void Broadcast()
-        {
-            Interop.ffi_test_broadcaster(_handle);
-        }
-        
-        public void Dispose()
-        {
-            _handle.Dispose();
-        }
-    }
         internal class TestBroadcaster : IBroadcaster
         {
             public ConcurrentBag<string> BroadcastedTxHex { get; } = new ConcurrentBag<string>();
