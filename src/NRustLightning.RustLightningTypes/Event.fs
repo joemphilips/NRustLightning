@@ -244,6 +244,7 @@ type Event =
         | Error e -> raise <| FormatException(e)
         
     static member ParseMany(s: byte[]): Result<Event[], _> =
+        if s.Length = 0 then Ok([||]) else
         let len = int(UInt16.FromBytesBigEndian(s.[0..1]))
         let res = Array.zeroCreate(len)
         let mutable pos = 0

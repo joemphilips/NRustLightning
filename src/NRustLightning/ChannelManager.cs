@@ -18,6 +18,7 @@ namespace NRustLightning
     public sealed class ChannelManager : IDisposable
     {
         internal readonly ChannelManagerHandle Handle;
+        private bool _disposed = false;
         private readonly object[] _deps;
         internal ChannelManager(ChannelManagerHandle handle, object[] deps = null)
         {
@@ -145,7 +146,11 @@ namespace NRustLightning
         
         public void Dispose()
         {
-            Handle.Dispose();
+            if (!_disposed)
+            {
+                Handle.Dispose();
+                _disposed = true;
+            }
         }
     }
 }

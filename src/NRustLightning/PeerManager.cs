@@ -20,6 +20,7 @@ namespace NRustLightning
         private readonly PeerManagerHandle _handle;
         private readonly object[] _deps;
         private readonly Timer tick;
+        private bool _disposed = false;
 
         public ChannelManager ChannelManager { get; }
         
@@ -209,11 +210,13 @@ namespace NRustLightning
 
         public void Dispose()
         {
-            tick.Dispose();
-            // An order is important here, we must first dispose inner handle.
-            // Otherwise ChannelManager._handle might point to Invalid reference and crashes by double freeing.
-            ChannelManager.Dispose();
-            _handle.Dispose();
+            if (!_disposed)
+            {
+                tick.Dispose();
+                ChannelManager.Dispose();
+                _handle.Dispose();
+                _disposed = true;
+            }
         }
     }
 }
