@@ -40,12 +40,11 @@ namespace NRustLightning.Server.Services
                     var feeEst = new BitcoinCoreFeeEstimator(rpc);
                     var chainWatchInterface = new NBXChainWatchInterface(nbx, loggerFactory.CreateLogger<NBXChainWatchInterface>(), n);
                     var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
-                    var routingMsgHandler = new RoutingMsgHandler();
                     var seed = new byte[32];
                     RandomUtils.GetBytes(seed);
                     var ffiN = n.FFINetwork;
                     var conf = config.Value.RustLightningConfig;
-                    var peerMan = PeerManager.Create(seed.AsSpan(), in ffiN, in conf, chainWatchInterface, b, logger, feeEst, routingMsgHandler, 400000, keysRepository.GetNodeSecret().ToBytes());
+                    var peerMan = PeerManager.Create(seed.AsSpan(), in ffiN, in conf, chainWatchInterface, b, logger, feeEst, 400000, keysRepository.GetNodeSecret().ToBytes());
                     _peerManagers.Add(n.CryptoCode, peerMan);
                 }
             }

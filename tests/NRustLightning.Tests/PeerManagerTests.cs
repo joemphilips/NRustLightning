@@ -44,11 +44,10 @@ namespace NRustLightning.Tests
             var chainWatchInterface = new TestChainWatchInterface();
             var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
             var n = Network.TestNet;
-            var routingMsgHandler = new TestRoutingMsgHandler();
             var ourNodeSecret = _keys[0].ToBytes();
             var peerManager =
                 PeerManager.Create(
-                    seed, in n, in TestUserConfig.Default, chainWatchInterface, broadcaster, logger, feeEstiamtor,  routingMsgHandler,400000, ourNodeSecret
+                    seed, in n, in TestUserConfig.Default, chainWatchInterface, broadcaster, logger, feeEstiamtor, 400000, ourNodeSecret
                     );
             return peerManager;
         }
@@ -75,9 +74,20 @@ namespace NRustLightning.Tests
         }
 
         [Fact]
+        public void CanCreateAndDisposePeerManagerSafely()
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                using var peerMan = getTestPeerManager();
+                peerMan.Dispose();
+            }
+        }
+        
+        [Fact]
         public void CanCallChannelManagerThroughPeerManager()
         {
             using var peerMan = getTestPeerManager();
+            
             var channelManager = peerMan.ChannelManager;
             var nodeFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
             var channelFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
@@ -90,8 +100,6 @@ namespace NRustLightning.Tests
             var e = Assert.Throws<FFIException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
             Assert.Equal("FFI against rust-lightning failed (InternalError), Error: AllFailedRetrySafe([No channel available with first hop!])", e.Message);
 
-            // var events= channelManager.GetAndClearPendingEvents();
-            
             peerMan.Dispose();
         }
     }

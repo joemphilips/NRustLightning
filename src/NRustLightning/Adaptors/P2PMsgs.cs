@@ -1,10 +1,12 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using DotNetLightning.Serialize;
 using Msgs = DotNetLightning.Serialize.Msgs;
 
 namespace NRustLightning.Adaptors
 {
+    [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFINodeAnnoucement
     {
         internal readonly IntPtr ptr;

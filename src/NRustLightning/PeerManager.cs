@@ -45,7 +45,6 @@ namespace NRustLightning
             IBroadcaster broadcaster,
             ILogger logger,
             IFeeEstimator feeEstimator,
-            IRoutingMsgHandler routingMsgHandler,
             uint currentBlockHeight,
             Span<byte> ourNodeSecret,
             int tickIntervalMSec = 30000
@@ -77,7 +76,7 @@ namespace NRustLightning
                         (IntPtr)pubkeyPtr,
                         out var handle
                         );
-                    return new PeerManager(handle, chanMan, tickIntervalMSec,new object[]{ chainWatchInterface, broadcaster, logger, feeEstimator, routingMsgHandler });
+                    return new PeerManager(handle, chanMan, tickIntervalMSec,new object[]{ chainWatchInterface, broadcaster, logger, feeEstimator, });
                 }
             }
         }

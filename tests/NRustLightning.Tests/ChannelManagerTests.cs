@@ -73,10 +73,12 @@ namespace NRustLightning.Tests
         public void CanCreateAndCloseChannel()
         {
             using var channelManager = PeerManagerTests.getTestPeerManager().ChannelManager;
-            var pk = _pubKeys[0];
+            // var pk = _pubKeys[0];
             // channelManager.CreateChannel(pk, 100000, 1000, UInt64.MaxValue);
             // var c = channelManager.ListChannels(_pool);
             // channelManager.CloseChannel(c[0].ChannelId);
+            // var events = channelManager.GetAndClearPendingEvents();
+            channelManager.Dispose();
         }
     }
 }
