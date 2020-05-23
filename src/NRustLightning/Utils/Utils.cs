@@ -8,11 +8,16 @@ namespace NRustLightning.Utils
     {
         public const int BUFFER_SIZE_UNIT = 1024;
         public const int MAX_BUFFER_SIZE = 65536;
+        
         /// <summary>
         /// Use this function when ffi function returns variable length return value
+        /// It will rent `BUFFER_SIZE_UNIT` bytes from MemoryPool and tries to write a return value
+        /// in to it. If the length was not enough, then it will try again with longer buffer.
+        /// This process continues until the buffer reaches MAX_BUFFER_SIZE, and it will throws FFIException
+        /// When that is even not enough.
         /// </summary>
         /// <param name="pool"></param>
-        /// <param name="func"></param>
+        /// <param name="func"> actual ffi function, first argument is a pointer to a allocated buffer, second is the length of it, and third is a parent SafeHandle class</param>
         /// <param name="handle"></param>
         /// <param name="postProcess"></param>
         /// <typeparam name="T"></typeparam>

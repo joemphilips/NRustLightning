@@ -236,11 +236,11 @@ namespace NRustLightning
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "get_and_clear_pending_events",
             ExactSpelling = true)]
-        static extern FFIResult _get_and_clear_pending_events(ChannelManagerHandle handle, out FFIBytes events);
+        static extern FFIResult _get_and_clear_pending_events(ChannelManagerHandle handle, IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualBufLen);
 
-        internal static FFIResult get_and_clear_pending_events(ChannelManagerHandle handle, out FFIBytes events,
+        internal static FFIResult get_and_clear_pending_events(ChannelManagerHandle handle, IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualBufLen,
             bool check = true)
-            => MaybeCheck(_get_and_clear_pending_events(handle, out events), check);
+            => MaybeCheck(_get_and_clear_pending_events(handle, bufOut, bufLen, out actualBufLen), check);
         
 
         [DllImport(RustLightning,

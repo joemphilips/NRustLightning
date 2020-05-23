@@ -86,7 +86,7 @@ namespace NRustLightning.Tests
             Assert.False(c[0].IsLive);
             var e = Assert.Throws<FFIException>(() => channelManager.CloseChannel(c[0].ChannelId));
             Assert.Contains("No such channel", e.ToString());
-            var events = channelManager.GetAndClearPendingEvents();
+            var events = channelManager.GetAndClearPendingEvents(_pool);
             channelManager.Dispose();
         }
     }

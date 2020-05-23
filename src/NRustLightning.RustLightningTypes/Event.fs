@@ -181,7 +181,7 @@ type Event =
     | SpendableOutputs of SpendableOutputDescriptor[]
     with
     
-    static member Parse(s: byte[]): Result<Option<Event>, _> =
+    static member Parse(s: byte[]): Result<Event, _> =
         match s.[0] with
         | 0uy ->
             Ok(None)
@@ -191,33 +191,33 @@ type Event =
                 UserChannelId = ChannelId(uint256(s.[(36 + 1)..], false))
             }
             |> FundingBroadcastSafe
-            |> Some |> Ok
+            |> Ok
         | 2uy ->
             {
                 PaymentReceivedData.PaymentHash = uint256(s.[1..32], false) |> PaymentHash
                 Amount = LNMoney.FromSpan(s.[33..40].AsSpan())
             }
             |> PaymentReceived
-            |> Some |> Ok
+            |> Ok
         | 3uy ->
             s.[1..32]
             |> PaymentPreimage.Create
             |> PaymentSent
-            |> Some |> Ok
+            |> Ok
         | 4uy ->
             {
                 PaymentFailedData.PaymentHash = uint256(s.[1..32], false) |> PaymentHash
                 RejectedByDest = s.[33] = 1uy
             }
             |> PaymentFailed
-            |> Some |> Ok
+            |> Ok
         | 5uy ->
             {
                 Duration.Secs = 0UL
                 Nanos = 0u
             }
             |> PendingHTLCsForwardable
-            |> Some |> Ok
+            |> Ok
         | 6uy ->
             let len = UInt64.FromSpan(s.[1..8].AsSpan(), false)
             let outputs = ResizeArray()
@@ -231,14 +231,13 @@ type Event =
                 | Error e -> result <- Error e
             result
             |> Result.map(fun _ ->
-            outputs.ToArray()
-            |> SpendableOutputs
-            |> Some
+                outputs.ToArray()
+                |> SpendableOutputs
             )
         | x ->
             Error(sprintf "Unknown event type %A" x)
         
-    static member ParseUnsafe(s:byte[]): Option<Event> =
+    static member ParseUnsafe(s:byte[]): Event =
         match Event.Parse(s) with
         | Ok s -> s
         | Error e -> raise <| FormatException(e)
@@ -255,8 +254,7 @@ type Event =
             let e = Event.Parse(s.[pos..])
             match e with
             | Error e -> error <- Error(e)
-            | Ok(None) -> breaked <- true
-            | Ok(Some e) ->
+            | Ok(e) ->
                 pos <- e.BytesLength
                 res.[i] <- e
         error |> Result.map(fun _ -> res)

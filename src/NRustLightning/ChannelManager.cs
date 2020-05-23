@@ -202,10 +202,17 @@ namespace NRustLightning
             }
         }
         
-        public Event[] GetAndClearPendingEvents()
+        public Event[] GetAndClearPendingEvents(MemoryPool<byte> pool)
         {
-            Interop.get_and_clear_pending_events(Handle, out var eventsBytes);
-            return Event.ParseManyUnsafe(eventsBytes.AsArray());
+            Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
+                (bufOut, bufLength, handle) =>
+                {
+                    var ffiResult = Interop.get_and_clear_pending_events(handle, bufOut, bufLength, out var actualLength);
+                    return (ffiResult, actualLength);
+                };
+
+            var arr = WithVariableLengthReturnBuffer(pool, func, Handle);
+            return Event.ParseManyUnsafe(arr);
         }
 
         

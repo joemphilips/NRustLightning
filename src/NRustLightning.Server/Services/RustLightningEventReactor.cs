@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 using NRustLightning.RustLightningTypes;
@@ -12,8 +13,10 @@ namespace NRustLightning.Server.Services
         private readonly P2PConnectionHandler _connectionHandler;
         private readonly PeerManagerProvider _peerManagerProvider;
         private readonly PeerManager _peerManager;
+        private readonly MemoryPool<byte> _pool;
         public RustLightningEventReactor(P2PConnectionHandler connectionHandler, PeerManagerProvider peerManagerProvider)
         {
+            _pool = MemoryPool<byte>.Shared;
             _connectionHandler = connectionHandler;
             _peerManagerProvider = peerManagerProvider;
             _peerManager = peerManagerProvider.GetPeerManager("BTC");
@@ -24,7 +27,7 @@ namespace NRustLightning.Server.Services
             while (await _connectionHandler.EventNotify.Reader.WaitToReadAsync(cancellationToken))
             {
                 var chanMan = _peerManager.ChannelManager;
-                var events = chanMan.GetAndClearPendingEvents();
+                var events = chanMan.GetAndClearPendingEvents(_pool);
                 foreach (var e in events)
                 {
                     if (e is Event.FundingGenerationReady f)
