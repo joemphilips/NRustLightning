@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Threading;
+using DotNetLightning.Payment;
 using Microsoft.AspNetCore.Http;
 using NBitcoin;
 using NBXplorer;
@@ -18,7 +19,7 @@ namespace NRustLightning.Client
 {
     public class NRustLightningClient : IDisposable, INRustLightningClient
     {
-        private HttpClient _client;
+        public HttpClient HttpClient;
         private Uri _baseUri;
 
         private JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
@@ -38,13 +39,13 @@ namespace NRustLightning.Client
                 handler.ClientCertificates.Add(certificate);
             }
 
-            _client = new HttpClient(handler);
+            HttpClient = new HttpClient(handler);
             _baseUri = new Uri(baseUrl);
         }
         
         public void Dispose()
         {
-            _client.Dispose();
+            HttpClient.Dispose();
         }
 
         public Task<NodeInfo> GetInfoAsync()
@@ -62,6 +63,11 @@ namespace NRustLightning.Client
             return RequestAsync<object>("/v1/peer/disconnect", HttpMethod.Delete, connectionString.ToString());
         }
 
+        public Task<PaymentRequest> GetInvoiceAsync(InvoiceCreationOption option = default)
+        {
+            return RequestAsync<PaymentRequest>("/v1/payment/BTC/invoice", HttpMethod.Get, option);
+        }
+
         private async Task<T> RequestAsync<T>(string relativePath, HttpMethod method, object parameters = null)
         {
             using var msg = new HttpRequestMessage();
@@ -72,7 +78,7 @@ namespace NRustLightning.Client
                 var stringContent = JsonSerializer.Serialize(parameters);
                 msg.Content = new StringContent(stringContent, Encoding.UTF8, "application/json");
             }
-            using var resp = await _client.SendAsync(msg).ConfigureAwait(false);
+            using var resp = await HttpClient.SendAsync(msg).ConfigureAwait(false);
             resp.EnsureSuccessStatusCode();
             var content = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
             return JsonSerializer.Deserialize<T>(content, jsonSerializerOptions);

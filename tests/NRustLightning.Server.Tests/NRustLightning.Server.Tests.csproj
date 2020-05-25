@@ -21,4 +21,6 @@
     <ProjectReference Include="..\DockerComposeFixture\DockerComposeFixture\DockerComposeFixture.csproj" />
   </ItemGroup>
 
+  <Import Project="../../src/LDK.targets" />
+
 </Project>
