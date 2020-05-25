@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.IO;
+using System.Linq;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
@@ -158,10 +159,10 @@ namespace NRustLightning
             Interop.timer_chan_freshness_every_min(Handle);
         }
 
-        public unsafe bool FailHTLCBackwards(uint256 paymentHash, uint256 paymentSecret = null)
+        public unsafe bool FailHTLCBackwards(Primitives.PaymentHash paymentHash, Primitives.PaymentPreimage paymentSecret = null)
         {
             if (paymentHash == null) throw new ArgumentNullException(nameof(paymentHash));
-            var paymentHashBytes = paymentHash.ToBytes();
+            var paymentHashBytes = paymentHash.Value.ToBytes();
             if (paymentSecret is null)
             {
                 fixed (byte* p1 = paymentHashBytes)
@@ -170,7 +171,7 @@ namespace NRustLightning
                     return result == 1;
                 }
             }
-            var paymentSecretBytes = paymentSecret.ToBytes();
+            var paymentSecretBytes = paymentSecret.ToBytes().ToArray();
             fixed (byte* p1 = paymentHashBytes)
             fixed (byte* p2 = paymentSecretBytes)
             {
@@ -179,12 +180,12 @@ namespace NRustLightning
             }
         }
 
-        public unsafe bool ClaimFunds(uint256 paymentPreimage, uint256 paymentSecret, ulong expectedAmount)
+        public unsafe bool ClaimFunds(Primitives.PaymentPreimage paymentPreimage, uint256 paymentSecret, ulong expectedAmount)
         {
             if (paymentPreimage == null) throw new ArgumentNullException(nameof(paymentPreimage));
             if (paymentSecret == null) throw new ArgumentNullException(nameof(paymentSecret));
-            var b1 = paymentPreimage.ToBytes();
-            var b2 = paymentSecret.ToBytes();
+            var b1 = paymentPreimage.ToBytes().ToArray();
+            var b2 = paymentSecret.ToBytes().ToArray();
             fixed(byte* p1 = b1)
             fixed (byte* p2 = b2)
             {

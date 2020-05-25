@@ -25,11 +25,12 @@ type FundingBroadcastSafeData = {
     /// The output, which was passed to ChannelManager.FundingTransactionGenerated, which is now safe to broadcast.
     OutPoint: LNOutPoint
     /// The value passed in to ChannelManager.CreateChannel .
-    UserChannelId: ChannelId
+    UserChannelId: uint64
 }
 
 type PaymentReceivedData = {
     PaymentHash: PaymentHash
+    PaymentSecret: uint256 option
     Amount: LNMoney
 }
 type PaymentFailedData = {
@@ -38,9 +39,12 @@ type PaymentFailedData = {
 }
 
 type Duration = {
-    Secs: uint64
-    Nanos: uint32
+    MilliSec: uint64
 }
+with
+     member this.TimeToWait(random: Random) =
+         let factor = float (random.Next(1, 5))
+         TimeSpan.FromMilliseconds(float this.MilliSec) * factor
 
 type StaticOutputData = {
     Outpoint: LNOutPoint
@@ -60,87 +64,95 @@ type DynamicOutputP2WPKHData = {
     Output: TxOut
 }
 
+/// When on-chain outputs are created by rust-lightning (which our counterparty is not able to claim at any point in
+/// the future) and event is generated which you must track and be able to spend on-chain.
+/// The information needed to do this is provided in this enum, including the outpoint describing which txid and
+/// output index is available, the full output which exists at that txid/index, and any keys or other information
+/// required to sign.
 type SpendableOutputDescriptor =
+    /// An output to a script which was provided via KeysInterface, thus you should already know
+    /// how to spend it. No keys are provided as rust-lightning was never given any keys - only the script_pubkey
+    /// as it appears in the output.
+    /// These may include outputs from a transaction pushing our counterparty or claiming an HTLC on-chain using
+    /// the payment preimage or after it has timed out.
     | StaticOutput of StaticOutputData
+    /// An output to a P2WSH script which can be spent with a single signature after a CSV delay.
+    /// The private key which should be used to sign the transaction is provided, as well as the
+    /// full witness in the spending input should be:
+    /// <BIP 143 signature generated with the given key> <empty vector> (MINIMALIF standard rule)
+    /// <witness_script as provided>
+    /// Note that the nSequence field in the input must be set to_self_delay (which corresponds to
+    /// the transaction not being broadcastable until at least tl_self_delay blocks after the input
+    /// confirms).
+    /// These are generally the result of "revocable" output to us, spendable only by us unless
+    /// it is an output from us having broadcast an old state (which should never happen).
     | DynamicOutputP2WSH of DynamicOutputP2WSHData
     | DynamicOutputP2WPKH of DynamicOutputP2WPKHData
     with
-    static member Parse(bytes: byte[]): Result<SpendableOutputDescriptor, _> =
-        match bytes.[0] with
-        | 0uy ->
-            let outputs = TxOut()
-            outputs.FromBytes(bytes.[37..])
-            {
-                StaticOutputData.Outpoint = LNOutPoint.FromBytes(bytes.[1..36])
-                Output = outputs
-            }
-            |> StaticOutput
-            |> Ok
-        | 1uy ->
-            result {
-                let! witnessScriptLen, _ = bytes.[(1 + 36 + 31)..].TryPopVarInt()
-                let witnessScriptLen = int witnessScriptLen
-                let output = TxOut()
-                output.FromBytes(bytes.[(1 + 36 + 32 + witnessScriptLen + 2)..])
-                return {
-                    // 36 bytes
-                    DynamicOutputP2WSHData.Outpoint = LNOutPoint.FromBytes(bytes.[1..36])
-                    // 32 bytes
-                    Key = Key(bytes.[(1 + 36)..(1 + 36 + 32 - 1)])
-                    WitnessScript = Script(bytes.[(1 + 36 + 32)..(1 + 36 + 32 + witnessScriptLen - 1)])
-                    ToSelfDelay = UInt16.FromBytesBigEndian(bytes.[(1 + 36 + 32 + witnessScriptLen)..(1 + 36 + 32 + witnessScriptLen + 2 - 1)])
-                    Output = output
-                }
-                |> DynamicOutputP2WSH
-            }
-        | 2uy ->
-            let output = TxOut()
-            output.FromBytes(bytes.[(1 + 36 + 32)..])
-            {
-                DynamicOutputP2WPKHData.Outpoint = LNOutPoint.FromBytes(bytes.[1..36])
-                Key = Key(bytes.[(1 + 36)..(1 + 36 + 32 - 1)])
-                Output = output
-            }
-            |> DynamicOutputP2WPKH
-            |> Ok
-        | x ->
-            Error(sprintf "Unknown SpendableOutputDescriptor type %A" x)
-        
-    member this.BytesLength =
+    member this.OutPoint =
         match this with
-        | StaticOutput x ->
-            1 + 36 + x.Output.ToBytes().Length
-        | DynamicOutputP2WSH x ->
-            1 + 36 + 32 + x.WitnessScript.ToBytes().Length + 2 + x.Output.ToBytes().Length
-        | DynamicOutputP2WPKH x ->
-            1 + 36 + 32 + x.Output.ToBytes().Length
-            
+        | StaticOutput({ Outpoint = o }) -> o
+        | DynamicOutputP2WSH({ Outpoint = o }) -> o
+        | DynamicOutputP2WPKH({ Outpoint = o }) -> o
+    static member Deserialize(ls: LightningReaderStream): SpendableOutputDescriptor =
+        match ls.ReadByte() with
+        | 0uy ->
+            StaticOutput({
+                Outpoint = ls.ReadOutpoint()
+                Output = ls.ReadTxOut()
+            })
+        | 1uy ->
+            DynamicOutputP2WSH({
+                DynamicOutputP2WSHData.Outpoint = ls.ReadOutpoint()
+                Key = ls.ReadBytes 32 |> Key
+                WitnessScript = ls.ReadWithLenVarInt() |> Script.FromBytesUnsafe
+                ToSelfDelay = ls.ReadUInt16 false
+                Output = ls.ReadTxOut()
+            })
+        | 2uy ->
+            DynamicOutputP2WPKH({
+                Outpoint = ls.ReadOutpoint()
+                Key = ls.ReadBytes 32 |> Key
+                Output = ls.ReadTxOut()
+            })
+        | x ->
+            failwithf "Unknown SpendableOutputDescriptor type %A ! this should never happen"  x
+    static member ParseUnsafe(b: byte[]) =
+        use ms = new MemoryStream(b)
+        use ls = new LightningReaderStream(ms)
+        SpendableOutputDescriptor.Deserialize ls
+        
+    static member Parse(bytes: byte[]): Result<SpendableOutputDescriptor, _> =
+        try
+            SpendableOutputDescriptor.ParseUnsafe bytes |> Ok
+        with
+        | ex -> Error ex
+        
     member this.ToBytes() =
         use ms = new MemoryStream()
         use s = new LightningWriterStream(ms)
+        this.Serialize s
+        ms.ToArray()
+        
+            
+    member this.Serialize(ls: LightningWriterStream) =
         match this with
         | StaticOutput d ->
-            s.Write(0uy)
-            s.Write(d.Outpoint.Value.ToBytes())
-            s.Write(d.Output.ToBytes())
+            ls.Write(0uy)
+            ls.Write(d.Outpoint.Value.ToBytes())
+            ls.Write(d.Output.ToBytes())
         | DynamicOutputP2WSH d ->
-            s.Write(1uy)
-            s.Write(d.Outpoint.Value.ToBytes())
-            s.Write(d.Key.ToBytes())
-            s.Write(d.WitnessScript.ToBytes())
-            s.Write(d.ToSelfDelay.GetBytesBigEndian())
-            s.Write(d.Output.ToBytes())
+            ls.Write(1uy)
+            ls.Write(d.Outpoint.Value.ToBytes())
+            ls.Write(d.Key.ToBytes())
+            ls.WriteWithLenVarInt(d.WitnessScript.ToBytes())
+            ls.Write(d.ToSelfDelay, false)
+            ls.Write(d.Output.ToBytes())
         | DynamicOutputP2WPKH d ->
-            s.Write(2uy)
-            s.Write(d.Outpoint.Value.ToBytes())
-            s.Write(d.Key.ToBytes())
-            s.Write(d.Output.ToBytes())
-        ms.ToArray()
-            
-    static member ParseUnsafe(b: byte[]) =
-        match SpendableOutputDescriptor.Parse b with
-        | Ok r -> r
-        | Error e -> raise <| FormatException(e)
+            ls.Write(2uy)
+            ls.Write(d.Outpoint.Value.ToBytes())
+            ls.Write(d.Key.ToBytes())
+            ls.Write(d.Output.ToBytes())
 
 /// An Event which you should probably take some action in response to.
 type Event =
@@ -180,100 +192,73 @@ type Event =
     /// time in the future.
     | SpendableOutputs of SpendableOutputDescriptor[]
     with
-    
-    static member Parse(s: byte[]): Result<Event, _> =
-        match s.[0] with
+    static member Deserialize(ls: LightningReaderStream) =
+        let t = ls.ReadByte()
+        match t with
         | 0uy ->
-            Ok(None)
+            FundingGenerationReady({
+                FundingGenerationReadyData.TemporaryChannelId = ChannelId(ls.ReadUInt256(false))
+                ChannelValueSatoshis = ls.ReadUInt64(false)
+                OutputScript = ls.ReadWithLen16() |> Script.FromBytesUnsafe
+                UserChannelId = ls.ReadUInt64 false
+            })
         | 1uy ->
-            {
-                FundingBroadcastSafeData.OutPoint = LNOutPoint.FromBytes(s.[1..36])
-                UserChannelId = ChannelId(uint256(s.[(36 + 1)..], false))
-            }
-            |> FundingBroadcastSafe
-            |> Ok
+            FundingBroadcastSafe({
+                FundingBroadcastSafeData.OutPoint =
+                    (ls.ReadUInt256(false), ls.ReadUInt32(false))
+                    |> OutPoint
+                    |> LNOutPoint
+                UserChannelId = ls.ReadUInt64 false
+            })
         | 2uy ->
-            {
-                PaymentReceivedData.PaymentHash = uint256(s.[1..32], false) |> PaymentHash
-                Amount = LNMoney.FromSpan(s.[33..40].AsSpan())
-            }
-            |> PaymentReceived
-            |> Ok
+            PaymentReceived({
+                PaymentReceivedData.PaymentHash = ls.ReadUInt256 false |> PaymentHash
+                PaymentSecret = ls.ReadOption() |> Option.map (fun x -> uint256(x, false))
+                Amount = ls.ReadUInt64 false |> LNMoney.MilliSatoshis
+            })
         | 3uy ->
-            s.[1..32]
-            |> PaymentPreimage.Create
-            |> PaymentSent
-            |> Ok
+            PaymentSent(ls.ReadBytes 32 |> PaymentPreimage.Create)
         | 4uy ->
-            {
-                PaymentFailedData.PaymentHash = uint256(s.[1..32], false) |> PaymentHash
-                RejectedByDest = s.[33] = 1uy
-            }
-            |> PaymentFailed
-            |> Ok
+            PaymentFailed({
+                PaymentFailedData.PaymentHash = ls.ReadUInt256 false |> PaymentHash
+                RejectedByDest = ls.ReadByte() = 1uy
+            })
         | 5uy ->
-            {
-                Duration.Secs = 0UL
-                Nanos = 0u
-            }
-            |> PendingHTLCsForwardable
-            |> Ok
+            PendingHTLCsForwardable({
+                Duration.MilliSec = ls.ReadUInt64 false
+            })
         | 6uy ->
-            let len = UInt64.FromSpan(s.[1..8].AsSpan(), false)
-            let outputs = ResizeArray()
-            let mutable result = Ok()
-            let mutable pos = 0
-            for _ in 0UL..(len - 1UL) do
-                match SpendableOutputDescriptor.Parse s with
-                | Ok s ->
-                    outputs.Add(s)
-                    pos <- pos + s.BytesLength
-                | Error e -> result <- Error e
-            result
-            |> Result.map(fun _ ->
-                outputs.ToArray()
-                |> SpendableOutputs
-            )
-        | x ->
-            Error(sprintf "Unknown event type %A" x)
+            let length = int (ls.ReadUInt64 false)
+            let result = Array.zeroCreate length
+            for i in 0..(length - 1) do
+                result.[i] <- SpendableOutputDescriptor.Deserialize ls
+            SpendableOutputs(result)
+        | x -> failwithf "Unknown event type %A!: this should never happen" x
+    
+    static member Parse(s:byte[]): Result<Event, _> =
+        try
+            Event.Parse s
+        with
+            | ex -> Error ex
         
-    static member ParseUnsafe(s:byte[]): Event =
-        match Event.Parse(s) with
-        | Ok s -> s
-        | Error e -> raise <| FormatException(e)
-        
-    static member ParseMany(s: byte[]): Result<Event[], _> =
-        if s.Length = 0 then Ok([||]) else
-        let len = int(UInt16.FromBytesBigEndian(s.[0..1]))
-        let res = Array.zeroCreate(len)
-        let mutable pos = 0
-        let mutable error = Ok()
-        let mutable breaked = false
-        let i = 0
-        while (not <| breaked) && i < len do
-            let e = Event.Parse(s.[pos..])
-            match e with
-            | Error e -> error <- Error(e)
-            | Ok(e) ->
-                pos <- e.BytesLength
-                res.[i] <- e
-        error |> Result.map(fun _ -> res)
+    static member ParseUnsafe(s: byte[]): Event =
+        use ms = new MemoryStream(s)
+        use ls = new LightningReaderStream(ms)
+        Event.Deserialize ls
         
     static member ParseManyUnsafe(s: byte[]): Event[] =
-        match Event.ParseMany(s) with
-        | Ok s -> s
-        | Error e -> raise <| FormatException(e);
-    member this.BytesLength =
-        match this with
-        | FundingGenerationReady _ ->
-            1
-        | FundingBroadcastSafe _ ->
-            1 +
-            (32 + 4) // outpoint
-            + 32 //  channel id
-        | PaymentReceived _ -> 1 + 40
-        | PaymentSent _ -> 1 + 32
-        | PaymentFailed _ -> 1 + 33
-        | PendingHTLCsForwardable _ -> 1
-        | SpendableOutputs outputs ->
-            1 + (outputs |> Array.sumBy(fun o -> o.BytesLength))
+        if s.Length = 0 then [||] else
+        let len = int(UInt16.FromBytesBigEndian(s.[0..1]))
+        let res = Array.zeroCreate(len)
+        use ms = new MemoryStream(s)
+        use ls = new LightningReaderStream(ms)
+        for i in 0..(len - 1) do
+            res.[i] <- Event.Deserialize ls
+        res
+        
+    static member ParseMany(s: byte[]): Result<Event[], _> =
+        try
+            Event.ParseManyUnsafe s |> Ok
+        with
+        | ex -> Error (ex)
+            
