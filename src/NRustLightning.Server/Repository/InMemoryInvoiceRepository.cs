@@ -16,12 +16,12 @@ using NRustLightning.Server.Networks;
 
 namespace NRustLightning.Server.Repository
 {
-    public class InvoiceRepository : IInvoiceRepository
+    public class InMemoryInvoiceRepository : IInvoiceRepository
     {
         private readonly IKeysRepository _keysRepository;
         private readonly ConcurrentDictionary<Primitives.PaymentHash, (PaymentRequest, Primitives.PaymentPreimage)> _paymentRequests = new ConcurrentDictionary<Primitives.PaymentHash,(PaymentRequest, Primitives.PaymentPreimage)>();
 
-        public InvoiceRepository(IKeysRepository keysRepository)
+        public InMemoryInvoiceRepository(IKeysRepository keysRepository)
         {
             _keysRepository = keysRepository;
         }

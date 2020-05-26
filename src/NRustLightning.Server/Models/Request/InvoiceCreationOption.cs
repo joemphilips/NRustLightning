@@ -10,12 +10,16 @@ namespace NRustLightning.Server.Models.Request
     {
         [JsonConverter(typeof(LNMoneyJsonConverter))]
         public LNMoney? Amount { get; set; }
+
         [JsonConverter(typeof(uint256JsonConverter))]
-        public uint256? PaymentSecret { get; set; }
-        public string Description { get; set; }
+        public uint256? PaymentSecret { get; set; } = null;
+
+        public string Description { get; set; } = "no description";
+
         [JsonConverter(typeof(MMDDHHmmTimeSpanConverter))]
-        public TimeSpan? Expiry { get; set; }
-        public string? FallbackAddress { get; set; }
+        public TimeSpan? Expiry { get; set; } = null;
+
+        public string? FallbackAddress { get; set; } = null;
 
         public bool? EncodeDescriptionWithHash { get; set; } = false;
     }

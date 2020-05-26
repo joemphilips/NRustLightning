@@ -11,6 +11,7 @@ using DotNetLightning.Payment;
 using Microsoft.AspNetCore.Http;
 using NBitcoin;
 using NBXplorer;
+using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Models;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Models.Response;
@@ -24,7 +25,7 @@ namespace NRustLightning.Client
 
         private JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
         {
-            PropertyNameCaseInsensitive = true
+            PropertyNameCaseInsensitive = true,
         };
 
         public NRustLightningClient(string baseUrl) : this(baseUrl, null) {}
@@ -63,9 +64,9 @@ namespace NRustLightning.Client
             return RequestAsync<object>("/v1/peer/disconnect", HttpMethod.Delete, connectionString.ToString());
         }
 
-        public Task<PaymentRequest> GetInvoiceAsync(InvoiceCreationOption option = default)
+        public Task<InvoiceResponse> GetInvoiceAsync(InvoiceCreationOption option)
         {
-            return RequestAsync<PaymentRequest>("/v1/payment/BTC/invoice", HttpMethod.Get, option);
+            return RequestAsync<InvoiceResponse>("/v1/payment/BTC/invoice", HttpMethod.Get, option);
         }
 
         private async Task<T> RequestAsync<T>(string relativePath, HttpMethod method, object parameters = null)

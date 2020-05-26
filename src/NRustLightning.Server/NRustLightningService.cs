@@ -22,7 +22,7 @@ namespace NRustLightning.Server
             services.AddSingleton<ISocketDescriptorFactory, SocketDescriptorFactory>();
             services.AddSingleton<IKeysRepository, FlatFileKeyRepository>();
             services.AddSingleton<IRPCClientProvider, RPCClientProvider>();
-            services.AddSingleton<IInvoiceRepository, InvoiceRepository>();
+            services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
             services.AddSingleton<P2PConnectionFactory>();
             services.AddSingleton<P2PConnectionHandler>();
             services.AddSingleton<NBXplorerClientProvider>();

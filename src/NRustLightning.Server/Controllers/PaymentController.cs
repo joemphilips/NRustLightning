@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
 using NRustLightning.Server.Extensions;
 using NRustLightning.Server.Interfaces;
+using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Models.Request;
+using NRustLightning.Server.Models.Response;
 using NRustLightning.Server.Networks;
 using NRustLightning.Server.Services;
 
@@ -32,11 +34,12 @@ namespace NRustLightning.Server.Controllers
         
         [HttpGet]
         [Route("{cryptoCode}/invoice")]
-        public string Invoice(string cryptoCode,[FromBody] InvoiceCreationOption option)
+        public InvoiceResponse Invoice(string cryptoCode,[FromBody] InvoiceCreationOption option)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode);
             var preimage = Primitives.PaymentPreimage.Create(RandomUtils.GetBytes(32));
-            return _invoiceRepository.GetNewInvoice(n, preimage, option).ToString();
+            var invoice = _invoiceRepository.GetNewInvoice(n, preimage, option);
+            return new InvoiceResponse {Invoice = invoice};
         }
 
         [HttpPost]
