@@ -29,6 +29,7 @@ namespace NRustLightning.Server.Extensions
 
         public static FSharpList<T> ToFSharpList<T>(this IEnumerable<T> val)
         {
+            if (val == null) throw new ArgumentNullException(nameof(val));
             var r = FSharpList<T>.Empty;
             foreach (var v in val)
             {
@@ -39,11 +40,11 @@ namespace NRustLightning.Server.Extensions
 
         public static T? ToNullable<T>(this FSharpOption<T> val) where T : struct
         {
-            return FSharpOption<T>.None.Equals(val) ? new T?() : val.Value;
+            return (val is null) || FSharpOption<T>.None.Equals(val) ? (T?)null : val.Value;
         }
         public static T GetOrDefault<T>(this FSharpOption<T> val)
         {
-            return FSharpOption<T>.None.Equals(val) ? default : val.Value;
+            return (val is null) || FSharpOption<T>.None.Equals(val) ? default : val.Value;
         }
     }
 }

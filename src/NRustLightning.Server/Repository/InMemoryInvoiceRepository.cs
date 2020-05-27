@@ -58,7 +58,7 @@ namespace NRustLightning.Server.Repository
             }
 
             var t = new TaggedFields(taggedFields.ToFSharpList());
-            var r = PaymentRequest.TryCreate(network.BOLT11InvoicePrefix,  option.Amount.ToFSharpOption(), DateTimeOffset.Now, nodeId, t);
+            var r = PaymentRequest.TryCreate(network.BOLT11InvoicePrefix,  option.Amount.ToFSharpOption(), DateTimeOffset.Now, nodeId, t, _keysRepository.AsMessageSigner());
             if (r.IsError)
             {
                 throw new InvalidDataException($"Error when creating our payment request: {r.ErrorValue}");

@@ -129,7 +129,7 @@ namespace NRustLightning.Server.Services
             else if (e is Event.PendingHTLCsForwardable pendingHtlCsForwardable)
             {
                 var wait = pendingHtlCsForwardable.Item.TimeToWait(_random);
-                await Task.Delay(wait);
+                await Task.Delay(wait, cancellationToken);
                 _peerManager.ChannelManager.ProcessPendingHTLCForwards();
             }
             else if (e is Event.SpendableOutputs spendableOutputs)

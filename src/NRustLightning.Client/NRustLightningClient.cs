@@ -26,6 +26,7 @@ namespace NRustLightning.Client
         private JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
         {
             PropertyNameCaseInsensitive = true,
+            Converters = { new PaymentRequestJsonConverter()}
         };
 
         public NRustLightningClient(string baseUrl) : this(baseUrl, null) {}
