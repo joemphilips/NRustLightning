@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+      <ProjectReference Include="..\NSec\Cryptography\NSec.Cryptography.csproj" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+    </PropertyGroup>
+    <ItemGroup>
+      <PackageReference Include="NBitcoin" Version="5.0.39" />
+    </ItemGroup>
+</Project>
