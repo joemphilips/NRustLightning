@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NRustLightning\NRustLightning.csproj" />
-    <ProjectReference Include="..\FSharp.SystemTextJson\FSharp.SystemTextJson.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
