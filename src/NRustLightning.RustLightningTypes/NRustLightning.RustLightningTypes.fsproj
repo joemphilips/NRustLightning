@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+        <RootNamespace>RustLightningTypes</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="PrimitiveExtensions.fs" />
+        <Compile Include="StreamExtensions.fs" />
+        <Compile Include="Event.fs" />
+        <Compile Include="ChannelDetails.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200527-1224-git-23e9fa2" />
+    </ItemGroup>
+
+</Project>

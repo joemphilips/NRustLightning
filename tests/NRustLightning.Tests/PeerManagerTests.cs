@@ -1,8 +1,12 @@
 using System;
+using System.Buffers;
 using System.Linq;
+using DotNetLightning.Serialize;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NBitcoin.DataEncoders;
+using NRustLightning.Adaptors;
+using NRustLightning.Facades;
 using NRustLightning.Tests.Utils;
 using Xunit;
 using Xunit.Abstractions;
@@ -22,13 +26,16 @@ namespace NRustLightning.Tests
 
         private static PubKey[] _pubKeys = _keys.Select(k => k.PubKey).ToArray();
         private static Primitives.NodeId[] _nodeIds = _pubKeys.Select(x => Primitives.NodeId.NewNodeId(x)).ToArray();
+
+        private MemoryPool<byte> _pool;
         
         public PeerManagerTests(ITestOutputHelper output)
         {
             _output = output;
+            _pool = MemoryPool<byte>.Shared;
         }
 
-        private PeerManager getTestPeerManager()
+        public static PeerManager getTestPeerManager()
         {
             
             var logger = new TestLogger();
@@ -37,11 +44,10 @@ namespace NRustLightning.Tests
             var chainWatchInterface = new TestChainWatchInterface();
             var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
             var n = Network.TestNet;
-            var routingMsgHandler = new TestRoutingMsgHandler();
             var ourNodeSecret = _keys[0].ToBytes();
             var peerManager =
                 PeerManager.Create(
-                    seed, in n, in TestUserConfig.Default, chainWatchInterface, broadcaster, logger, feeEstiamtor,  routingMsgHandler,400000, ourNodeSecret
+                    seed, in n, in TestUserConfig.Default, chainWatchInterface, broadcaster, logger, feeEstiamtor, 400000, ourNodeSecret
                     );
             return peerManager;
         }
@@ -55,9 +61,45 @@ namespace NRustLightning.Tests
             peerMan.NewInboundConnection(socket1);
             var socket2 = socketFactory.GetNewSocket();
             var theirNodeId = _pubKeys[1];
+            var theirNodeIds = peerMan.GetPeerNodeIds(_pool);
+            Assert.Empty(theirNodeIds);
             var actOne = peerMan.NewOutboundConnection(socket2, theirNodeId.ToBytes());
             Assert.Equal(50, actOne.Length);
             // Console.WriteLine($"actOne in C# is {Hex.EncodeData(actOne)}");
+
+            theirNodeIds = peerMan.GetPeerNodeIds(_pool);
+            // It does not count when handshake is not complete
+            Assert.Empty(theirNodeIds);
+            peerMan.Dispose();
+        }
+
+        [Fact]
+        public void CanCreateAndDisposePeerManagerSafely()
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                using var peerMan = getTestPeerManager();
+                peerMan.Dispose();
+            }
+        }
+        
+        [Fact]
+        public void CanCallChannelManagerThroughPeerManager()
+        {
+            using var peerMan = getTestPeerManager();
+            
+            var channelManager = peerMan.ChannelManager;
+            var nodeFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
+            var channelFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
+            var hop1 = new RouteHopWithFeature(_nodeIds[0], nodeFeature, 1, channelFeature, 1000, 72);
+            var hop2 = new RouteHopWithFeature(_nodeIds[1], nodeFeature, 2, channelFeature, 1000, 72);
+            var route1 = new[] {hop1, hop2};
+            var routes = new RoutesWithFeature(route1);
+            
+            var paymentHash = new uint256();
+            var e = Assert.Throws<FFIException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
+            Assert.Equal("FFI against rust-lightning failed (InternalError), Error: AllFailedRetrySafe([No channel available with first hop!])", e.Message);
+
             peerMan.Dispose();
         }
     }

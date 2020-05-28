@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Linq;
 using System.Text;
 using System.Transactions;
@@ -31,6 +32,12 @@ namespace NRustLightning.Tests
         private static PubKey[] _pubKeys = _keys.Select(k => k.PubKey).ToArray();
         private static Primitives.NodeId[] _nodeIds = _pubKeys.Select(x => Primitives.NodeId.NewNodeId(x)).ToArray();
 
+        private MemoryPool<byte> _pool;
+        public ChannelManagerTests()
+        {
+            _pool = MemoryPool<byte>.Shared;
+        }
+
 
         private ChannelManager GetTestChannelManager()
         {
@@ -48,7 +55,7 @@ namespace NRustLightning.Tests
         [Fact]
         public void CanCreateChannelManager()
         {
-            var channelManager = GetTestChannelManager();
+            using var channelManager = PeerManagerTests.getTestPeerManager().ChannelManager;
             var nodeFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
             var channelFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
             var hop1 = new RouteHopWithFeature(_nodeIds[0], nodeFeature, 1, channelFeature, 1000, 72);
@@ -63,9 +70,24 @@ namespace NRustLightning.Tests
         }
 
         [Fact]
-        public void CanGetPendingEvent()
+        public void CanCreateAndCloseChannel()
         {
-            var channelManager = GetTestChannelManager();
+            using var channelManager = PeerManagerTests.getTestPeerManager().ChannelManager;
+            var pk = _pubKeys[0];
+            channelManager.CreateChannel(pk, 100000, 1000, UInt64.MaxValue);
+            var c = channelManager.ListChannels(_pool);
+            Assert.Single(c);
+            Assert.Equal(c[0].RemoteNetworkId, pk);
+            Assert.Equal(100000U, c[0].ChannelValueSatoshis);
+            // Before fully open, It must be 0.
+            Assert.Equal(0U, c[0].InboundCapacityMSat);
+            Assert.Equal(0U, c[0].OutboundCapacityMSat);
+            
+            Assert.False(c[0].IsLive);
+            var e = Assert.Throws<FFIException>(() => channelManager.CloseChannel(c[0].ChannelId));
+            Assert.Contains("No such channel", e.ToString());
+            var events = channelManager.GetAndClearPendingEvents(_pool);
+            channelManager.Dispose();
         }
     }
 }

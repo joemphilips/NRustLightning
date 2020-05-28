@@ -18,11 +18,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="NBitcoin" Version="5.0.27" />
+        <PackageReference Include="NBitcoin" Version="5.0.3" />
         <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.6.0-*" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DotNetLightning.Data\DotNetLightning.Data.fsproj" />
+      <ProjectReference Include="..\NRustLightning.RustLightningTypes\NRustLightning.RustLightningTypes.fsproj" />
     </ItemGroup>
 </Project>

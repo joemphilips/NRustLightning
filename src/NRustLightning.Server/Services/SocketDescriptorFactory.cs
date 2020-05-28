@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading;
+using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using NRustLightning.Interfaces;
 using NRustLightning.Server.Interfaces;
+using NRustLightning.Server.P2P;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace NRustLightning.Server.Services
@@ -13,16 +15,22 @@ namespace NRustLightning.Server.Services
     {
         private readonly ILoggerFactory loggerFactory;
         private int CurrentNum = 0;
-        private Dictionary<int, ISocketDescriptor> Sockets = new Dictionary<int, ISocketDescriptor>();
+        private Dictionary<int, SocketDescriptor> Sockets = new Dictionary<int, SocketDescriptor>();
         public SocketDescriptorFactory(ILoggerFactory loggerFactory)
         {
             this.loggerFactory = loggerFactory;
         }
-        public ISocketDescriptor GetNewSocket(PipeWriter writer)
+        public (SocketDescriptor, ChannelReader<byte>) GetNewSocket(PipeWriter writer)
         {
             Interlocked.Add(ref CurrentNum, 1);
-            Sockets[CurrentNum] = new SocketDescriptor((UIntPtr)CurrentNum, writer, loggerFactory.CreateLogger<SocketDescriptor>());
-            return Sockets[(int)CurrentNum];
+            
+            // We only ever need a channel of depth 1 here: if we returned a non-full write to the PeerManager,
+            // we will eventually get notified that there is room in the socket to write new bytes, which will generate
+            // an event. That event will be popped off the queue before we call WriteBufferSpaceAvail, ensuring that we
+            // have room to push a new () if, during the WriteBufferSpaceAvail call, send_data() returns a non-full write.
+            var writeAvail = Channel.CreateBounded<byte>(1);
+            Sockets[CurrentNum] = new SocketDescriptor((UIntPtr)CurrentNum, writer, loggerFactory.CreateLogger<SocketDescriptor>(), writeAvail.Writer);
+            return (Sockets[(int)CurrentNum], writeAvail.Reader);
         }
     }
 }

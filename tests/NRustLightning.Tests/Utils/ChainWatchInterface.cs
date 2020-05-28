@@ -25,7 +25,6 @@ namespace NRustLightning.Tests.Utils
             _installWatchOutpoint =
             (ref FFIOutPoint outpoint, ref FFIScript script) =>
             {
-                Console.WriteLine($"Installing watch outpoint with txid: {outpoint.txid}, index: {outpoint.index} spk: {Hex.Encode(script.AsSpan())}");
             };
             _watchAllTxn =
             () =>

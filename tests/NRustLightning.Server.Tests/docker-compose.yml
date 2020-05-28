@@ -123,6 +123,7 @@ services:
       - dotnet
       - NRustLightning.Server.dll
       - --nohttps
+      - --debug.http=false
       - --httpport=80
       - --externalip="nrustlightning:9735"
     ports:

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using NBitcoin.RPC;
 using Microsoft.AspNetCore.Builder;
@@ -12,6 +13,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NBXplorer;
+using NRustLightning.Server.Configuration;
+using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Middlewares;
 
 namespace NRustLightning.Server
@@ -38,7 +41,11 @@ namespace NRustLightning.Server
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers().AddJsonOptions(options =>
+            {
+                var c = options.JsonSerializerOptions.Converters;
+                c.Add(new PaymentRequestJsonConverter());
+            });
             services.AddHttpClient();
             services.AddNRustLightning();
             services.ConfigureNRustLightning(Configuration, logger);
@@ -52,7 +59,9 @@ namespace NRustLightning.Server
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseMiddleware<RequestResponseLoggingMiddleware>();
+                var useLoggingMiddleware = Configuration.GetSection("debug").GetOrDefault("http", true);
+                if (useLoggingMiddleware)
+                    app.UseMiddleware<RequestResponseLoggingMiddleware>();
             }
             else
             {

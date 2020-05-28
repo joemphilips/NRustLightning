@@ -29,7 +29,6 @@ namespace NRustLightning.Server.Services
             explorerClients.TryGetValue(cryptoCode, out var c);
             return c;
         }
-
         public ExplorerClient? GetClient(NRustLightningNetwork n) => GetClient(n.CryptoCode);
     }
 }

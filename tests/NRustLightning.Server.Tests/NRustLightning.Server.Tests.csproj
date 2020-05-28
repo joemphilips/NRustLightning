@@ -7,8 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoFac" Version="5.1.4" />
-    <PackageReference Include="BTCPayServer.Lightning.All" Version="1.1.13" />
+    <PackageReference Include="BTCPayServer.Lightning.All" Version="1.1.8" />
     <PackageReference Include="Microsoft.AspNetcore.Mvc.Testing" Version="3.1.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
     <PackageReference Include="xunit" Version="2.4.*" />
@@ -20,5 +19,7 @@
     <ProjectReference Include="..\..\src\NRustLightning.Client\NRustLightning.Client.csproj" />
     <ProjectReference Include="..\DockerComposeFixture\DockerComposeFixture\DockerComposeFixture.csproj" />
   </ItemGroup>
+
+  <Import Project="../../src/LDK.targets" />
 
 </Project>

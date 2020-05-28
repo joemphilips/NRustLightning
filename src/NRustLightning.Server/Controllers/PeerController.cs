@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Mvc;
+using NBitcoin;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.ModelBinders;
 using NRustLightning.Server.Models.Request;
@@ -40,6 +41,17 @@ namespace NRustLightning.Server.Controllers
                 return isNewPeer;
             }
 
+            throw new HttpRequestException($"Invalid connection string {connectionString}");
+        }
+
+        [HttpDelete]
+        [Route("disconnect")]
+        public async Task<bool> Disconnect([FromBody] string connectionString)
+        {
+            if (PeerConnectionString.TryCreate(connectionString, out var conn))
+            {
+                return await _connectionHandler.DisconnectPeer(conn.EndPoint);
+            }
             throw new HttpRequestException($"Invalid connection string {connectionString}");
         }
     }

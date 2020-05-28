@@ -17,7 +17,7 @@ namespace NRustLightning.Tests.Utils
         public ISocketDescriptor GetNewSocket()
         {
             CurrentNum++;
-            Sockets[CurrentNum] = new DuplexPipeSocketDescriptor((UIntPtr)CurrentNum, new Pipe().Writer);
+            Sockets[CurrentNum] = new TestSocketDescriptor((UIntPtr)CurrentNum, new Pipe().Writer);
             return Sockets[CurrentNum];
         }
 

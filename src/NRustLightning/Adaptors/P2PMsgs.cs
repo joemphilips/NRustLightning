@@ -1,8 +1,12 @@
 using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using DotNetLightning.Serialize;
 using Msgs = DotNetLightning.Serialize.Msgs;
 
 namespace NRustLightning.Adaptors
 {
+    [StructLayout(LayoutKind.Sequential)]
     public readonly ref struct FFINodeAnnoucement
     {
         internal readonly IntPtr ptr;
@@ -25,7 +29,11 @@ namespace NRustLightning.Adaptors
         }
         public Msgs.NodeAnnouncement ParseArray()
         {
-            return Msgs.ILightningSerializable.fromBytes<Msgs.NodeAnnouncement>(this.AsArray());
+            using var ms = new MemoryStream(this.AsArray());
+            using var ls = new LightningReaderStream(ms);
+            var r = new Msgs.NodeAnnouncement();
+            ((Msgs.ILightningSerializable<Msgs.NodeAnnouncement>)r).Deserialize(ls);
+            return r;
         }
     }
 

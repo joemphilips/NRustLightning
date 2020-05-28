@@ -6,8 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.IO.REcyclableMemoryStream" Version="1.3.3" />
-    <PackageReference Include="NBitcoin.Altcoins" Version="2.0.8" />
-    <PackageReference Include="NBXplorer.Client" Version="3.0.9" />
+    <PackageReference Include="NBXplorer.Client" Version="2.0.0.26" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20214.1" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.112.1" />
     <PackageReference Include="System.IO.Pipelines" Version="4.7.1" />
