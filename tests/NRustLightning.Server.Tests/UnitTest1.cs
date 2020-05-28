@@ -10,7 +10,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.FSharp.Core;
-using NRustLightning.Server.Entities;
 using NRustLightning.Server.Extensions;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Models.Request;
@@ -41,29 +40,25 @@ namespace NRustLightning.Server.Tests
         [Fact]
         public async Task CanGetNewInvoice()
         {
-            var hostBuilder = new HostBuilder().ConfigureWebHost(webHost =>
-            {
-                webHost.UseEnvironment("Development");
-                var curr = Directory.GetCurrentDirectory();
-                webHost.UseContentRoot(curr);
-                webHost.ConfigureAppConfiguration(builder =>
-                {
-                    builder.AddJsonFile("appsettings.Development.json");
-                });
-                webHost.UseStartup<Startup>();
-                webHost.ConfigureTestServices(services =>
-                {
-                    services.TryAddSingleton<IKeysRepository, InMemoryKeysRepository>();
-                    services.TryAddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
-                });
-                webHost.UseTestServer();
-            });
-
+            var hostBuilder = new HostBuilder().ConfigureTestHost();
             using var host = await hostBuilder.StartAsync();
             var c = host.GetTestNRustLightningClient();
             var resp = await c.GetInvoiceAsync(new InvoiceCreationOption());
             Assert.Equal(resp.Invoice.AmountValue, FSharpOption<LNMoney>.None);
+            Assert.True(resp.Invoice.Expiry > DateTimeOffset.UnixEpoch);
+            Assert.False(resp.Invoice.IsExpired);
             Assert.Null(resp.Invoice.AmountValue.ToNullable());
+        }
+
+        [Fact]
+        public async Task CanGetChannelList()
+        {
+            var hostBuilder = new HostBuilder().ConfigureTestHost();
+            using var host = await hostBuilder.StartAsync();
+            var c = host.GetTestNRustLightningClient();
+            var resp = await c.GetChannelDetails();
+            Assert.NotNull(resp);
+            Assert.Empty(resp.Details);
         }
     }
 }

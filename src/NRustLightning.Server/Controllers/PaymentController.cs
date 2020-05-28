@@ -1,4 +1,3 @@
-using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DotNetLightning.Utils;
@@ -6,9 +5,7 @@ using DotNetLightning.Payment;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
-using NRustLightning.Server.Extensions;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Models.Response;
 using NRustLightning.Server.Networks;

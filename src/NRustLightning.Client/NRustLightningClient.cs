@@ -65,9 +65,14 @@ namespace NRustLightning.Client
             return RequestAsync<object>("/v1/peer/disconnect", HttpMethod.Delete, connectionString.ToString());
         }
 
-        public Task<InvoiceResponse> GetInvoiceAsync(InvoiceCreationOption option)
+        public Task<InvoiceResponse> GetInvoiceAsync(InvoiceCreationOption option, string cryptoCode = "BTC")
         {
-            return RequestAsync<InvoiceResponse>("/v1/payment/BTC/invoice", HttpMethod.Get, option);
+            return RequestAsync<InvoiceResponse>($"/v1/payment/{cryptoCode}/invoice", HttpMethod.Get, option);
+        }
+
+        public Task<ChannelInfoResponse> GetChannelDetails(string cryptoCode = "BTC")
+        {
+            return RequestAsync<ChannelInfoResponse>($"/v1/channel/{cryptoCode}/", HttpMethod.Get);
         }
 
         private async Task<T> RequestAsync<T>(string relativePath, HttpMethod method, object parameters = null)

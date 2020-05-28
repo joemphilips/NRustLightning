@@ -11,15 +11,22 @@ using BTCPayServer.Lightning.CLightning;
 using BTCPayServer.Lightning.LND;
 using DockerComposeFixture;
 using DockerComposeFixture.Exceptions;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using NBitcoin.RPC;
 using NRustLightning.Client;
+using NRustLightning.Server.Interfaces;
+using NRustLightning.Server.Repository;
 using NRustLightning.Server.Tests.Support;
 using NRustLightning.Utils;
 using Xunit.Abstractions;
 
 namespace NRustLightning.Server.Tests
 {
-    public static class DockerFixtureExtensions
+    public static class Extensions
     {
         private static byte[] GetCertificateFingerPrint(string filePath)
         {
@@ -94,6 +101,27 @@ namespace NRustLightning.Server.Tests
                 new NRustLightningClient($"http://localhost:{ports[3]}")
                 );
             return clients;
+        }
+
+        public static IHostBuilder ConfigureTestHost(this IHostBuilder builder)
+        {
+            return builder.ConfigureWebHost(webHost =>
+            {
+                webHost.UseEnvironment("Development");
+                var curr = Directory.GetCurrentDirectory();
+                webHost.UseContentRoot(curr);
+                webHost.ConfigureAppConfiguration(builder =>
+                {
+                    builder.AddJsonFile("appsettings.Development.json");
+                });
+                webHost.UseStartup<Startup>();
+                webHost.ConfigureTestServices(services =>
+                {
+                    services.TryAddSingleton<IKeysRepository, InMemoryKeysRepository>();
+                    services.TryAddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
+                });
+                webHost.UseTestServer();
+            });
         }
     }
 }
