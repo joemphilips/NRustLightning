@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -16,7 +15,9 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using NBitcoin;
 using NBitcoin.RPC;
+using NBXplorer;
 using NRustLightning.Client;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Repository;
@@ -42,7 +43,7 @@ namespace NRustLightning.Server.Tests
         
         public static async Task<Clients> StartLNTestFixtureAsync(this DockerFixture dockerFixture, ITestOutputHelper output, string caller)
         {
-            var ports = new int[4];
+            var ports = new int[5];
             Support.Utils.FindEmptyPort(ports);
             var dataPath = Path.GetFullPath(caller);
             if (!Directory.Exists(dataPath))
@@ -64,6 +65,7 @@ namespace NRustLightning.Server.Tests
                 {"LND_REST_PORT", ports[1]},
                 {"LIGHTNINGD_RPC_PORT", ports[2]},
                 {"HTTP_PORT", ports[3]},
+                {"NBXPLORER_PORT", ports[4]},
                 {"DATA_PATH", dataPath }
             };
             try
@@ -79,6 +81,7 @@ namespace NRustLightning.Server.Tests
                         return
                             o.Any(x => x.Contains("Content root path: /app")) // nrustlightning is up
                             && o.Any(x => x.Contains("Server started with public key")) // lightningd is up
+                            && o.Any(x => x.Contains("BTC: Node state changed: NBXplorerSynching => Ready")) // nbx is up
                             && o.Any(x => x.Contains("BTCN: Server listening on")); // lnd is up
                     }
                 });
@@ -98,7 +101,8 @@ namespace NRustLightning.Server.Tests
                 new RPCClient($"{Constants.BitcoindRPCUser}:{Constants.BitcoindRPCPass}", new Uri($"http://localhost:{ports[0]}"), NBitcoin.Network.RegTest),
                 (LndClient)LightningClientFactory.CreateClient($"type=lnd-rest;macaroonfilepath={lndMacaroonPath};certthumbprint={lndTlsCertThumbPrint};server=https://localhost:{ports[1]}", NBitcoin.Network.RegTest),
                 (CLightningClient)LightningClientFactory.CreateClient($"type=clightning;server=tcp://127.0.0.1:{ports[2]}", NBitcoin.Network.RegTest), 
-                new NRustLightningClient($"http://localhost:{ports[3]}")
+                new NRustLightningClient($"http://localhost:{ports[3]}"),
+                new ExplorerClient(new NBXplorerNetworkProvider(NetworkType.Regtest).GetBTC(), new Uri($"http://localhost:{ports[4]}"))
                 );
             return clients;
         }

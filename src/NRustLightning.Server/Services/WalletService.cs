@@ -9,13 +9,11 @@ namespace NRustLightning.Server.Services
     public class WalletService
     {
         private readonly IKeysRepository _keysRepository;
-        private readonly DerivationStrategyFactory _derivationStrategyFactory;
         private readonly ConcurrentDictionary<NRustLightningNetwork, ExtKey> BaseXPrivs = new ConcurrentDictionary<NRustLightningNetwork, ExtKey>();
 
-        public WalletService(IKeysRepository keysRepository, DerivationStrategyFactory derivationStrategyFactory)
+        public WalletService(IKeysRepository keysRepository)
         {
             _keysRepository = keysRepository;
-            _derivationStrategyFactory = derivationStrategyFactory;
         }
         
         public IHDScriptPubKey GetOurXPub(NRustLightningNetwork network)
@@ -32,7 +30,8 @@ namespace NRustLightning.Server.Services
                 baseKey = new ExtKey(_keysRepository.GetNodeSecret().ToBytes()).Derive(network.BaseKeyPath);
                 BaseXPrivs.TryAdd(network, baseKey);
             }
-            return _derivationStrategyFactory.CreateDirectDerivationStrategy(baseKey.Neuter());
+
+            return network.NbXplorerNetwork.DerivationStrategyFactory.CreateDirectDerivationStrategy(baseKey.Neuter());
         }
 
         public PSBT SignPSBT(PSBT psbt, NRustLightningNetwork network)

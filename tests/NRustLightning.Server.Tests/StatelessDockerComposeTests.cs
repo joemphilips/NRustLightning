@@ -27,7 +27,7 @@ namespace NRustLightning.Server.Tests
         [Fact]
         public async Task CanConnectNodes()
         {
-            var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(StatelessDockerComposeTests));
+            var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanConnectNodes));
             var blockchainInfo = await clients.BitcoinRPCClient.GetBlockchainInfoAsync();
             Assert.NotNull(blockchainInfo);
             var lndInfo = await clients.LndLNClient.GetInfo();
@@ -71,6 +71,14 @@ namespace NRustLightning.Server.Tests
             // Can disconnect from inside for inbound connection.
             // TODO: after handling events from rl, we must hold PubKey => connection in ConnectionHandler.
             // And then we can disconnect from inside.
+        }
+
+        [Fact]
+        public async Task CanOpenCloseChannels()
+        {
+            var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanOpenCloseChannels));
+            var nrlInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
+            await clients.NBXClient.TrackAsync(nrlInfo.DerivationStrategy);
         }
     }
 }

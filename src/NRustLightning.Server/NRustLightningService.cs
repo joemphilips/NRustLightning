@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NBitcoin;
+using NBXplorer.DerivationStrategy;
 using NRustLightning.Interfaces;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Configuration.SubConfiguration;
@@ -23,6 +24,7 @@ namespace NRustLightning.Server
             services.AddSingleton<IKeysRepository, FlatFileKeyRepository>();
             services.AddSingleton<IRPCClientProvider, RPCClientProvider>();
             services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
+            services.AddSingleton<WalletService>();
             services.AddSingleton<P2PConnectionFactory>();
             services.AddSingleton<P2PConnectionHandler>();
             services.AddSingleton<NBXplorerClientProvider>();

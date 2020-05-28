@@ -8,12 +8,13 @@ namespace NRustLightning.Server.Tests.Support
 {
     public class Clients
     {
-        public Clients(RPCClient bitcoinRPCClient, LndClient lndClient, CLightningClient cLightningClient, NRustLightningClient nRustLightningHttpClient)
+        public Clients(RPCClient bitcoinRPCClient, LndClient lndClient, CLightningClient cLightningClient, NRustLightningClient nRustLightningHttpClient, NBXplorer.ExplorerClient nbxClient)
         {
             BitcoinRPCClient = bitcoinRPCClient;
             LndClient = lndClient;
             CLightningClient = cLightningClient;
             NRustLightningHttpClient = nRustLightningHttpClient;
+            NBXClient = nbxClient;
         }
         public readonly RPCClient BitcoinRPCClient;
         public readonly LndClient LndClient;
@@ -21,5 +22,7 @@ namespace NRustLightning.Server.Tests.Support
         public readonly CLightningClient CLightningClient;
         public ILightningClient ClightningLNClient => (ILightningClient) CLightningClient;
         public readonly NRustLightningClient NRustLightningHttpClient;
+
+        public readonly NBXplorer.ExplorerClient NBXClient;
     }
 }

@@ -45,7 +45,7 @@ namespace NRustLightning.Server.Networks
 
         private void Add(INetworkSet networkSet, NetworkType networkType, NBXplorerNetwork nbXplorerNetwork, KeyPath baseKeyPath, string bolt11InvoicePrefix)
         {
-            _Networks.Add(networkSet.CryptoCode, new NRustLightningNetwork(networkSet, networkType, nbXplorerNetwork, baseKeyPath, bolt11InvoicePrefix));
+            _Networks.Add(networkSet.CryptoCode.ToLowerInvariant(), new NRustLightningNetwork(networkSet, networkType, nbXplorerNetwork, baseKeyPath, bolt11InvoicePrefix));
         }
         NBXplorerNetworkProvider nbXplorerNetworkProvider;
         public NRustLightningNetworkProvider(NetworkType networkType)
@@ -73,7 +73,7 @@ namespace NRustLightning.Server.Networks
 
         public NRustLightningNetwork GetByCryptoCode(string cryptoCode)
         {
-            return _Networks[cryptoCode];
+            return _Networks[cryptoCode.ToLowerInvariant()];
         }
     }
 }

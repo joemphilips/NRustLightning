@@ -75,6 +75,11 @@ namespace NRustLightning.Client
             return RequestAsync<ChannelInfoResponse>($"/v1/channel/{cryptoCode}/", HttpMethod.Get);
         }
 
+        public Task<WalletInfo> GetWalletInfoAsync(string cryptoCode = "BTC")
+        {
+            return RequestAsync<WalletInfo>($"/v1/info/{cryptoCode}/wallet", HttpMethod.Get);
+        }
+
         private async Task<T> RequestAsync<T>(string relativePath, HttpMethod method, object parameters = null)
         {
             using var msg = new HttpRequestMessage();

@@ -33,6 +33,31 @@ services:
           - bitcoind
     volumes:
       - "${DATA_PATH:?datapath_not_set}/.bitcoin:/data"
+ 
+  nbxplorer:
+    image: nicolasdorier/nbxplorer:2.1.24
+    restart: unless-stopped
+    ports:
+      - "${NBXPLORER_PORT}:${NBXPLORER_PORT:?no_nbxplorer_port}"
+    expose: 
+      - "${NBXPLORER_PORT}"
+    environment:
+      NBXPLORER_NETWORK: regtest
+      NBXPLORER_CHAINS: "btc"
+      NBXPLORER_BTCRPCURL: http://bitcoind:${BITCOIND_RPC_PORT}/
+      NBXPLORER_BTCNODEENDPOINT: bitcoind:39388
+      NBXPLORER_BTCRPCUSER: johndoe
+      NBXPLORER_BTCRPCPASSWORD: HmcwPBb0KRWFWlSXkSY_DI70JekYyAr5CPx2N2i8RjA=
+      NBXPLORER_BIND: 0.0.0.0:32838
+      NBXPLORER_MINGAPSIZE: 5
+      NBXPLORER_MAXGAPSIZE: 10
+      NBXPLORER_VERBOSE: 1
+      NBXPLORER_NOAUTH: 1
+    networks:
+      main:
+        aliases:
+          - nbxplorer
+
   lnd:
     restart: unless-stopped
     image: joemphilips/lnd:v0.9.0-beta
@@ -146,8 +171,6 @@ services:
       main:
         aliases:
           - nrustlightning
- 
-
 volumes:
   lightningd_dir:
 
