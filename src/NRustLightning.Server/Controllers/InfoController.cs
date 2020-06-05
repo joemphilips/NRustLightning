@@ -15,6 +15,7 @@ namespace NRustLightning.Server.Controllers
 {
     [ApiController]
     [Route("/v1/[controller]")]
+    [Authorize(AuthenticationSchemes = "LSAT")]
     public class InfoController : ControllerBase
     {
         private readonly IKeysRepository keysRepository;

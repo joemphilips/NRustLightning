@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NRustLightning\NRustLightning.csproj" />
+    <ProjectReference Include="..\Macaroons\Macaroons.csproj" />
   </ItemGroup>
 
   <ItemGroup>

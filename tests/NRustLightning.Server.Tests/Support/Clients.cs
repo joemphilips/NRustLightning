@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Threading.Tasks;
 using BTCPayServer.Lightning;
 using BTCPayServer.Lightning.CLightning;
 using BTCPayServer.Lightning.LND;
@@ -24,5 +26,21 @@ namespace NRustLightning.Server.Tests.Support
         public readonly NRustLightningClient NRustLightningHttpClient;
 
         public readonly NBXplorer.ExplorerClient NBXClient;
+
+        public async Task ConnectAll()
+        {
+            var clightningInfo = await ClightningLNClient.GetInfo();
+            await NRustLightningHttpClient.ConnectAsync(clightningInfo.NodeInfoList.FirstOrDefault().ToConnectionString());
+            var lndInfo = await LndLNClient.GetInfo();
+            await NRustLightningHttpClient.ConnectAsync(lndInfo.NodeInfoList.FirstOrDefault().ToConnectionString());
+            await LndLNClient.ConnectTo(clightningInfo.NodeInfoList.FirstOrDefault());
+        }
+
+        public async Task PrepareFunds()
+        {
+            var clAddressTask = CLightningClient.NewAddressAsync();
+            var lndAddressTask = LndClient.SwaggerClient.NewWitnessAddressAsync();
+            var nrlAddressTask = NRustLightningHttpClient.GetWalletInfoAsync();
+        }
     }
 }

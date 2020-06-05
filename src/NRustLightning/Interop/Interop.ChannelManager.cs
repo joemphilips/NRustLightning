@@ -76,14 +76,15 @@ namespace NRustLightning
         static extern FFIResult _create_channel_with_custom_config(IntPtr publicKey, ulong channelValueSatoshis, ulong pushMsat, ulong userId, in UserConfig config, ChannelManagerHandle handle);
 
         internal static FFIResult create_channel(IntPtr publicKey, ulong channelValueSatoshis, ulong pushMsat,
-            ulong userId, ChannelManagerHandle handle, in UserConfig? config = null)
+            ulong userId, ChannelManagerHandle handle, in UserConfig config, bool check = true)
         {
-            if (config is null)
-            {
-                return MaybeCheck(_create_channel(publicKey, channelValueSatoshis, pushMsat, userId, handle), true);
-            }
-            var v = config.Value;
-            return MaybeCheck(_create_channel_with_custom_config(publicKey, channelValueSatoshis, pushMsat, userId, in v, handle), true);
+            return MaybeCheck(_create_channel_with_custom_config(publicKey, channelValueSatoshis, pushMsat, userId, in config, handle), check);
+        }
+        
+        internal static FFIResult create_channel(IntPtr publicKey, ulong channelValueSatoshis, ulong pushMsat,
+            ulong userId, ChannelManagerHandle handle, bool check = true)
+        {
+            return MaybeCheck(_create_channel(publicKey, channelValueSatoshis, pushMsat, userId, handle), check);
         }
 
         [DllImport(RustLightning,

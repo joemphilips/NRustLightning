@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using DotNetLightning.Utils;
 using DotNetLightning.Payment;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
@@ -15,6 +16,7 @@ namespace NRustLightning.Server.Controllers
 {
     [ApiController]
     [Route("/v1/[controller]")]
+    [Authorize(AuthenticationSchemes = "LSAT")]
     public class PaymentController : ControllerBase
     {
         private readonly IInvoiceRepository _invoiceRepository;

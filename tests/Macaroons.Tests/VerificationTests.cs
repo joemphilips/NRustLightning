@@ -382,5 +382,18 @@ namespace Macaroons.Tests
             Assert.Equal(1, verified2.Messages.Count);
             Assert.Equal("Caveat 'other: 1234' failed", verified2.Messages[0]);
         }
+
+        [Fact]
+        public void VerificationFailsWhenUnknownCaveatsPresent()
+        {
+            var m = new Macaroon(Location, Secret, Identifier);
+            m.AddFirstPartyCaveat("account = 1234567");
+            m.AddFirstPartyCaveat("service = myowesomeservice");
+            
+            var v = new Verifier();
+            v.SatisfyExact("account = 1234567");
+            var result = m.Verify(v, Secret);
+            Assert.False(result.Success);
+        }
     }
 }

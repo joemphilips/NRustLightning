@@ -114,9 +114,9 @@ namespace NRustLightning.Server.Tests
                 webHost.UseEnvironment("Development");
                 var curr = Directory.GetCurrentDirectory();
                 webHost.UseContentRoot(curr);
-                webHost.ConfigureAppConfiguration(builder =>
+                webHost.ConfigureAppConfiguration(configBuilder =>
                 {
-                    builder.AddJsonFile("appsettings.Development.json");
+                    configBuilder.AddJsonFile("appsettings.Development.json");
                 });
                 webHost.UseStartup<Startup>();
                 webHost.ConfigureTestServices(services =>

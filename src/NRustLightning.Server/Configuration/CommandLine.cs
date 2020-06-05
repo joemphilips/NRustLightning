@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Builder;
@@ -82,6 +83,8 @@ namespace NRustLightning.Server.Configuration
                         {Argument = new Argument<string> {Arity =  ArgumentArity.ZeroOrOne }}
                 };
             options.AddRange(op);
+            
+            # region Chain options
             var provider = new NRustLightningNetworkProvider(NetworkType.Mainnet);
             var allCryptoCodes = provider.GetAll().Select(n => n.CryptoCode.ToLowerInvariant()).ToArray();
             options.Add(
@@ -137,6 +140,7 @@ namespace NRustLightning.Server.Configuration
                     }
                 );
             }
+            # endregion
             
             #region rust-lightning specific options
             var uc = UserConfig.GetDefault();
@@ -182,6 +186,54 @@ namespace NRustLightning.Server.Configuration
                     Arity = ArgumentArity.ZeroOrOne
                 }
             });
+            # endregion
+            
+            # region lsat options
+            options.Add(
+                new Option("--lsat.servicename", $"service name for lsat. default is 'nrustlightning'")
+                    {
+                        Argument = new Argument<string>()
+                        {
+                            Arity = ArgumentArity.ZeroOrOne
+                        }
+                    }
+                );
+            
+            options.Add(new Option("--lsat.servicetier",
+                $"When you update capabilities or constraints for this service, you must increment this number. {Environment.NewLine}"+ 
+                "See official LSAT spec for the detail. (default: 0)")
+            {
+                Argument = new Argument<int>()
+                {
+                    Arity = ArgumentArity.ZeroOrOne
+                }
+            });
+            
+            options.Add(new Option("--lsat.invoice.amount", "You will charge user this amount (by lsat) for giving the 'read' capability, default is '0")
+            {
+                Argument = new Argument<int>()
+                {
+                    Arity = ArgumentArity.ZeroOrOne
+                }
+            });
+            
+            options.Add(new Option("--lsat.invoice.description", "description filed for lsat invoice")
+            {
+                Argument = new Argument<string>()
+                {
+                    Arity = ArgumentArity.ZeroOrOne
+                }
+            });
+            
+            options.Add(new Option("--lsat.invoice.expirysecconds", "time before expiring invoice for lsat. default: 3600")
+            {
+                Argument = new Argument<int>()
+                {
+                    Arity = ArgumentArity.ZeroOrOne
+                }
+            });
+            
+            options.Add(new Option("--lsat.readfee", "If this value is set, user must pay this amount before "));
             # endregion
             return options.ToArray();
         }

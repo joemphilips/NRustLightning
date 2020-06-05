@@ -60,5 +60,13 @@ namespace NRustLightning.Server.Tests
             Assert.NotNull(resp);
             Assert.Empty(resp.Details);
         }
+
+        [Fact]
+        public async Task LSATAuthenticationTest()
+        {
+            var hostBuilder = new HostBuilder().ConfigureTestHost();
+            using var host = await hostBuilder.StartAsync();
+            var client = host.GetTestNRustLightningClient();
+        }
     }
 }

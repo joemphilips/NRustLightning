@@ -76,16 +76,30 @@ namespace NRustLightning
             return ChannelDetails.ParseManyUnsafe(arr);
         }
 
-        public unsafe void CreateChannel(PubKey theirNetworkKey, ulong channelValueSatoshis, ulong pushMSat, ulong userId, in UserConfig? overrideConfig = null)
+        public unsafe void CreateChannel(PubKey theirNetworkKey, ulong channelValueSatoshis, ulong pushMSat, ulong userId, in UserConfig overrideConfig)
+        {
+            if (theirNetworkKey == null) throw new ArgumentNullException(nameof(theirNetworkKey));
+            if (!theirNetworkKey.IsCompressed) Errors.PubKeyNotCompressed(nameof(theirNetworkKey), theirNetworkKey);
+            var pk = theirNetworkKey.ToBytes();
+            fixed (byte* b = pk)
+            fixed (UserConfig* _u = &overrideConfig)
+            {
+                Interop.create_channel((IntPtr) b, channelValueSatoshis, pushMSat, userId, Handle,
+                    in overrideConfig);
+            }
+        }
+        
+        public unsafe void CreateChannel(PubKey theirNetworkKey, ulong channelValueSatoshis, ulong pushMSat, ulong userId)
         {
             if (theirNetworkKey == null) throw new ArgumentNullException(nameof(theirNetworkKey));
             if (!theirNetworkKey.IsCompressed) Errors.PubKeyNotCompressed(nameof(theirNetworkKey), theirNetworkKey);
             var pk = theirNetworkKey.ToBytes();
             fixed (byte* b = pk)
             {
-                Interop.create_channel((IntPtr)b, channelValueSatoshis, pushMSat, userId, Handle, in overrideConfig);
+                Interop.create_channel((IntPtr) b, channelValueSatoshis, pushMSat, userId, Handle);
             }
         }
+
         public unsafe void CloseChannel(uint256 channelId)
         {
             if (channelId == null) throw new ArgumentNullException(nameof(channelId));

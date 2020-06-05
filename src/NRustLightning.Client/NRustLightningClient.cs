@@ -80,6 +80,22 @@ namespace NRustLightning.Client
             return RequestAsync<WalletInfo>($"/v1/info/{cryptoCode}/wallet", HttpMethod.Get);
         }
 
+        public Task<GetNewAddressResponse> GetNewDepositAddressAsync(string cryptoCode = "BTC")
+        {
+            return RequestAsync<GetNewAddressResponse>($"/v1/wallet/{cryptoCode}/address", HttpMethod.Get);
+        }
+        
+        /// <summary>
+        /// Returns Id for that channel
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="cryptoCode"></param>
+        /// <returns></returns>
+        public Task<ulong> CreateChannel(OpenChannelRequest request, string cryptoCode = "BTC")
+        {
+            return RequestAsync<ulong>($"/v1/channel/{cryptoCode}", HttpMethod.Post);
+        }
+
         private async Task<T> RequestAsync<T>(string relativePath, HttpMethod method, object parameters = null)
         {
             using var msg = new HttpRequestMessage();

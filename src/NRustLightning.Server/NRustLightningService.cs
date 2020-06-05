@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NBitcoin;
 using NBXplorer.DerivationStrategy;
 using NRustLightning.Interfaces;
+using NRustLightning.Server.Authentication;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Configuration.SubConfiguration;
 using NRustLightning.Server.FFIProxies;

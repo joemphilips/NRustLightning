@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Net.Http;
 using Microsoft.Extensions.Options;
 using NBXplorer;
 using NRustLightning.Server.Configuration;
@@ -11,7 +12,7 @@ namespace NRustLightning.Server.Services
     {
         Dictionary<string, ExplorerClient> explorerClients = new Dictionary<string, ExplorerClient>();
 
-        public NBXplorerClientProvider(IOptions<Config> config, IOptionsMonitor<ChainConfiguration> chainConfig, NRustLightningNetworkProvider networkProvider)
+        public NBXplorerClientProvider(IOptions<Config> config, IOptionsMonitor<ChainConfiguration> chainConfig, NRustLightningNetworkProvider networkProvider, IHttpClientFactory httpClientFactory)
         {
             foreach (var n in networkProvider.GetAll())
             {
@@ -19,6 +20,7 @@ namespace NRustLightning.Server.Services
                 if (!(chainConf is null))
                 {
                     var c = new ExplorerClient(n.NbXplorerNetwork, config.Value.NBXplorerUri);
+                    c.SetClient(httpClientFactory.CreateClient(nameof(NBXplorerClientProvider)));
                     explorerClients.Add(n.CryptoCode, c);
                 }
             }
