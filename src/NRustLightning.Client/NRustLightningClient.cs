@@ -6,6 +6,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using DotNetLightning.Payment;
 using Microsoft.AspNetCore.Http;
@@ -15,6 +16,8 @@ using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Models;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Models.Response;
+using NRustLightning.Server.Networks;
+using NRustLightning.Server.Repository;
 
 namespace NRustLightning.Client
 {
@@ -26,11 +29,12 @@ namespace NRustLightning.Client
         private JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
         {
             PropertyNameCaseInsensitive = true,
-            Converters = { new PaymentRequestJsonConverter()}
+            Converters = { new PaymentRequestJsonConverter(), new JsonFSharpConverter() }
         };
 
-        public NRustLightningClient(string baseUrl) : this(baseUrl, null) {}
-        public NRustLightningClient(string baseUrl, X509Certificate2? certificate)
+        private NRustLightningNetworkProvider _networkProvider;
+        
+        public NRustLightningClient(string baseUrl, X509Certificate2? certificate = null, NetworkType networkType = NetworkType.Mainnet)
         {
             var handler = new HttpClientHandler()
             {
@@ -40,7 +44,13 @@ namespace NRustLightning.Client
             {
                 handler.ClientCertificates.Add(certificate);
             }
+            _networkProvider = new NRustLightningNetworkProvider(networkType);
 
+            foreach (var n in _networkProvider.GetAll())
+            {
+                var ser = new RepositorySerializer(n);
+                ser.ConfigureSerializer(jsonSerializerOptions);
+            }
             HttpClient = new HttpClient(handler);
             _baseUri = new Uri(baseUrl);
         }
@@ -75,6 +85,27 @@ namespace NRustLightning.Client
             return RequestAsync<ChannelInfoResponse>($"/v1/channel/{cryptoCode}/", HttpMethod.Get);
         }
 
+        public Task<WalletInfo> GetWalletInfoAsync(string cryptoCode = "BTC")
+        {
+            return RequestAsync<WalletInfo>($"/v1/info/{cryptoCode}/wallet", HttpMethod.Get);
+        }
+
+        public Task<GetNewAddressResponse> GetNewDepositAddressAsync(string cryptoCode = "BTC")
+        {
+            return RequestAsync<GetNewAddressResponse>($"/v1/wallet/{cryptoCode}/address", HttpMethod.Get);
+        }
+        
+        /// <summary>
+        /// Returns Id for the created channel
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="cryptoCode"></param>
+        /// <returns></returns>
+        public Task<ulong> CreateChannel(OpenChannelRequest request, string cryptoCode = "BTC")
+        {
+            return RequestAsync<ulong>($"/v1/channel/{cryptoCode}", HttpMethod.Post, request);
+        }
+
         private async Task<T> RequestAsync<T>(string relativePath, HttpMethod method, object parameters = null)
         {
             using var msg = new HttpRequestMessage();
@@ -88,6 +119,8 @@ namespace NRustLightning.Client
             using var resp = await HttpClient.SendAsync(msg).ConfigureAwait(false);
             resp.EnsureSuccessStatusCode();
             var content = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (string.IsNullOrEmpty(content))
+                return default;
             return JsonSerializer.Deserialize<T>(content, jsonSerializerOptions);
         }
     }

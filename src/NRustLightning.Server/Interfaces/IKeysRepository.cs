@@ -1,5 +1,6 @@
 using DotNetLightning.Payment;
 using NBitcoin;
+using NRustLightning.Server.Repository;
 
 namespace NRustLightning.Server.Interfaces
 {
@@ -7,6 +8,8 @@ namespace NRustLightning.Server.Interfaces
     {
         Key GetNodeSecret();
         PubKey GetNodeId();
+
+        RepositorySerializer Serializer { get; set; }
     }
     
     public class KeysRepoMessageSigner : IMessageSigner
@@ -20,7 +23,7 @@ namespace NRustLightning.Server.Interfaces
             _keysRepository.GetNodeSecret().SignCompact(obj0, false);
     }
 
-    public static class IKeysRepositoryExtensoin
+    public static class IKeysRepositoryExtension
     {
         public static IMessageSigner AsMessageSigner(this IKeysRepository repo)
         {

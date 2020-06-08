@@ -9,7 +9,7 @@ namespace NRustLightning.Server.Models.Request
     public class InvoiceCreationOption
     {
         [JsonConverter(typeof(LNMoneyJsonConverter))]
-        public LNMoney? Amount { get; set; }
+        public LNMoney? Amount { get; set; } = null;
 
         [JsonConverter(typeof(uint256JsonConverter))]
         public uint256? PaymentSecret { get; set; } = null;

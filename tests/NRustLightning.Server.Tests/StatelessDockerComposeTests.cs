@@ -8,9 +8,11 @@ using BTCPayServer.Lightning;
 using DockerComposeFixture;
 using DockerComposeFixture.Compose;
 using DockerComposeFixture.Exceptions;
+using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Tests.Support;
 using Xunit;
 using Xunit.Abstractions;
+using OpenChannelRequest = NRustLightning.Server.Models.Request.OpenChannelRequest;
 
 namespace NRustLightning.Server.Tests
 {
@@ -27,7 +29,7 @@ namespace NRustLightning.Server.Tests
         [Fact]
         public async Task CanConnectNodes()
         {
-            var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(StatelessDockerComposeTests));
+            var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanConnectNodes));
             var blockchainInfo = await clients.BitcoinRPCClient.GetBlockchainInfoAsync();
             Assert.NotNull(blockchainInfo);
             var lndInfo = await clients.LndLNClient.GetInfo();
@@ -71,6 +73,19 @@ namespace NRustLightning.Server.Tests
             // Can disconnect from inside for inbound connection.
             // TODO: after handling events from rl, we must hold PubKey => connection in ConnectionHandler.
             // And then we can disconnect from inside.
+        }
+
+        [Fact]
+        public async Task CanOpenCloseChannels()
+        {
+            var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanOpenCloseChannels));
+            var nrlInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
+            Assert.NotNull(nrlInfo.DerivationStrategy);
+            // Assert.DoesNotContain("legacy", nrlInfo.DerivationStrategy.ToString());
+            await clients.ConnectAll();
+            var lnd = await clients.LndLNClient.GetInfo();
+            var i = lnd.NodeInfoList.FirstOrDefault()?.NodeId;
+            // await clients.NRustLightningHttpClient.CreateChannel(new OpenChannelRequest() { TheirNetworkKey = i });
         }
     }
 }

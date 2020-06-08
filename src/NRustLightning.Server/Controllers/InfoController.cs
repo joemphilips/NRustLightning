@@ -7,22 +7,32 @@ using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Models.Response;
+using NRustLightning.Server.Networks;
 using NRustLightning.Server.P2P;
+using NRustLightning.Server.Repository;
+using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Controllers
 {
     [ApiController]
     [Route("/v1/[controller]")]
+    // [Authorize(AuthenticationSchemes = "LSAT", Policy = "Readonly")]
     public class InfoController : ControllerBase
     {
         private readonly IKeysRepository keysRepository;
         private readonly P2PConnectionHandler _connectionHandler;
+        private readonly WalletService _walletService;
+        private readonly NRustLightningNetworkProvider _networkProvider;
+        private readonly RepositoryProvider _repositoryProvider;
         private readonly Config config;
 
-        public InfoController(IKeysRepository keysRepository, IOptions<Config> config, P2PConnectionHandler connectionHandler)
+        public InfoController(IKeysRepository keysRepository, IOptions<Config> config, P2PConnectionHandler connectionHandler, WalletService walletService, NRustLightningNetworkProvider networkProvider, RepositoryProvider repositoryProvider)
         {
             this.keysRepository = keysRepository;
             _connectionHandler = connectionHandler;
+            _walletService = walletService;
+            _networkProvider = networkProvider;
+            _repositoryProvider = repositoryProvider;
             this.config = config.Value;
         }
         
@@ -36,6 +46,16 @@ namespace NRustLightning.Server.Controllers
                 NodeIds = nodeIds.Select(x => x.ToHex()).ToList(),
                 ConnectionString = new PeerConnectionString(keysRepository.GetNodeId(), config.P2PExternalIp)
             };
+        }
+
+        [HttpGet]
+        [Route("{cryptoCode}/wallet")]
+        public JsonResult GetWalletInfo(string cryptoCode)
+        {
+            var n = _networkProvider.GetByCryptoCode(cryptoCode);
+            var derivationStrategy = _walletService.GetOurDerivationStrategy(n);
+            var resp = new WalletInfo {DerivationStrategy = derivationStrategy};
+            return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);
         }
     }
 }

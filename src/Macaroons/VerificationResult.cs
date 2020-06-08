@@ -15,7 +15,7 @@ namespace Macaroons
             Success = true;
             MessageList = new List<string>();
         }
-
+        
         public VerificationResult(string msg) : this()
         {
             AddFailure(msg);

@@ -1,7 +1,12 @@
+using System;
+using DotNetLightning.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NBitcoin;
+using NBXplorer.DerivationStrategy;
 using NRustLightning.Interfaces;
+using NRustLightning.Server.Authentication;
+using NRustLightning.Server.Authentication.MacaroonMinter;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Configuration.SubConfiguration;
 using NRustLightning.Server.FFIProxies;
@@ -23,6 +28,8 @@ namespace NRustLightning.Server
             services.AddSingleton<IKeysRepository, FlatFileKeyRepository>();
             services.AddSingleton<IRPCClientProvider, RPCClientProvider>();
             services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
+            services.AddSingleton<RepositoryProvider>();
+            services.AddSingleton<WalletService>();
             services.AddSingleton<P2PConnectionFactory>();
             services.AddSingleton<P2PConnectionHandler>();
             services.AddSingleton<NBXplorerClientProvider>();
@@ -37,6 +44,47 @@ namespace NRustLightning.Server
             services.AddSingleton(networkProvider);
             services.AddLogging();
             services.Configure<Config>(o => { o.LoadArgs(configuration, logger); });
+        }
+
+        public static void ConfigureNRustLightningAuth(this IServiceCollection services, IConfiguration Configuration)
+        {
+            // configure lsat/macaroon authentication
+            services.AddSingleton<IMacaroonSecretRepository, InMemoryMacaroonSecretRepository>();
+            services.AddSingleton<ILSATInvoiceProvider, InMemoryInvoiceRepository>();
+            
+            string? ourServiceName = null;
+            int ourServiceTier = 0;
+            var lsatConfig = Configuration.GetSection("LSAT");
+            services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = LSATDefaults.Scheme;
+                options.DefaultChallengeScheme = LSATDefaults.Scheme;
+            }).AddLSATAuthentication(options =>
+            {
+                options.ServiceName = "nrustlightning";
+                options.ServiceTier = ourServiceTier;
+                lsatConfig.Bind(options);
+                ourServiceName = options.ServiceName;
+                ourServiceTier = options.ServiceTier;
+                // we want to give users only read capability when they have payed for it. not write.
+                options.MacaroonCaveats.Add($"{ourServiceName}{LSATDefaults.CapabilitiesConditionPrefix}=read");
+                int amount = lsatConfig.GetOrDefault("amount", 1);
+                options.InvoiceAmount = LNMoney.MilliSatoshis(amount);
+            });
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("Readonly", policy =>
+                {
+                    policy.RequireClaim("service", $"{ourServiceName}:{ourServiceTier}");
+                    policy.RequireClaim($"{ourServiceName}{LSATDefaults.CapabilitiesConditionPrefix}", "read", "admin");
+                });
+                
+                options.AddPolicy("Admin", policy =>
+                {
+                    policy.RequireClaim("service", $"{ourServiceName}:{ourServiceTier}");
+                    policy.RequireClaim($"{ourServiceName}{LSATDefaults.CapabilitiesConditionPrefix}", "admin");
+                });
+            });
         }
     }
 }

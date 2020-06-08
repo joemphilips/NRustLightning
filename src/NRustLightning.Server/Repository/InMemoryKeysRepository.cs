@@ -25,9 +25,9 @@ namespace NRustLightning.Server.Repository
             
             hex = new HexEncoder();
             logger.LogInformation($"Our node id is {hex.EncodeData(NodeId.ToBytes())}");
-            logger.LogInformation($"and secret is {hex.EncodeData(Secret.ToBytes())}");
         }
 
+        public RepositorySerializer Serializer { get; set; }
         public Key GetNodeSecret() => Secret;
         public PubKey GetNodeId()
         {

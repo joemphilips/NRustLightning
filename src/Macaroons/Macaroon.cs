@@ -25,7 +25,7 @@ namespace Macaroons
         public Packet Signature { get; protected set; }
 
         public IList<Caveat> Caveats => CaveatsList.AsReadOnly();
-        public IEnumerable<Caveat> ThirdPartyCaveats => Caveats.Where(c => c.IsTheirPartyCaveat);
+        public IEnumerable<Caveat> ThirdPartyCaveats => Caveats.Where(c => c.IsThirdPartyCaveat);
         protected List<Caveat> CaveatsList { get; set; }
         
         protected Macaroon(){}

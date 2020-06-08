@@ -21,6 +21,9 @@ namespace Macaroons
         /// </summary>
         public Packet? Cl { get; protected set; }
 
+        public string? Condition => CId?.ToString().Split('=')[0];
+        public string? Value => CId?.ToString().Split('=')[1];
+        
         public Caveat(string cid, string cl = null)
         {
             if (cid == null) throw new ArgumentNullException(nameof(cid));
@@ -47,7 +50,7 @@ namespace Macaroons
         }
 
         public bool IsFirstPartyCaveat => VId is null;
-        public bool IsTheirPartyCaveat => VId != null;
+        public bool IsThirdPartyCaveat => VId != null;
 
         public string Inspect()
         {
