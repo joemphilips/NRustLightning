@@ -66,7 +66,8 @@ namespace NRustLightning.Server.Tests
         {
             var hostBuilder = new HostBuilder().ConfigureTestHost();
             using var host = await hostBuilder.StartAsync();
-            var client = host.GetTestNRustLightningClient();
+            var client = host.GetTestClient();
+            return;
         }
     }
 }

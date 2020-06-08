@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using NBitcoin;
 using NBitcoin.DataEncoders;
+using NRustLightning.Server.Authentication.MacaroonMinter;
 using NRustLightning.Server.Interfaces;
 
 namespace NRustLightning.Server.Authentication
@@ -32,9 +33,9 @@ namespace NRustLightning.Server.Authentication
         private HexEncoder _hex;
         public Verifier MacaroonVerifier { get; set; }
         public ILSATInvoiceProvider? _InvoiceRepository;
-        public LSATAuthenticationHandler(IOptionsMonitor<LSATAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock, IMacaroonSecretRepository macaroonSecretRepository, IServiceProvider serviceProvider) : base(options, logger, encoder, clock)
+        public LSATAuthenticationHandler(IOptionsMonitor<LSATAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock, IServiceProvider serviceProvider) : base(options, logger, encoder, clock)
         {
-            _macaroonSecretRepository = macaroonSecretRepository;
+            _macaroonSecretRepository = serviceProvider.GetService<IMacaroonSecretRepository>() ?? new InMemoryMacaroonSecretRepository();
             _InvoiceRepository = serviceProvider.GetService<ILSATInvoiceProvider>();
             _hex = new HexEncoder();
         }
@@ -130,7 +131,7 @@ namespace NRustLightning.Server.Authentication
                     Principal = principal,
                 };
                 await Events.OnTokenValidated(tokenValidatedContext);
-                return AuthenticateResult.Success(new AuthenticationTicket(principal, null, LSATDefaults.Scheme));
+                return AuthenticateResult.Success(new AuthenticationTicket(principal, new AuthenticationProperties(), LSATDefaults.Scheme));
             }
             catch (Exception ex)
             {
@@ -165,7 +166,7 @@ namespace NRustLightning.Server.Authentication
             }
             else if (_InvoiceRepository != null)
             {
-                invoice = await _InvoiceRepository.GetNewInvoiceAsync(Options.InvoiceCreationOption);
+                invoice = await _InvoiceRepository.GetNewInvoiceAsync(Options.InvoiceAmount);
             }
             if (invoice is null)
             {
@@ -174,7 +175,6 @@ namespace NRustLightning.Server.Authentication
                 return;
             }
 
-            invoice = paymentRequiredContext.Bolt11Invoice;
             var m = await GetAuthMacaroon(invoice?.PaymentHash).ConfigureAwait(false);
 
             Response.StatusCode = 402;

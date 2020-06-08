@@ -21,6 +21,7 @@ using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Middlewares;
+using NRustLightning.Server.Repository;
 
 namespace NRustLightning.Server
 {
@@ -48,51 +49,17 @@ namespace NRustLightning.Server
         {
             services.AddControllers().AddJsonOptions(options =>
             {
-                var c = options.JsonSerializerOptions.Converters;
-                c.Add(new PaymentRequestJsonConverter());
+                options.JsonSerializerOptions.Converters
+                    .Add(new PaymentRequestJsonConverter());
+                options.JsonSerializerOptions.Converters
+                    .Add(new JsonFSharpConverter());
             });
             services.AddHttpClient();
             services.AddSingleton<ISystemClock, SystemClock>();
             services.AddNRustLightning();
             services.ConfigureNRustLightning(Configuration, logger);
             services.AddMvc();
-            
-            // configure lsat/macaroon authentication
-            string? ourServiceName = null;
-            int ourServiceTier = 0;
-            services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = LSATDefaults.Scheme;
-                options.DefaultChallengeScheme = LSATDefaults.Scheme;
-            }).AddLSATAuthentication(options =>
-            {
-                options.ServiceName = "nrustlightning";
-                options.ServiceTier = ourServiceTier;
-                Configuration.GetSection("LSAT").Bind(options);
-                ourServiceName = options.ServiceName;
-                ourServiceTier = options.ServiceTier;
-                // we want to give users only read capability when they have payed for it. not write.
-                options.MacaroonCaveats.Add($"{ourServiceName}{LSATDefaults.CapabilitiesConditionPrefix}=read");
-                options.InvoiceCreationOption.Amount =
-                    LNMoney.MilliSatoshis(Configuration.GetSection("LSAT").GetOrDefault("amount", 0));
-                options.InvoiceCreationOption.Description = Configuration.GetSection("LSAT").GetOrDefault("description", "this is invoice for using nrustlightning");
-                options.InvoiceCreationOption.Expiry =
-                    TimeSpan.FromSeconds(Configuration.GetSection("LSAT").GetOrDefault("expirysecconds", 3600));
-            });
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy("Readonly", policy =>
-                {
-                    policy.RequireClaim("service", $"{ourServiceName}:{ourServiceTier}");
-                    policy.RequireClaim($"{ourServiceName}{LSATDefaults.CapabilitiesConditionPrefix}", "read", "admin");
-                });
-                
-                options.AddPolicy("Admin", policy =>
-                {
-                    policy.RequireClaim("service", $"{ourServiceName}:{ourServiceTier}");
-                    policy.RequireClaim($"{ourServiceName}{LSATDefaults.CapabilitiesConditionPrefix}", "admin");
-                });
-            });
+            services.ConfigureNRustLightningAuth(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

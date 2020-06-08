@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DotNetLightning.Utils;
 using Microsoft.AspNetCore.Authentication;
 using NRustLightning.Server.Models.Request;
 
@@ -28,7 +29,7 @@ namespace NRustLightning.Server.Authentication
         /// </summary>
         public string ServiceLocation { get; set; } = "https://localhost";
 
-        public InvoiceCreationOption InvoiceCreationOption { get; set; }
+        public LNMoney InvoiceAmount = LNMoney.One;
         
         /// <summary>
         /// When you update capabilities or constraints for this service, you must increment this number.

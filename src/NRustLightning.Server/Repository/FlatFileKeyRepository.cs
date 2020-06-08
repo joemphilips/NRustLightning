@@ -13,7 +13,6 @@ namespace NRustLightning.Server.Repository
         private readonly IOptions<Config> config;
         private readonly ILogger<FlatFileKeyRepository> logger;
         private Key Secret;
-        public PubKey NodeId { get; set; }
 
         public FlatFileKeyRepository(IOptions<Config> config, ILogger<FlatFileKeyRepository> logger)
         {
@@ -33,6 +32,10 @@ namespace NRustLightning.Server.Repository
             NodeId = Secret.PubKey;
             logger.LogInformation($"Our nodeid is {NodeId}");
         }
+
+        public RepositorySerializer Serializer { get; set; }
+
+        public PubKey NodeId { get; set; }
 
         public Key GetNodeSecret() => Secret;
 

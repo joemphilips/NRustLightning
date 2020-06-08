@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using NBXplorer.DerivationStrategy;
+using NBXplorer.JsonConverters;
 
 namespace NRustLightning.Server.Models.Response
 {

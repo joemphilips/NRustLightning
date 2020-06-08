@@ -48,7 +48,7 @@ services:
       NBXPLORER_BTCNODEENDPOINT: bitcoind:39388
       NBXPLORER_BTCRPCUSER: johndoe
       NBXPLORER_BTCRPCPASSWORD: HmcwPBb0KRWFWlSXkSY_DI70JekYyAr5CPx2N2i8RjA=
-      NBXPLORER_BIND: 0.0.0.0:32838
+      NBXPLORER_BIND: 0.0.0.0:${NBXPLORER_PORT}
       NBXPLORER_MINGAPSIZE: 5
       NBXPLORER_MAXGAPSIZE: 10
       NBXPLORER_VERBOSE: 1
@@ -148,7 +148,7 @@ services:
       - dotnet
       - NRustLightning.Server.dll
       - --nohttps
-      - --debug.http=false
+      - --debug.http=true
       - --httpport=80
       - --externalip="nrustlightning:9735"
     ports:
@@ -163,6 +163,7 @@ services:
     links:
       - bitcoind
       - lnd
+      - nbxplorer
     volumes:
       - "${HOME}/.aspnet/:/root/.aspnet/"
       - "${HOME}/.microsoft/usersecrets/:/root/.microsoft/usersecrets"

@@ -80,11 +80,12 @@ namespace NRustLightning.Server.Tests
         {
             var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanOpenCloseChannels));
             var nrlInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
-            await clients.NBXClient.TrackAsync(nrlInfo.DerivationStrategy);
+            Assert.NotNull(nrlInfo.DerivationStrategy);
+            // Assert.DoesNotContain("legacy", nrlInfo.DerivationStrategy.ToString());
             await clients.ConnectAll();
             var lnd = await clients.LndLNClient.GetInfo();
             var i = lnd.NodeInfoList.FirstOrDefault()?.NodeId;
-            await clients.NRustLightningHttpClient.CreateChannel(new OpenChannelRequest() { TheirNetworkKey = i });
+            // await clients.NRustLightningHttpClient.CreateChannel(new OpenChannelRequest() { TheirNetworkKey = i });
         }
     }
 }

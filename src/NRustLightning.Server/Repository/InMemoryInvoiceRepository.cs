@@ -9,6 +9,8 @@ using DotNetLightning.Utils;
 using Microsoft.AspNetCore.Authentication;
 using NBitcoin;
 using NBitcoin.Crypto;
+using NRustLightning.Server.Authentication;
+using NRustLightning.Server.Authentication.MacaroonMinter;
 using NRustLightning.Server.Entities;
 using NRustLightning.Server.Extensions;
 using NRustLightning.Server.Interfaces;
@@ -17,16 +19,18 @@ using NRustLightning.Server.Networks;
 
 namespace NRustLightning.Server.Repository
 {
-    public class InMemoryInvoiceRepository : IInvoiceRepository
+    public class InMemoryInvoiceRepository : IInvoiceRepository, ILSATInvoiceProvider
     {
         private readonly IKeysRepository _keysRepository;
         private readonly ISystemClock _systemClock;
+        private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly ConcurrentDictionary<Primitives.PaymentHash, (PaymentRequest, Primitives.PaymentPreimage)> _paymentRequests = new ConcurrentDictionary<Primitives.PaymentHash,(PaymentRequest, Primitives.PaymentPreimage)>();
 
-        public InMemoryInvoiceRepository(IKeysRepository keysRepository, ISystemClock systemClock)
+        public InMemoryInvoiceRepository(IKeysRepository keysRepository, ISystemClock systemClock, NRustLightningNetworkProvider networkProvider)
         {
             _keysRepository = keysRepository;
             _systemClock = systemClock;
+            _networkProvider = networkProvider;
         }
         
         public Task PaymentStarted(PaymentRequest bolt11)
@@ -98,6 +102,13 @@ namespace NRustLightning.Server.Repository
         public Primitives.PaymentPreimage GetPreimage(Primitives.PaymentHash hash)
         {
             return _paymentRequests[hash].Item2;
+        }
+        
+        public Task<PaymentRequest> GetNewInvoiceAsync(LNMoney amount)
+        {
+            var n = _networkProvider.GetByCryptoCode("btc");
+            var p = Primitives.PaymentPreimage.Create(RandomUtils.GetBytes(32));
+            return Task.FromResult(GetNewInvoice(n, p, new InvoiceCreationOption(){Amount = amount}));
         }
     }
 }

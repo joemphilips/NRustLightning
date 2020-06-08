@@ -16,7 +16,7 @@ namespace NRustLightning.Server.Controllers
 {
     [ApiController]
     [Route("/v1/[controller]")]
-    [Authorize(AuthenticationSchemes = "LSAT")]
+    // [Authorize(AuthenticationSchemes = "LSAT", Policy = "Readonly")]
     public class PaymentController : ControllerBase
     {
         private readonly IInvoiceRepository _invoiceRepository;

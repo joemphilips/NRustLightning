@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using NBitcoin;
 using NBXplorer.DerivationStrategy;
@@ -38,7 +39,12 @@ namespace NRustLightning.Server.Services
         public DerivationStrategyBase GetOurDerivationStrategy(NRustLightningNetwork network)
         {
             var baseKey = GetBaseXPriv(network);
-            return network.NbXplorerNetwork.DerivationStrategyFactory.CreateDirectDerivationStrategy(baseKey.Neuter());
+            var strategy = network.NbXplorerNetwork.DerivationStrategyFactory.CreateDirectDerivationStrategy(baseKey.Neuter(),
+                new DerivationStrategyOptions
+                {
+                    ScriptPubKeyType = ScriptPubKeyType.Segwit
+                });
+            return strategy;
         }
 
         public BitcoinAddress GetNewAddress(NRustLightningNetwork network)

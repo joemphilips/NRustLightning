@@ -15,7 +15,7 @@ namespace NRustLightning.Server.Controllers
 {
     [ApiController]
     [Route("/v1/[controller]")]
-    [Authorize(AuthenticationSchemes = "LSAT")]
+    // [Authorize(AuthenticationSchemes = "LSAT", Policy = "Readonly")]
     public class PeerController : ControllerBase
     {
         private readonly P2PConnectionHandler _connectionHandler;

@@ -2,10 +2,9 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
 using DotNetLightning.Payment;
-using Macaroons;
 using NBitcoin;
 
-namespace NRustLightning.Server.Authentication
+namespace NRustLightning.Server.Authentication.MacaroonMinter
 {
     public interface IMacaroonSecretRepository
     {

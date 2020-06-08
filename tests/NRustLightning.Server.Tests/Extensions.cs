@@ -70,7 +70,7 @@ namespace NRustLightning.Server.Tests
             };
             try
             {
-                await dockerFixture.InitOnceAsync(() => new DockerFixtureOptions
+                await dockerFixture.InitAsync(() => new DockerFixtureOptions
                 {
                     DockerComposeFiles = new[] {"docker-compose.yml"},
                     EnvironmentVariables = env,
@@ -101,7 +101,7 @@ namespace NRustLightning.Server.Tests
                 new RPCClient($"{Constants.BitcoindRPCUser}:{Constants.BitcoindRPCPass}", new Uri($"http://localhost:{ports[0]}"), NBitcoin.Network.RegTest),
                 (LndClient)LightningClientFactory.CreateClient($"type=lnd-rest;macaroonfilepath={lndMacaroonPath};certthumbprint={lndTlsCertThumbPrint};server=https://localhost:{ports[1]}", NBitcoin.Network.RegTest),
                 (CLightningClient)LightningClientFactory.CreateClient($"type=clightning;server=tcp://127.0.0.1:{ports[2]}", NBitcoin.Network.RegTest), 
-                new NRustLightningClient($"http://localhost:{ports[3]}"),
+                new NRustLightningClient($"http://localhost:{ports[3]}", null, NetworkType.Regtest),
                 new ExplorerClient(new NBXplorerNetworkProvider(NetworkType.Regtest).GetBTC(), new Uri($"http://localhost:{ports[4]}"))
                 );
             return clients;
