@@ -10,12 +10,10 @@
         <Compile Include="StreamExtensions.fs" />
         <Compile Include="Event.fs" />
         <Compile Include="ChannelDetails.fs" />
-        <Compile Include="LSAT.fs" />
-        <Compile Include="LSATTransport.fs" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200527-1224-git-23e9fa2" />
+      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200609-0909-git-e6c4820" />
     </ItemGroup>
 
     <ItemGroup>

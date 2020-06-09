@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using DotNetLightning.Payment;
 using DotNetLightning.Utils;
 using NBitcoin;
-using NRustLightning.Server.Authentication;
 using NRustLightning.Server.Entities;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Networks;
