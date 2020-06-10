@@ -7,7 +7,6 @@ open DotNetLightning.Utils.Primitives
 open DotNetLightning.Utils
 open DotNetLightning.Serialize
 open DotNetLightning.Core.Utils.Extensions
-open DotNetLightning.Serialize
 
 [<AutoOpen>]
 module PrimitiveStaticExtensions =

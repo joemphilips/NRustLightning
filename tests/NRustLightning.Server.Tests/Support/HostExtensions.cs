@@ -2,7 +2,9 @@ using System.Linq;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NBitcoin;
 using NRustLightning.Client;
+using NRustLightning.Server.Networks;
 
 namespace NRustLightning.Server.Tests.Support
 {
@@ -11,7 +13,7 @@ namespace NRustLightning.Server.Tests.Support
         public static NRustLightningClient GetTestNRustLightningClient(this IHost host)
         {
             var httpClient = host.GetTestClient();
-            var client = new NRustLightningClient(httpClient.BaseAddress.ToString());
+            var client = new NRustLightningClient(httpClient.BaseAddress.ToString(), new NRustLightningNetworkProvider(NetworkType.Regtest).GetByCryptoCode("BTC"));
             client.HttpClient = httpClient;
             return client;
         }

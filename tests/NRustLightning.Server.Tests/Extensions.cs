@@ -22,6 +22,7 @@ using NBitcoin.RPC;
 using NBXplorer;
 using NRustLightning.Client;
 using NRustLightning.Server.Interfaces;
+using NRustLightning.Server.Networks;
 using NRustLightning.Server.Repository;
 using NRustLightning.Server.Tests.Support;
 using NRustLightning.Utils;
@@ -97,14 +98,16 @@ namespace NRustLightning.Server.Tests
                 }
             }
             
+            var networkProvider = new NRustLightningNetworkProvider(NetworkType.Regtest);
+            var btcNetwork = networkProvider.GetByCryptoCode("BTC");
             var lndMacaroonPath = Path.Join(dataPath, ".lnd", "chain", "bitcoin", "regtest", "admin.macaroon");
             var lndTlsCertThumbPrint = GetCertificateFingerPrintHex(Path.Join(dataPath, ".lnd", "tls.cert"));
             var clients = new Clients(
                 new RPCClient($"{Constants.BitcoindRPCUser}:{Constants.BitcoindRPCPass}", new Uri($"http://localhost:{ports[0]}"), NBitcoin.Network.RegTest),
                 (LndClient)LightningClientFactory.CreateClient($"type=lnd-rest;macaroonfilepath={lndMacaroonPath};certthumbprint={lndTlsCertThumbPrint};server=https://localhost:{ports[1]}", NBitcoin.Network.RegTest),
                 (CLightningClient)LightningClientFactory.CreateClient($"type=clightning;server=tcp://127.0.0.1:{ports[2]}", NBitcoin.Network.RegTest), 
-                new NRustLightningClient($"http://localhost:{ports[3]}", null, NetworkType.Regtest),
-                new ExplorerClient(new NBXplorerNetworkProvider(NetworkType.Regtest).GetBTC(), new Uri($"http://localhost:{ports[4]}"))
+                new NRustLightningClient($"http://localhost:{ports[3]}",btcNetwork),
+                new ExplorerClient(btcNetwork.NbXplorerNetwork, new Uri($"http://localhost:{ports[4]}"))
                 );
             return clients;
         }
@@ -118,7 +121,7 @@ namespace NRustLightning.Server.Tests
                 webHost.UseContentRoot(curr);
                 webHost.ConfigureAppConfiguration(configBuilder =>
                 {
-                    configBuilder.AddJsonFile("appsettings.Development.json");
+                    configBuilder.AddJsonFile("appsettings.test.json");
                 });
                 webHost.UseStartup<Startup>();
                 webHost.ConfigureTestServices(services =>

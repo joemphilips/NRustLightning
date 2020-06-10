@@ -13,11 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200609-0909-git-e6c4820" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Macaroons\Macaroons.csproj" />
+      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200610-0423-git-c63b168" />
     </ItemGroup>
 
 </Project>

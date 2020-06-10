@@ -85,7 +85,7 @@ namespace NRustLightning.Server.Tests
             await clients.ConnectAll();
             var lnd = await clients.LndLNClient.GetInfo();
             var i = lnd.NodeInfoList.FirstOrDefault()?.NodeId;
-            // await clients.NRustLightningHttpClient.CreateChannel(new OpenChannelRequest() { TheirNetworkKey = i });
+            await clients.NRustLightningHttpClient.CreateChannel(new OpenChannelRequest() { TheirNetworkKey = i });
         }
         
         [Fact]
