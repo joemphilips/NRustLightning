@@ -10,9 +10,11 @@ using BTCPayServer.Lightning.CLightning;
 using BTCPayServer.Lightning.LND;
 using DockerComposeFixture;
 using DockerComposeFixture.Exceptions;
+using LSATAuthenticationHandler;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using NBitcoin;
@@ -121,8 +123,10 @@ namespace NRustLightning.Server.Tests
                 webHost.UseStartup<Startup>();
                 webHost.ConfigureTestServices(services =>
                 {
-                    services.TryAddSingleton<IKeysRepository, InMemoryKeysRepository>();
-                    services.TryAddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
+                    services.AddSingleton<IKeysRepository, InMemoryKeysRepository>();
+                    services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
+                    services.AddSingleton<IMacaroonSecretRepository, InMemoryMacaroonSecretRepository>();
+                    services.AddSingleton<ILSATInvoiceProvider, InMemoryInvoiceRepository>();
                 });
                 webHost.UseTestServer();
             });

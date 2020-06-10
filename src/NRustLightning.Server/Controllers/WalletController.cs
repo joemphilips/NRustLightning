@@ -16,22 +16,26 @@ namespace NRustLightning.Server.Controllers
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly NBXplorerClientProvider _nbXplorerClientProvider;
         private readonly WalletService _walletService;
+        private readonly RepositoryProvider _repositoryProvider;
 
         public WalletController(NRustLightningNetworkProvider networkProvider,
-            NBXplorerClientProvider nbXplorerClientProvider, WalletService walletService)
+            NBXplorerClientProvider nbXplorerClientProvider, WalletService walletService,
+            RepositoryProvider repositoryProvider)
         {
             _networkProvider = networkProvider;
             _nbXplorerClientProvider = nbXplorerClientProvider;
             _walletService = walletService;
+            _repositoryProvider = repositoryProvider;
         }
         
         [HttpGet]
         [Route("{cryptoCode}/address")]
-        public GetNewAddressResponse Address(string cryptoCode)
+        public JsonResult Address(string cryptoCode)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
             var addr = _walletService.GetNewAddress(n);
-            return new GetNewAddressResponse { Address = addr };
+            var resp = new GetNewAddressResponse { Address = addr };
+            return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);
         }
     }
 }

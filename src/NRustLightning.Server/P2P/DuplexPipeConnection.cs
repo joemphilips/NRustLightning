@@ -1,8 +1,7 @@
-using System;
 using System.IO.Pipelines;
 using NRustLightning.Server.P2P.Sockets;
 
-namespace NRustLightning.Server
+namespace NRustLightning.Server.P2P
 {
     public class DuplexPipe : IDuplexPipe
     {

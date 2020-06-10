@@ -20,9 +20,15 @@ using Xunit;
 
 namespace NRustLightning.Server.Tests
 {
-    public class UnitTest1
+    public class UnitTest1 : IClassFixture<CustomWebApplicationFactory>
     {
+        private readonly CustomWebApplicationFactory _fixture;
         public IServiceProvider sp;
+        
+        public UnitTest1(CustomWebApplicationFactory fixture)
+        {
+            _fixture = fixture;
+        }
 
         [Fact]
         public async Task CanConvertJsonTypes()
@@ -59,6 +65,40 @@ namespace NRustLightning.Server.Tests
             var resp = await c.GetChannelDetails();
             Assert.NotNull(resp);
             Assert.Empty(resp.Details);
+        }
+
+        [Fact]
+        public async Task CanGetOnChainAddress()
+        {
+            var hostBuilder = new HostBuilder().ConfigureTestHost();
+            using var host = await hostBuilder.StartAsync();
+            var c = host.GetTestNRustLightningClient();
+            var resp = await c.GetNewDepositAddressAsync();
+            Assert.NotNull(resp.Address);
+        }
+
+        [Fact]
+        public async Task CanGetWalletInfo()
+        {
+            var hostBuilder = new HostBuilder().ConfigureTestHost();
+            using var host = await hostBuilder.StartAsync();
+            var c = host.GetTestNRustLightningClient();
+            var w = await c.GetWalletInfoAsync();
+            Assert.NotNull(w);
+            Assert.NotNull(w.DerivationStrategy);
+        }
+
+        [Fact]
+        public async Task CanGetInfo()
+        {
+            var hostBuilder = new HostBuilder().ConfigureTestHost();
+            using var host = await hostBuilder.StartAsync();
+            var c = host.GetTestNRustLightningClient();
+            var info = await c.GetInfoAsync();
+            Assert.NotNull(info);
+            Assert.Equal(0, info.NumConnected);
+            Assert.NotNull(info.ConnectionString);
+            Assert.Empty(info.NodeIds);
         }
 
         [Fact]

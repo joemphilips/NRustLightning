@@ -26,6 +26,7 @@ namespace NRustLightning.Server.Repository
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
             options.Converters.Add(new DerivationStrategyJsonConverter(_network.NbXplorerNetwork.DerivationStrategyFactory));
+            options.Converters.Add(new BitcoinAddressJsonConverter(_network.NBitcoinNetwork));
         }
     }
 }

@@ -87,5 +87,8 @@ namespace NRustLightning.Server.Tests
             var i = lnd.NodeInfoList.FirstOrDefault()?.NodeId;
             // await clients.NRustLightningHttpClient.CreateChannel(new OpenChannelRequest() { TheirNetworkKey = i });
         }
+        
+        [Fact]
+        public async Task CanPayToOtherNodes() {}
     }
 }
