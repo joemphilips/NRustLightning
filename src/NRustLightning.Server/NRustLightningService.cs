@@ -27,7 +27,7 @@ namespace NRustLightning.Server
             services.AddSingleton<P2PConnectionFactory>();
             services.AddSingleton<P2PConnectionHandler>();
             services.AddSingleton<NBXplorerClientProvider>();
-            services.AddSingleton<PeerManagerProvider>();
+            services.AddSingleton<IPeerManagerProvider, PeerManagerProvider>();
             services.AddTransient<RequestResponseLoggingMiddleware>();
         }
 

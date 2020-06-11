@@ -24,8 +24,8 @@ namespace NRustLightning.Server.Configuration
         public string ConfigurationFile { get; set; } = "nrustlightning.conf";
         public string DataDir { get; set; } = Constants.DataDirectoryPath;
         public List<ChainConfiguration> ChainConfiguration { get; } = new List<ChainConfiguration>();
-        
-        public UserConfig RustLightningConfig { get; }
+
+        public UserConfig RustLightningConfig { get; } = UserConfig.GetDefault();
         
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
 

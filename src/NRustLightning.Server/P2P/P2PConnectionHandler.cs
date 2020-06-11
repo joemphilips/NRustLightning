@@ -35,7 +35,7 @@ namespace NRustLightning.Server.P2P
         /// </summary>
         public Channel<byte> EventNotify { get; }
  
-        public P2PConnectionHandler(ISocketDescriptorFactory descriptorFactory, PeerManagerProvider peerManager,
+        public P2PConnectionHandler(ISocketDescriptorFactory descriptorFactory, IPeerManagerProvider peerManager,
             ILoggerFactory loggerFactory, P2PConnectionFactory connectionFactory)
         {
             // TODO: Support other chains

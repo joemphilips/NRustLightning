@@ -11,6 +11,8 @@ namespace NRustLightning.Server.Models.Request
         public PubKey TheirNetworkKey { get; set; }
         public ulong ChannelValueSatoshis { get; set; }
         public ulong PushMSat { get; set; }
+        
+        [JsonConverter(typeof(NullableStructConverter<UserConfig>))]
         public UserConfig? OverrideConfig { get; set; } = null;
     }
 }

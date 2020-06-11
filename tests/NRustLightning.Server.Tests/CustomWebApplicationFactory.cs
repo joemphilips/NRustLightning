@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NRustLightning.Interfaces;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Repository;
+using NRustLightning.Server.Tests.Stubs;
 
 namespace NRustLightning.Server.Tests
 {
@@ -28,6 +30,9 @@ namespace NRustLightning.Server.Tests
                 services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
                 services.AddSingleton<IMacaroonSecretRepository, InMemoryMacaroonSecretRepository>();
                 services.AddSingleton<ILSATInvoiceProvider, InMemoryInvoiceRepository>();
+                services.AddSingleton<IFeeEstimator, TestFeeEstimator>();
+                services.AddSingleton<IBroadcaster, TestBroadcaster>();
+                services.AddSingleton<IChainWatchInterface, TestChainWatchInterface>();
             });
             webHost.UseTestServer();
         }

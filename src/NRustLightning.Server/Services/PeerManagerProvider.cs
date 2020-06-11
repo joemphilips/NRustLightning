@@ -13,7 +13,7 @@ using NRustLightning.Server.Repository;
 
 namespace NRustLightning.Server.Services
 {
-    public class PeerManagerProvider
+    public class PeerManagerProvider : IPeerManagerProvider
     {
         private readonly IRPCClientProvider rpcClientProvider;
         private readonly NBXplorerClientProvider nbXplorerClientProvider;

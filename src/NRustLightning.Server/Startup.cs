@@ -39,6 +39,10 @@ namespace NRustLightning.Server
                 options.JsonSerializerOptions.Converters
                     .Add(new PaymentRequestJsonConverter());
                 options.JsonSerializerOptions.Converters
+                    .Add(new HexPubKeyConverter());
+                options.JsonSerializerOptions
+                    .Converters.Add(new NullableStructConverterFactory());
+                options.JsonSerializerOptions.Converters
                     .Add(new JsonFSharpConverter());
             });
             services.AddHttpClient();

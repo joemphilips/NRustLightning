@@ -1,9 +1,10 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using NBitcoin;
+using NRustLightning.Adaptors;
 using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Networks;
+using Network = NBitcoin.Network;
 
 namespace NRustLightning.Server.Repository
 {
@@ -29,6 +30,8 @@ namespace NRustLightning.Server.Repository
             options.Converters.Add(new DerivationStrategyJsonConverter(_network.NbXplorerNetwork.DerivationStrategyFactory));
             options.Converters.Add(new BitcoinAddressJsonConverter(_network.NBitcoinNetwork));
             options.Converters.Add(new PaymentRequestJsonConverter());
+            options.Converters.Add(new HexPubKeyConverter());
+            options.Converters.Add(new NullableStructConverterFactory());
             // this is a last resort for serializing F# value, we usually want to try custom converters first.
             // So it must be specified at last.
             options.Converters.Add(new JsonFSharpConverter());

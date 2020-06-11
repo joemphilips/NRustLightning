@@ -23,7 +23,7 @@ namespace NRustLightning.Server.Services
     public class RustLightningEventReactor : IHostedService
     {
         private readonly P2PConnectionHandler _connectionHandler;
-        private readonly PeerManagerProvider _peerManagerProvider;
+        private readonly IPeerManagerProvider _peerManagerProvider;
         private readonly NBXplorerClientProvider _nbXplorerClientProvider;
         private readonly WalletService _walletService;
         private readonly PeerManager _peerManager;
@@ -38,7 +38,7 @@ namespace NRustLightning.Server.Services
 
         public RustLightningEventReactor(
             P2PConnectionHandler connectionHandler,
-            PeerManagerProvider peerManagerProvider,
+            IPeerManagerProvider peerManagerProvider,
             NBXplorerClientProvider nbXplorerClientProvider,
             WalletService walletService,
             NRustLightningNetwork network,

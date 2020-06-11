@@ -145,33 +145,33 @@ namespace NRustLightning.Server.Configuration
             #region rust-lightning specific options
             var uc = UserConfig.GetDefault();
             options.Add(new Option("--ln.own_channel_config.minimum_depth", 
-                $"Confirmation we will wait for before considering the channel locked in. (default: {uc.own_channel_config.minimum_depth})")
+                $"Confirmation we will wait for before considering the channel locked in. (default: {uc.OwnChannelConfig.MinimumDepth})")
             {
                 Argument = new Argument<uint> { Arity = ArgumentArity.ZeroOrOne }
             });
             options.Add(new Option("--ln.own_channel_config.our_to_self_delay", 
-                $"Set to the amount of time we require our counterparty to wait to claim their money.  (default: {uc.own_channel_config.our_to_self_delay})")
+                $"Set to the amount of time we require our counterparty to wait to claim their money.  (default: {uc.OwnChannelConfig.OurToSelfDelay})")
             {
                 Argument = new Argument<ushort> { Arity = ArgumentArity.ZeroOrOne }
             });
             options.Add(new Option("--ln.own_channel_config.our_htlc_minimum_msat", 
-                $"Set to the smallest value HTLC we will accept to process. (default: {uc.own_channel_config.our_htlc_minimum_msat})")
+                $"Set to the smallest value HTLC we will accept to process. (default: {uc.OwnChannelConfig.OurHtlcMinimumMsat})")
             {
                 Argument = new Argument<ulong> { Arity = ArgumentArity.ZeroOrOne }
             });
 
             options.Add(new Option("--ln.channel_options.fee_proportional_millionths", 
-                $"Amount (in millionths of satoshi) our channels will charge per transferred satoshi (default: {uc.channel_options.fee_proportional_millionths})")
+                $"Amount (in millionths of satoshi) our channels will charge per transferred satoshi (default: {uc.ChannelOptions.FeeProportionalMillionths})")
             {
                 Argument = new Argument<uint> { Arity = ArgumentArity.ZeroOrOne }
             });
             options.Add(new Option("--ln.channel_options.announced_channel", 
-                $"Set this to announce the channel publicly and notify all nodes that they can route via our channels. (default: {uc.channel_options.announced_channel == 1})")
+                $"Set this to announce the channel publicly and notify all nodes that they can route via our channels. (default: {uc.ChannelOptions.AnnouncedChannel == 1})")
             {
                 Argument = new Argument<bool> { Arity = ArgumentArity.Zero }
             });
             options.Add(new Option("--ln.channel_options.commit_upfront_shutdown_pubkey", 
-                $"When set, we commit to an upfront shutdown_pubkey at channel open. (default: {uc.channel_options.commit_upfront_shutdown_pubkey == 1})")
+                $"When set, we commit to an upfront shutdown_pubkey at channel open. (default: {uc.ChannelOptions.CommitUpfrontShutdownPubkey == 1})")
             {
                 Argument = new Argument<bool> { Arity = ArgumentArity.ZeroOrOne }
             });

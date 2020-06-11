@@ -19,10 +19,10 @@ namespace NRustLightning.Server.Controllers
     public class PeerController : ControllerBase
     {
         private readonly P2PConnectionHandler _connectionHandler;
-        public PeerManagerProvider PeerManagerProvider { get; }
+        public IPeerManagerProvider PeerManagerProvider { get; }
         public ISocketDescriptorFactory SocketDescriptorFactory { get; }
 
-        public PeerController(PeerManagerProvider peerManagerProvider, ISocketDescriptorFactory socketDescriptorFactory, P2PConnectionHandler connectionHandler)
+        public PeerController(IPeerManagerProvider peerManagerProvider, ISocketDescriptorFactory socketDescriptorFactory, P2PConnectionHandler connectionHandler)
         {
             _connectionHandler = connectionHandler;
             PeerManagerProvider = peerManagerProvider;

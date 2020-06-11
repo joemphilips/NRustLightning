@@ -29,7 +29,7 @@ namespace NRustLightning.Client
 
         private JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
         {
-            PropertyNameCaseInsensitive = true
+            PropertyNameCaseInsensitive = true,
         };
 
         public NRustLightningClient(string baseUrl, NRustLightningNetwork network, X509Certificate2? certificate = null)
@@ -91,12 +91,12 @@ namespace NRustLightning.Client
         }
         
         /// <summary>
-        /// Returns Id for the created channel
+        /// Returns Id for the opened channel
         /// </summary>
         /// <param name="request"></param>
         /// <param name="cryptoCode"></param>
         /// <returns></returns>
-        public Task<ulong> CreateChannel(OpenChannelRequest request, string cryptoCode = "BTC")
+        public Task<ulong> OpenChannel(OpenChannelRequest request)
         {
             return RequestAsync<ulong>($"/v1/channel/{cryptoCode}", HttpMethod.Post, request);
         }
@@ -108,11 +108,15 @@ namespace NRustLightning.Client
             msg.Method = method;
             if (parameters != null)
             {
-                var stringContent = JsonSerializer.Serialize(parameters);
+                var stringContent = JsonSerializer.Serialize(parameters, jsonSerializerOptions);
                 msg.Content = new StringContent(stringContent, Encoding.UTF8, "application/json");
             }
             using var resp = await HttpClient.SendAsync(msg).ConfigureAwait(false);
-            resp.EnsureSuccessStatusCode();
+            if (!resp.IsSuccessStatusCode)
+            {
+                var errMsg= await resp.Content.ReadAsStringAsync();
+                throw new HttpRequestException(errMsg);
+            }
             var content = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (string.IsNullOrEmpty(content))
                 return default;

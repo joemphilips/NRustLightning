@@ -21,10 +21,12 @@ using NBitcoin;
 using NBitcoin.RPC;
 using NBXplorer;
 using NRustLightning.Client;
+using NRustLightning.Interfaces;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Networks;
 using NRustLightning.Server.Repository;
 using NRustLightning.Server.Tests.Support;
+using NRustLightning.Server.Tests.Stubs;
 using NRustLightning.Utils;
 using Xunit.Abstractions;
 
@@ -130,6 +132,11 @@ namespace NRustLightning.Server.Tests
                     services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
                     services.AddSingleton<IMacaroonSecretRepository, InMemoryMacaroonSecretRepository>();
                     services.AddSingleton<ILSATInvoiceProvider, InMemoryInvoiceRepository>();
+                    
+                    services.AddSingleton<IFeeEstimator, TestFeeEstimator>();
+                    services.AddSingleton<IBroadcaster, TestBroadcaster>();
+                    services.AddSingleton<IChainWatchInterface, TestChainWatchInterface>();
+                    services.AddSingleton<IPeerManagerProvider, TestPeerManagerProvider>();
                 });
                 webHost.UseTestServer();
             });

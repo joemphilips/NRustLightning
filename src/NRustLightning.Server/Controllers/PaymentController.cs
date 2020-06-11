@@ -21,11 +21,11 @@ namespace NRustLightning.Server.Controllers
     public class PaymentController : ControllerBase
     {
         private readonly IInvoiceRepository _invoiceRepository;
-        private readonly PeerManagerProvider _peerManagerProvider;
+        private readonly IPeerManagerProvider _peerManagerProvider;
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly RepositoryProvider _repositoryProvider;
 
-        public PaymentController(IInvoiceRepository invoiceRepository, PeerManagerProvider peerManagerProvider,
+        public PaymentController(IInvoiceRepository invoiceRepository, IPeerManagerProvider peerManagerProvider,
             NRustLightningNetworkProvider networkProvider, RepositoryProvider repositoryProvider)
         {
             _invoiceRepository = invoiceRepository;
