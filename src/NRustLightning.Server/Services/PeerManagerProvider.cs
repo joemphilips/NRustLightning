@@ -32,12 +32,11 @@ namespace NRustLightning.Server.Services
             this.nbXplorerClientProvider = nbXplorerClientProvider;
             foreach (var n in networkProvider.GetAll())
             {
-                var rpc = rpcClientProvider.GetRpcClient(n);
                 var nbx = nbXplorerClientProvider.GetClient(n);
-                if (!(rpc is null) && !(nbx is null))
+                if (!(nbx is null))
                 {
-                    var b = new BitcoinCoreBroadcaster(rpc);
-                    var feeEst = new BitcoinCoreFeeEstimator(rpc);
+                    var b = new NBXplorerBroadcaster(nbx);
+                    var feeEst = new NBXplorerFeeEstimator(nbx);
                     var chainWatchInterface = new NBXChainWatchInterface(nbx, loggerFactory.CreateLogger<NBXChainWatchInterface>(), n);
                     var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
                     var seed = new byte[32];
