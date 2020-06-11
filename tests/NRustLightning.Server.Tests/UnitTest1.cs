@@ -61,6 +61,12 @@ namespace NRustLightning.Server.Tests
             
             Assert.True(conv.OverrideConfig.HasValue);
             Assert.Equal(openChannelRequest.OverrideConfig.Value.ChannelOptions.AnnouncedChannel, conv.OverrideConfig.Value.ChannelOptions.AnnouncedChannel);
+            j =
+                "{\"TheirNetworkKey\":\"024a8b7fc86957537bb365cc0242255582d3d40a5532489f67e700a89bcac2f010\",\"ChannelValueSatoshis\":100000,\"PushMSat\":1000,\"OverrideConfig\":null}";
+            openChannelRequest = JsonSerializer.Deserialize<OpenChannelRequest>(j, new JsonSerializerOptions() { Converters = { new HexPubKeyConverter()  }});
+            Assert.Equal(100000UL, openChannelRequest.ChannelValueSatoshis);
+            Assert.Equal(1000UL, openChannelRequest.PushMSat);
+            Assert.NotNull(openChannelRequest.TheirNetworkKey);
         }
         
         [Fact]
@@ -152,6 +158,11 @@ namespace NRustLightning.Server.Tests
             request.OverrideConfig = UserConfig.GetDefault();
             resp = await c.OpenChannel(request);
             Assert.NotEqual(0UL, resp);
+            
+            var pk = new PubKey("03f8d2c299d24e4dac07dd920516a082b637b4f7918c2712ad7e1e0e841f90d7c2");
+            var newReq = new OpenChannelRequest { TheirNetworkKey = pk, ChannelValueSatoshis = 100000, PushMSat = 1000};
+            resp = await c.OpenChannel(newReq);
+
         }
 
         [Fact]

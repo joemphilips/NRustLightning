@@ -109,6 +109,8 @@ namespace NRustLightning.Client
             if (parameters != null)
             {
                 var stringContent = JsonSerializer.Serialize(parameters, jsonSerializerOptions);
+                Console.WriteLine("content is");
+                Console.WriteLine(stringContent);
                 msg.Content = new StringContent(stringContent, Encoding.UTF8, "application/json");
             }
             using var resp = await HttpClient.SendAsync(msg).ConfigureAwait(false);

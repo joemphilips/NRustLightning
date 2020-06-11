@@ -36,10 +36,11 @@ namespace NRustLightning.Server
         {
             services.AddControllers().AddJsonOptions(options =>
             {
-                options.JsonSerializerOptions.Converters
-                    .Add(new PaymentRequestJsonConverter());
+                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
                 options.JsonSerializerOptions.Converters
                     .Add(new HexPubKeyConverter());
+                options.JsonSerializerOptions.Converters
+                    .Add(new PaymentRequestJsonConverter());
                 options.JsonSerializerOptions
                     .Converters.Add(new NullableStructConverterFactory());
                 options.JsonSerializerOptions.Converters
