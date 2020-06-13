@@ -1,6 +1,7 @@
 using System;
-using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 using NBXplorer;
+using NBXplorer.Models;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
 
@@ -10,7 +11,8 @@ namespace NRustLightning.Server.FFIProxies
     {
         private readonly ExplorerClient _client;
         private GetEstSatPer1000Weight _getEstSatPer1000Weight;
-        public NBXplorerFeeEstimator(ExplorerClient client) {
+        private ulong _cachedFee { get; set; } = 1000;
+        public NBXplorerFeeEstimator(ExplorerClient client, ILogger<NBXplorerFeeEstimator> logger) {
             _client = client ?? throw new ArgumentNullException(nameof(client));
             _getEstSatPer1000Weight = (target) =>
             {
@@ -22,13 +24,22 @@ namespace NRustLightning.Server.FFIProxies
                         FFIConfirmationTarget.HighPriority => 1,
                         _ => throw new Exception("Unreachable!")
                     };
-                var resp = _client.GetFeeRate(blockCountTarget);
-                if (resp is null)
+                GetFeeRateResult resp;
+                try
                 {
-                    throw new Exception("resp was null");
+                    resp = _client.GetFeeRate(blockCountTarget);
                 }
+                catch (NBXplorerException ex)
+                {
+                    logger.LogError($"Failed to estimate fee by nbxplorer: \"{ex.Message}\"");
+                    logger.LogWarning($"So we are using fallback fee {_cachedFee}");
+                    return _cachedFee;
+                }
+
                 var virtualSize = 1000;
-                return (ulong)resp.FeeRate.GetFee(virtualSize).Satoshi;
+                var newFee = (ulong)resp.FeeRate.GetFee(virtualSize).Satoshi;
+                _cachedFee = newFee;
+                return _cachedFee;
             };
         }
         public ref GetEstSatPer1000Weight getEstSatPer1000Weight => ref _getEstSatPer1000Weight;

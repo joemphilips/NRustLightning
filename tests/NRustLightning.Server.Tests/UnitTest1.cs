@@ -88,7 +88,7 @@ namespace NRustLightning.Server.Tests
             var hostBuilder = new HostBuilder().ConfigureTestHost();
             using var host = await hostBuilder.StartAsync();
             var c = host.GetTestNRustLightningClient();
-            var resp = await c.GetChannelDetails();
+            var resp = await c.GetChannelDetailsAsync();
             Assert.NotNull(resp);
             Assert.Empty(resp.Details);
         }

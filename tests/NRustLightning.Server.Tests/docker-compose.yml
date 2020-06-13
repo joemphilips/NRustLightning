@@ -57,6 +57,8 @@ services:
       main:
         aliases:
           - nbxplorer
+    volumes:
+      - "${DATA_PATH}/.nbxplorer:/datadir"
 
   lnd:
     restart: unless-stopped
@@ -148,9 +150,11 @@ services:
       - dotnet
       - NRustLightning.Server.dll
       - --nohttps
+      - --regtest
       - --debug.http=true
       - --httpport=80
       - --externalip="nrustlightning:9735"
+      - --nbx.rpcurl="http://nbxplorer:${NBXPLORER_PORT}"
     ports:
       - "9735:9735"
       - "${HTTP_PORT:?no_http_port_set}:80"

@@ -84,9 +84,16 @@ namespace NRustLightning.Server.Tests
             Assert.DoesNotContain("legacy", nrlInfo.DerivationStrategy.ToString());
             await clients.ConnectAll();
             var lnd = await clients.LndLNClient.GetInfo();
+            Assert.Single(lnd.NodeInfoList);
             var i = lnd.NodeInfoList.FirstOrDefault()?.NodeId;
             Assert.NotNull(i);
             await clients.NRustLightningHttpClient.OpenChannel(new OpenChannelRequest { TheirNetworkKey = i, ChannelValueSatoshis = 100000, PushMSat = 1000});
+            var addr = await clients.NRustLightningHttpClient.GetNewDepositAddressAsync();
+            await clients.BitcoinRPCClient.GenerateToAddressAsync(10, addr.Address);
+            await Task.Delay(100);
+
+            var lndChannelInfo = await clients.LndLNClient.ListChannels();
+            Assert.Single(lndChannelInfo);
         }
         
         [Fact]

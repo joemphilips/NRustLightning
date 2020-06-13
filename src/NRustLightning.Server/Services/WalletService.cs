@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Concurrent;
+using DotNetLightning.Utils;
 using NBitcoin;
 using NBXplorer.DerivationStrategy;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Networks;
+using NRustLightning.Server.Utils;
 
 namespace NRustLightning.Server.Services
 {
@@ -13,6 +15,11 @@ namespace NRustLightning.Server.Services
         private readonly NBXplorerClientProvider _nbXplorerClientProvider;
         private readonly ConcurrentDictionary<NRustLightningNetwork, ExtKey> BaseXPrivs = new ConcurrentDictionary<NRustLightningNetwork, ExtKey>();
 
+        /// <summary>
+        /// Service for handling on-chain balance
+        /// </summary>
+        /// <param name="keysRepository"></param>
+        /// <param name="nbXplorerClientProvider"></param>
         public WalletService(IKeysRepository keysRepository, NBXplorerClientProvider nbXplorerClientProvider)
         {
             _keysRepository = keysRepository;
@@ -45,6 +52,15 @@ namespace NRustLightning.Server.Services
                     ScriptPubKeyType = ScriptPubKeyType.Segwit
                 });
             return strategy;
+        }
+
+        public LNMoney GetBalanceAsync(string cryptoCode)
+        {
+            var cli = _nbXplorerClientProvider.GetClient(cryptoCode);
+            if (cli is null)
+                throw new NRustLightningException($"Unsupported cryptocode {cryptoCode}");
+            
+            throw new NotImplementedException();
         }
 
         public BitcoinAddress GetNewAddress(NRustLightningNetwork network)

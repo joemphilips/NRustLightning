@@ -33,7 +33,7 @@ namespace NRustLightning.Server
 
         public static void ConfigureNRustLightning(this IServiceCollection services, IConfiguration configuration, ILogger logger)
         {
-            var network = configuration.GetValue<NetworkType>("network");
+            var network = configuration.GetNetworkType();
             var networkProvider = new NRustLightningNetworkProvider(network);
             services.AddSingleton(networkProvider);
             services.AddLogging();

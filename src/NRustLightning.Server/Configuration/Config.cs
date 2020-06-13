@@ -20,18 +20,22 @@ namespace NRustLightning.Server.Configuration
     public class Config
     {
         public EndPoint P2PExternalIp { get; set; } = Constants.DefaultP2PExternalIp;
-        public Uri NBXplorerUri { get; set; } = new Uri("http://127.0.0.1:4774");
+        public Uri NBXplorerUri { get; set; } = new Uri(Constants.DefaultNBXplorerUri);
+        public string? NBXCookieFile = null;
         public string ConfigurationFile { get; set; } = "nrustlightning.conf";
         public string DataDir { get; set; } = Constants.DataDirectoryPath;
         public List<ChainConfiguration> ChainConfiguration { get; } = new List<ChainConfiguration>();
 
         public UserConfig RustLightningConfig { get; } = UserConfig.GetDefault();
         
+        
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
 
         public Config LoadArgs(IConfiguration config, ILogger logger)
         {
-            NetworkProvider = new NRustLightningNetworkProvider(config.GetNetworkType());
+            var networkType = config.GetNetworkType();
+            logger.LogInformation($"Network type: {networkType}");
+            NetworkProvider = new NRustLightningNetworkProvider(networkType);
             var defaultSettings = NRustLightningDefaultSettings.GetDefaultSettings(NetworkProvider.NetworkType);
             DataDir = config.GetOrDefault<string>("datadir", null);
             if (DataDir is null)
@@ -42,6 +46,21 @@ namespace NRustLightning.Server.Configuration
                 if (!Directory.Exists(defaultSettings.DefaultDataDir))
                     Directory.CreateDirectory(defaultSettings.DefaultDataDir);
             }
+
+            var nbxConfig = config.GetSection("nbx");
+            var nbxCookieFile =
+                nbxConfig.GetOrDefault("cookiefile",
+                    Constants.DefaultNBXplorerCookieFile(NetworkProvider.NetworkType));
+            NBXplorerUri = new Uri(nbxConfig.GetOrDefault("rpcurl", Constants.DefaultNBXplorerUri));
+            
+            if (!File.Exists(nbxCookieFile))
+            {
+                logger.LogWarning($"cookie file for nbxplorer does not exist in {nbxCookieFile}" +
+                                  " Make sure you are running nbx with --noauth.");
+            }
+
+            logger.LogInformation($"nbxplorer url {NBXplorerUri}");
+            NBXCookieFile = nbxCookieFile;
 
             var p2pExternalIp = config.GetOrDefault("externalip", Constants.DefaultP2PExternalIpStr);
             if (IPEndPoint.TryParse(p2pExternalIp, out var ip))

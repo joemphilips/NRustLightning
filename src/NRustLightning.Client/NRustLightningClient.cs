@@ -75,14 +75,14 @@ namespace NRustLightning.Client
             return RequestAsync<InvoiceResponse>($"/v1/payment/{cryptoCode}/invoice", HttpMethod.Post, option);
         }
 
-        public Task<ChannelInfoResponse> GetChannelDetails()
+        public Task<ChannelInfoResponse> GetChannelDetailsAsync()
         {
             return RequestAsync<ChannelInfoResponse>($"/v1/channel/{cryptoCode}/", HttpMethod.Get);
         }
 
         public Task<WalletInfo> GetWalletInfoAsync()
         {
-            return RequestAsync<WalletInfo>($"/v1/info/{cryptoCode}/wallet", HttpMethod.Get);
+            return RequestAsync<WalletInfo>($"/v1/wallet/{cryptoCode}", HttpMethod.Get);
         }
 
         public Task<GetNewAddressResponse> GetNewDepositAddressAsync()

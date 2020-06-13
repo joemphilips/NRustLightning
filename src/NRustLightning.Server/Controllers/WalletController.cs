@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NRustLightning.Server.Models.Request;
+using NRustLightning.Server.Models.Response;
 using NRustLightning.Server.Networks;
 using NRustLightning.Server.Repository;
 using NRustLightning.Server.Services;
@@ -26,6 +27,16 @@ namespace NRustLightning.Server.Controllers
             _nbXplorerClientProvider = nbXplorerClientProvider;
             _walletService = walletService;
             _repositoryProvider = repositoryProvider;
+        }
+        
+        [HttpGet]
+        [Route("{cryptoCode}")]
+        public JsonResult GetWalletInfo(string cryptoCode)
+        {
+            var n = _networkProvider.GetByCryptoCode(cryptoCode);
+            var derivationStrategy = _walletService.GetOurDerivationStrategy(n);
+            var resp = new WalletInfo {DerivationStrategy = derivationStrategy};
+            return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);
         }
         
         [HttpGet]

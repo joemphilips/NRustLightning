@@ -67,7 +67,7 @@ namespace NRustLightning.CLI
             });
             c.AddOption(op1);
             
-            var op2 = new Option("--host", "ip:port pair ot the node")
+            var op2 = new Option("--host", "ip:port pair of the node")
             {
                 Argument = new Argument<string>
                 {

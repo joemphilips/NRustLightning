@@ -35,8 +35,8 @@ namespace NRustLightning.Server.Services
                 var nbx = nbXplorerClientProvider.GetClient(n);
                 if (!(nbx is null))
                 {
-                    var b = new NBXplorerBroadcaster(nbx);
-                    var feeEst = new NBXplorerFeeEstimator(nbx);
+                    var b = new NBXplorerBroadcaster(nbx, loggerFactory.CreateLogger<NBXplorerBroadcaster>());
+                    var feeEst = new NBXplorerFeeEstimator(nbx, loggerFactory.CreateLogger<NBXplorerFeeEstimator>());
                     var chainWatchInterface = new NBXChainWatchInterface(nbx, loggerFactory.CreateLogger<NBXChainWatchInterface>(), n);
                     var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
                     var seed = new byte[32];

@@ -20,15 +20,15 @@ namespace NRustLightning.Server.Configuration
         public static Option[] GetOptions()
         {
             var options = new List<Option>();
-            var op = new[]
+            var op = new Option[]
                 {
-                    new Option(new[] {"-n", "--network"},
+                    new Option<string>(new[] {"-n", "--network"},
                         "Set the network among (mainnet, testnet, regtest) (default:mainnet)")
                     {
-                        Argument = new Argument {Arity = ArgumentArity.ZeroOrOne}.FromAmong("mainnet", "testnet", "regtest")
+                        Argument = new Argument<string> {Arity = ArgumentArity.ZeroOrOne}.FromAmong("mainnet", "testnet", "regtest")
                     },
-                    new Option(new[] {"--testnet"}, $"Use testnet"),
-                    new Option(new[] {"--regtest"}, "Use regtest"),
+                    new Option<bool>(new[] {"--testnet"}, $"Use testnet"),
+                    new Option<bool>(new[] {"--regtest"}, "Use regtest"),
                     new Option<DirectoryInfo>(new[] {"--datadir", "-d"}, "Directory to store data")
                     {
                         Argument = new Argument<DirectoryInfo> {Arity = ArgumentArity.ZeroOrOne}
@@ -80,7 +80,16 @@ namespace NRustLightning.Server.Configuration
                     new Option<string>("--https.cert", $"path to the https certification file. (default: {new HttpsConfig().Cert})")
                         {Argument = new Argument<string> {Arity =  ArgumentArity.ZeroOrOne}},
                     new Option<string>("--https.certpass", $"pass to open https certification file. (default: \"\")")
-                        {Argument = new Argument<string> {Arity =  ArgumentArity.ZeroOrOne }}
+                        {Argument = new Argument<string> {Arity =  ArgumentArity.ZeroOrOne }},
+                    
+                    new Option<string>("--nbx.cookiefile", $"path to the cookie file for nbxplorer which is required for http authentication")
+                    {
+                        Argument = new Argument<string> {Arity = ArgumentArity.ZeroOrOne}
+                    },
+                    new Option<string>("--nbx.rpcurl", $"rpc endpoint for nbxplorer. (default: {Constants.DefaultNBXplorerUri})")
+                    {
+                        Argument = new Argument<string> {Arity = ArgumentArity.ZeroOrOne}
+                    }
                 };
             options.AddRange(op);
             
@@ -88,54 +97,54 @@ namespace NRustLightning.Server.Configuration
             var provider = new NRustLightningNetworkProvider(NetworkType.Mainnet);
             var allCryptoCodes = provider.GetAll().Select(n => n.CryptoCode.ToLowerInvariant()).ToArray();
             options.Add(
-                new Option("--chain",
+                new Option<string>("--chain",
                 $"Chains to support. You can specify more than one chain by passing values delimited by ','. (default: btc)")
-                { Argument = new Argument{ Arity =  ArgumentArity.ZeroOrOne}.FromAmong(allCryptoCodes)});
+                { Argument = new Argument<string>{ Arity =  ArgumentArity.ZeroOrOne}.FromAmong(allCryptoCodes)});
             foreach (var crypto in allCryptoCodes)
             {
-                options.Add(new Option($"--{crypto}.rpc.user",
+                options.Add(new Option<string>($"--{crypto}.rpc.user",
                     "RPC authentication method 1: The RPC user (default: using cookie auth from default network folder)")
                     {
                         Argument = new Argument<string>
                         {
-                            Arity = ArgumentArity.ExactlyOne
+                            Arity = ArgumentArity.ZeroOrOne
                         }
                     }
                 );
-                options.Add(new Option($"--{crypto}.rpc.password",
+                options.Add(new Option<string>($"--{crypto}.rpc.password",
                     "RPC authentication method 1: The RPC password (default: using cookie auth from default network folder)"
                     )
                     {
                         Argument = new Argument<string>
                         {
-                            Arity = ArgumentArity.ExactlyOne
+                            Arity = ArgumentArity.ZeroOrOne
                         }
                     }
                 );
-                options.Add(new Option($"--{crypto}.rpc.cookiefile",
+                options.Add(new Option<FileInfo>($"--{crypto}.rpc.cookiefile",
                     $"RPC authentication method 2: The RPC cookiefile (default: using cookie auth from default network folder)")
                     {
                         Argument = new Argument<FileInfo>
                         {
-                            Arity = ArgumentArity.ExactlyOne
+                            Arity = ArgumentArity.ZeroOrOne
                         }
                     }
                 );
-                options.Add(new Option($"--{crypto}.rpc.auth",
+                options.Add(new Option<string>($"--{crypto}.rpc.auth",
                     $"RPC authentication method 3: user:password or cookiefile=path (default: using cookie auth from default network folder)")
                     {
                         Argument = new Argument<string>
                         {
-                            Arity = ArgumentArity.ExactlyOne
+                            Arity = ArgumentArity.ZeroOrOne
                         }
                     }
                 );
-                options.Add(new Option($"--{crypto}.rpc.url",
+                options.Add(new Option<string>($"--{crypto}.rpc.url",
                     $"The RPC server url (default: rpc server depended on the network)")
                     {
                         Argument = new Argument<string>
                         {
-                            Arity = ArgumentArity.ExactlyOne
+                            Arity = ArgumentArity.ZeroOrOne
                         }
                     }
                 );

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using Microsoft.Extensions.Options;
@@ -20,7 +21,12 @@ namespace NRustLightning.Server.Services
                 if (!(chainConf is null))
                 {
                     var c = new ExplorerClient(n.NbXplorerNetwork, config.Value.NBXplorerUri);
+                    if (!string.IsNullOrEmpty(config.Value.NBXCookieFile))
+                        c.SetCookieAuth(config.Value.NBXCookieFile);
                     c.SetClient(httpClientFactory.CreateClient(nameof(NBXplorerClientProvider)));
+                    // check the connection by getting status.
+                    // TODO: Prepare HostedService for waiting NBXplorer and bitcoind gets ready?
+                    var status = c.GetStatus();
                     explorerClients.Add(n.CryptoCode, c);
                 }
             }

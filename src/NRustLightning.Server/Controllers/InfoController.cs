@@ -48,14 +48,5 @@ namespace NRustLightning.Server.Controllers
             };
         }
 
-        [HttpGet]
-        [Route("{cryptoCode}/wallet")]
-        public JsonResult GetWalletInfo(string cryptoCode)
-        {
-            var n = _networkProvider.GetByCryptoCode(cryptoCode);
-            var derivationStrategy = _walletService.GetOurDerivationStrategy(n);
-            var resp = new WalletInfo {DerivationStrategy = derivationStrategy};
-            return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);
-        }
     }
 }
