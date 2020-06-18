@@ -152,22 +152,18 @@ services:
       - --nohttps
       - --regtest
       - --debug.http=true
-      - --httpport=80
+      - --httpport=8080
       - --externalip="nrustlightning:9735"
       - --nbx.rpcurl="http://nbxplorer:${NBXPLORER_PORT}"
     ports:
-      - "9735:9735"
-      - "${HTTP_PORT:?no_http_port_set}:80"
+      - "${HTTP_PORT:?no_http_port_set}:8080"
     expose:
       - "9735"
+      - "8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - RUST_BACKTRACE=1
       #- ASPNETCORE_URLS="https://+;http://+"
-    links:
-      - bitcoind
-      - lnd
-      - nbxplorer
     volumes:
       - "${HOME}/.aspnet/:/root/.aspnet/"
       - "${HOME}/.microsoft/usersecrets/:/root/.microsoft/usersecrets"

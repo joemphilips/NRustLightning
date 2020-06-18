@@ -165,7 +165,7 @@ namespace NRustLightning.Server.Tests
 
         }
 
-        [Fact]
+        [Fact(Skip = "We must tackle on this when ready.")]
         public async Task LSATAuthenticationTest()
         {
             var hostBuilder = new HostBuilder().ConfigureTestHost();

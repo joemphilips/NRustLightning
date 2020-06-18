@@ -55,6 +55,7 @@ namespace NRustLightning.Server.Services
 
                     if (e != null)
                     {
+                        _logger.LogCritical($"Failed to connect nbxplorer. check your settings.");
                         throw e;
                     }
 
