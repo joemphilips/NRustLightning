@@ -33,10 +33,10 @@ namespace NRustLightning.Server.Services
                     // check the connection by getting status.
                     // TODO: Prepare HostedService for waiting NBXplorer and bitcoind gets ready?
 
-                    int count = 0;
                     int sleepMs = 50;
                     Exception e = null;
-                    while (count <= 6)
+                    int maxRetry = 6;
+                    for (int count = 0; count <= maxRetry; count++)
                     {
                         try
                         {
@@ -47,7 +47,6 @@ namespace NRustLightning.Server.Services
                         {
                             _logger.LogWarning($"Failed to connect to nbxplorer. retrying in {sleepMs} milliseconds...");
                             e = ex;
-                            count++;
                             Thread.Sleep(sleepMs);
                             sleepMs *= 2;
                         }
