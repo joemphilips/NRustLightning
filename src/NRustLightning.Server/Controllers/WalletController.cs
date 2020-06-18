@@ -33,7 +33,7 @@ namespace NRustLightning.Server.Controllers
         public async Task<JsonResult> GetWalletInfo(string cryptoCode)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode);
-            var derivationStrategy = _walletService.GetOurDerivationStrategy(n);
+            var derivationStrategy = await _walletService.GetOurDerivationStrategyAsync(n);
             var balance = await _walletService.GetBalanceAsync(n);
             var resp = new WalletInfo {DerivationStrategy = derivationStrategy, BalanceSatoshis = balance};
             return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);

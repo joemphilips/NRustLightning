@@ -17,12 +17,12 @@ namespace NRustLightning.Server.Tests.Stubs
         {
             _keysRepository = keysRepository;
         }
-        private ExtKey GetBaseXPriv(NRustLightningNetwork network)
+        private BitcoinExtKey GetBaseXPriv(NRustLightningNetwork network)
         {
-            return new ExtKey(_keysRepository.GetNodeSecret().ToBytes()).Derive(network.BaseKeyPath);
+            return new BitcoinExtKey(new ExtKey(_keysRepository.GetNodeSecret().ToBytes()), network.NBitcoinNetwork).Derive(network.BaseKeyPath);
         }
         
-        public DerivationStrategyBase GetOurDerivationStrategy(NRustLightningNetwork network)
+        public async ValueTask<DerivationStrategyBase> GetOurDerivationStrategyAsync(NRustLightningNetwork network, CancellationToken ct = default)
         {
             var baseKey = GetBaseXPriv(network);
             var strategy = network.NbXplorerNetwork.DerivationStrategyFactory.CreateDirectDerivationStrategy(baseKey.Neuter(),
@@ -47,7 +47,7 @@ namespace NRustLightning.Server.Tests.Stubs
         public Task<BitcoinAddress> GetNewAddressAsync(NRustLightningNetwork network, CancellationToken ct = default)
         {
             var p = this.GetBaseXPriv(network);
-            var t = Task.FromResult(p.Derive(_derivationCount).Neuter().PubKey.WitHash.GetAddress(network.NBitcoinNetwork));
+            var t = Task.FromResult(p.Derive(_derivationCount).Neuter().ExtPubKey.PubKey.WitHash.GetAddress(network.NBitcoinNetwork));
             _derivationCount++;
             return t;
         }

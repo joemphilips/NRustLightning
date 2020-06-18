@@ -50,8 +50,8 @@ namespace NRustLightning.Server.Networks
         NBXplorerNetworkProvider nbXplorerNetworkProvider;
         public NRustLightningNetworkProvider(NetworkType networkType)
         {
-            nbXplorerNetworkProvider = new NBXplorerNetworkProvider(NetworkType);
             NetworkType = networkType;
+            nbXplorerNetworkProvider = new NBXplorerNetworkProvider(NetworkType);
             var invoicePrefix =
                 networkType == NetworkType.Mainnet ? "lnbc" :
                     networkType == NetworkType.Testnet ? "lntb" :

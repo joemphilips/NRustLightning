@@ -13,6 +13,7 @@ using NRustLightning.Server.Extensions;
 using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Models.Response;
+using NRustLightning.Server.Networks;
 using NRustLightning.Server.Tests.Support;
 using Xunit;
 
@@ -67,6 +68,13 @@ namespace NRustLightning.Server.Tests
             Assert.Equal(100000UL, openChannelRequest.ChannelValueSatoshis);
             Assert.Equal(1000UL, openChannelRequest.PushMSat);
             Assert.NotNull(openChannelRequest.TheirNetworkKey);
+            
+            // wallet info
+            j =
+                "{\"DerivationStrategy\":\"tpubDBte1PdX36pt167AFbKpHwFJqZAVVRuJSadZ49LdkX5JJbJCNDc8JQ7w5GdaDZcUXm2SutgwjRuufwq4q4soePD4fPKSZCUhqDDarKRCUen\",\"BalanceSatoshis\":0}";
+            var networkProvider = new NRustLightningNetworkProvider(NetworkType.Regtest);
+            var btcNetwork = networkProvider.GetByCryptoCode("BTC");
+            var walletInfo = JsonSerializer.Deserialize<WalletInfo>(j, new JsonSerializerOptions {Converters = { new DerivationStrategyJsonConverter(btcNetwork.NbXplorerNetwork.DerivationStrategyFactory) }});
         }
         
         [Fact]
