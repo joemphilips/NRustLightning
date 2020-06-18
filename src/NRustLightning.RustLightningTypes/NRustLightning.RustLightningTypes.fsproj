@@ -13,7 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200610-0423-git-c63b168" />
+      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200618-0035-git-d1d600d" />
     </ItemGroup>
 
 </Project>

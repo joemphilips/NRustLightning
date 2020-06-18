@@ -23,10 +23,10 @@ namespace NRustLightning.Server
             services.AddSingleton<IRPCClientProvider, RPCClientProvider>();
             services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
             services.AddSingleton<RepositoryProvider>();
-            services.AddSingleton<WalletService>();
+            services.AddSingleton<IWalletService, WalletService>();
             services.AddSingleton<P2PConnectionFactory>();
             services.AddSingleton<P2PConnectionHandler>();
-            services.AddSingleton<NBXplorerClientProvider>();
+            services.AddSingleton<INBXplorerClientProvider, NBXplorerClientProvider>();
             services.AddSingleton<IPeerManagerProvider, PeerManagerProvider>();
             services.AddTransient<RequestResponseLoggingMiddleware>();
         }

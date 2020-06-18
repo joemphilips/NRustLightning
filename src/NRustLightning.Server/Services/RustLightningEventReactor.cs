@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Channels;
@@ -24,8 +25,7 @@ namespace NRustLightning.Server.Services
     {
         private readonly P2PConnectionHandler _connectionHandler;
         private readonly IPeerManagerProvider _peerManagerProvider;
-        private readonly NBXplorerClientProvider _nbXplorerClientProvider;
-        private readonly WalletService _walletService;
+        private readonly IWalletService _walletService;
         private readonly PeerManager _peerManager;
         private readonly MemoryPool<byte> _pool;
         private readonly NRustLightningNetwork _network;
@@ -39,8 +39,8 @@ namespace NRustLightning.Server.Services
         public RustLightningEventReactor(
             P2PConnectionHandler connectionHandler,
             IPeerManagerProvider peerManagerProvider,
-            NBXplorerClientProvider nbXplorerClientProvider,
-            WalletService walletService,
+            INBXplorerClientProvider nbXplorerClientProvider,
+            IWalletService walletService,
             NRustLightningNetwork network,
             ILogger<RustLightningEventReactor> logger,
             IInvoiceRepository invoiceRepository)
@@ -48,7 +48,6 @@ namespace NRustLightning.Server.Services
             _pool = MemoryPool<byte>.Shared;
             _connectionHandler = connectionHandler;
             _peerManagerProvider = peerManagerProvider;
-            _nbXplorerClientProvider = nbXplorerClientProvider;
             _nbXplorerClient = nbXplorerClientProvider.GetClient(_network);
             _walletService = walletService;
             _network = network;
@@ -60,31 +59,13 @@ namespace NRustLightning.Server.Services
         private async Task HandleEvent(Event e, CancellationToken cancellationToken)
         {
             var chanMan = _peerManager.ChannelManager;
-            if (e is Event.FundingGenerationReady f) { _logger.LogTrace($"Funding generation ready {f.Item}"); var deriv = _walletService.GetOurDerivationStrategy(_network); var req = new CreatePSBTRequest() {
-                    Destinations = new List<CreatePSBTDestination>(new []
-                    {
-                        new CreatePSBTDestination
-                        {
-                            Amount = f.Item.ChannelValueSatoshis,
-                            Destination = f.Item.OutputScript.GetWitScriptAddress(_network.NBitcoinNetwork),
-                        },
-                    })
-                };
-                var psbtResponse = await _nbXplorerClient.CreatePSBTAsync(deriv, req, cancellationToken).ConfigureAwait(false);
-                var psbt = _walletService.SignPSBT(psbtResponse.PSBT, _network);
-                if (!psbt.IsAllFinalized())
-                {
-                    psbt.Finalize();
-                }
-
-                var tx = psbt.ExtractTransaction();
+            if (e is Event.FundingGenerationReady f) {
+                _logger.LogTrace($"Funding generation ready {f.Item}");
+                var outputAddress = f.Item.OutputScript.GetWitScriptAddress(_network.NBitcoinNetwork);
+                var tx = await _walletService.GetSendingTxAsync(outputAddress, f.Item.ChannelValueSatoshis, _network, cancellationToken);
                 var nOut =
-                    tx.Outputs.Count == 1 ?
-                        0 :
-                    tx.Outputs[0].ScriptPubKey.GetWitScriptAddress(_network.NBitcoinNetwork) !=
-                           psbtResponse.ChangeAddress
-                    ? 0
-                    : 1;
+                        tx.Outputs.Select((txo, i) => new {Index = i, Spk = txo.ScriptPubKey} )
+                        .First((item) => item.Spk == outputAddress.ScriptPubKey).Index;
                 var fundingTxo = new OutPoint(tx.GetHash(), nOut);
                 if (_pendingFundingTx.TryAdd(tx.GetHash(), tx))
                 {

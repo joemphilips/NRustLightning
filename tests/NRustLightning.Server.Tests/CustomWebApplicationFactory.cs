@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NRustLightning.Interfaces;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Repository;
+using NRustLightning.Server.Services;
 using NRustLightning.Server.Tests.Stubs;
 
 namespace NRustLightning.Server.Tests
@@ -33,6 +34,9 @@ namespace NRustLightning.Server.Tests
                 services.AddSingleton<IFeeEstimator, TestFeeEstimator>();
                 services.AddSingleton<IBroadcaster, TestBroadcaster>();
                 services.AddSingleton<IChainWatchInterface, TestChainWatchInterface>();
+                services.AddSingleton<IPeerManagerProvider, TestPeerManagerProvider>();
+                services.AddSingleton<IWalletService, StubWalletService>();
+                services.AddSingleton<INBXplorerClientProvider, StubNBXplorerClientProvider>();
             });
             webHost.UseTestServer();
         }

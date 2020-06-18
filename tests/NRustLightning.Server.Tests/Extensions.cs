@@ -25,6 +25,7 @@ using NRustLightning.Interfaces;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Networks;
 using NRustLightning.Server.Repository;
+using NRustLightning.Server.Services;
 using NRustLightning.Server.Tests.Support;
 using NRustLightning.Server.Tests.Stubs;
 using NRustLightning.Utils;
@@ -137,6 +138,8 @@ namespace NRustLightning.Server.Tests
                     services.AddSingleton<IBroadcaster, TestBroadcaster>();
                     services.AddSingleton<IChainWatchInterface, TestChainWatchInterface>();
                     services.AddSingleton<IPeerManagerProvider, TestPeerManagerProvider>();
+                    services.AddSingleton<IWalletService, StubWalletService>();
+                    services.AddSingleton<INBXplorerClientProvider, StubNBXplorerClientProvider>();
                 });
                 webHost.UseTestServer();
             });
