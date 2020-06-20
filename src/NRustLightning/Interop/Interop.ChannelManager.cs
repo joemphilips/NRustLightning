@@ -254,5 +254,6 @@ namespace NRustLightning
             IntPtr chan_man,
             bool check = true
         ) => MaybeCheck(_release_ffi_channel_manager(chan_man), check);
+
     }
 }

@@ -24,11 +24,11 @@ namespace NRustLightning.Server.Tests.Stubs
             _feeEstimator = feeEstimator;
             _chainWatchInterface = chainWatchInterface;
             var seed = new byte[32];
-            var n = NRustLightning.Adaptors.Network.RegTest;
+            var n= NBitcoin.Network.RegTest;
             var conf = config.Value.RustLightningConfig;
             var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
             _peerManager = 
-                PeerManager.Create(seed.AsSpan(), in n, in conf, chainWatchInterface, broadcaster, logger, feeEstimator, 100, keysRepository.GetNodeSecret().ToBytes());
+                PeerManager.Create(seed.AsSpan(), n, in conf, chainWatchInterface, broadcaster, logger, feeEstimator, 100, keysRepository.GetNodeSecret().ToBytes());
         }
         
         public PeerManager? GetPeerManager(string cryptoCode)

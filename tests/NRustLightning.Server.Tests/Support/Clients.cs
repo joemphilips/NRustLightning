@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using BTCPayServer.Lightning;
 using BTCPayServer.Lightning.CLightning;
 using BTCPayServer.Lightning.LND;
+using NBitcoin;
 using NBitcoin.RPC;
 using NRustLightning.Client;
 
@@ -38,9 +39,21 @@ namespace NRustLightning.Server.Tests.Support
 
         public async Task PrepareFunds()
         {
-            var clAddressTask = CLightningClient.NewAddressAsync();
-            var lndAddressTask = LndClient.SwaggerClient.NewWitnessAddressAsync();
-            var nrlAddressTask = NRustLightningHttpClient.GetWalletInfoAsync();
+            var nrlBalance = (await NRustLightningHttpClient.GetWalletInfoAsync()).BalanceSatoshis;
+            if (nrlBalance > 0)
+            {
+                return;
+            }
+            
+            var clAddress = (await CLightningClient.NewAddressAsync());
+            var lndAddress = BitcoinAddress.Create((await LndClient.SwaggerClient.NewWitnessAddressAsync()).Address, Network.RegTest);
+            var nrlAddress = (await NRustLightningHttpClient.GetNewDepositAddressAsync()).Address;
+            foreach (var addr in new[] {clAddress, lndAddress, nrlAddress})
+            {
+                await this.BitcoinRPCClient.GenerateToAddressAsync(1, addr);
+            }
+
+            await this.BitcoinRPCClient.GenerateAsync(Network.RegTest.Consensus.CoinbaseMaturity);
         }
     }
 }

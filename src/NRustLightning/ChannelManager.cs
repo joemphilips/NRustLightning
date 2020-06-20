@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DotNetLightning.Utils;
@@ -130,6 +131,7 @@ namespace NRustLightning
         
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash, Span<byte> paymentSecret)
         {
+            if (routesWithFeature == null) throw new ArgumentNullException(nameof(routesWithFeature));
             Errors.AssertDataLength(nameof(paymentHash), paymentHash.Length, 32);
             if (paymentSecret.Length != 0 && paymentSecret.Length != 32) throw new ArgumentException($"paymentSecret must be length of 32 or empty");
             unsafe
@@ -210,6 +212,7 @@ namespace NRustLightning
 
         public unsafe void UpdateFee(uint256 channelId, ulong feeRatePerKw)
         {
+            if (channelId == null) throw new ArgumentNullException(nameof(channelId));
             var b = channelId.ToBytes();
             fixed (byte* c = b)
             {
@@ -230,7 +233,6 @@ namespace NRustLightning
             return Event.ParseManyUnsafe(arr);
         }
 
-        
         public void Dispose()
         {
             if (!_disposed)

@@ -6,6 +6,7 @@ using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using NRustLightning.RustLightningTypes;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -21,7 +22,41 @@ using NRustLightning.Server.Entities;
 
 namespace NRustLightning.Server.Services
 {
-    public class RustLightningEventReactor : IHostedService
+    public class RustLightningEventReactors : IHostedService
+    {
+        public Dictionary<string, RustLightningEventReactor> Reactors = new Dictionary<string, RustLightningEventReactor>();
+        public RustLightningEventReactors(NRustLightningNetworkProvider networkProvider , INBXplorerClientProvider clientProvider, IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
+        {
+            foreach (var n in networkProvider.GetAll())
+            {
+                var cli = clientProvider.TryGetClient(n);
+                if (cli != null) // it means we want  to support that chain.
+                {
+                    var reactor = new RustLightningEventReactor(
+                        serviceProvider.GetRequiredService<P2PConnectionHandler>(),
+                        serviceProvider.GetRequiredService<IPeerManagerProvider>(),
+                        serviceProvider.GetRequiredService<INBXplorerClientProvider>(),
+                        serviceProvider.GetRequiredService<IWalletService>(),
+                        n,
+                        loggerFactory.CreateLogger(nameof(RustLightningEventReactor)+ $":{n.CryptoCode}"),
+                        serviceProvider.GetRequiredService<IInvoiceRepository>()
+                    );
+                    Reactors.Add(n.CryptoCode, reactor);
+                }
+            }
+        }
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            await Task.WhenAll(Reactors.Values.Select(r => r.StartAsync(cancellationToken)));
+        }
+
+        public async Task StopAsync(CancellationToken cancellationToken)
+        {
+            await Task.WhenAll(Reactors.Values.Select(r => r.StopAsync(cancellationToken)));
+        }
+    }
+    
+    public class RustLightningEventReactor : BackgroundService
     {
         private readonly P2PConnectionHandler _connectionHandler;
         private readonly IPeerManagerProvider _peerManagerProvider;
@@ -29,7 +64,7 @@ namespace NRustLightning.Server.Services
         private readonly PeerManager _peerManager;
         private readonly MemoryPool<byte> _pool;
         private readonly NRustLightningNetwork _network;
-        private readonly ILogger<RustLightningEventReactor> _logger;
+        private readonly ILogger _logger;
         private readonly IInvoiceRepository _invoiceRepository;
 
         private readonly Dictionary<uint256, Transaction> _pendingFundingTx = new Dictionary<uint256, Transaction>();
@@ -42,7 +77,7 @@ namespace NRustLightning.Server.Services
             INBXplorerClientProvider nbXplorerClientProvider,
             IWalletService walletService,
             NRustLightningNetwork network,
-            ILogger<RustLightningEventReactor> logger,
+            ILogger logger,
             IInvoiceRepository invoiceRepository)
         {
             _pool = MemoryPool<byte>.Shared;
@@ -58,6 +93,7 @@ namespace NRustLightning.Server.Services
         
         private async Task HandleEvent(Event e, CancellationToken cancellationToken)
         {
+            _logger.LogDebug($"Handling event {e}");
             var chanMan = _peerManager.ChannelManager;
             if (e is Event.FundingGenerationReady f) {
                 _logger.LogTrace($"Funding generation ready {f.Item}");
@@ -124,21 +160,13 @@ namespace NRustLightning.Server.Services
             throw new Exception("Unreachable!");
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             while (await _connectionHandler.EventNotify.Reader.WaitToReadAsync(cancellationToken))
             {
                 var events = _peerManager.ChannelManager.GetAndClearPendingEvents(_pool);
-                // TODO: Consider using IAsyncEnumerable or Channel to speed up.
-                foreach (var e in events)
-                {
-                    await HandleEvent(e, cancellationToken).ConfigureAwait(false);
-                }
+                await Task.WhenAll(events.Select(async e => await HandleEvent(e, cancellationToken).ConfigureAwait(false)));
             }
-        }
-
-        public async Task StopAsync(CancellationToken cancellationToken)
-        {
         }
     }
 }

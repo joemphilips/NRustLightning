@@ -79,10 +79,21 @@ namespace NRustLightning.Server.Tests
         public async Task CanOpenCloseChannels()
         {
             var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanOpenCloseChannels));
-            var nrlInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
-            Assert.NotNull(nrlInfo.DerivationStrategy);
-            Assert.DoesNotContain("legacy", nrlInfo.DerivationStrategy.ToString());
+            var walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
+            Assert.NotNull(walletInfo.DerivationStrategy);
+            Assert.Equal(0, walletInfo.BalanceSatoshis);
+            Assert.DoesNotContain("legacy", walletInfo.DerivationStrategy.ToString());
             await clients.ConnectAll();
+            await clients.PrepareFunds();
+            
+            // check wallet info and nbxplorer info is synchronized.
+            walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
+            Assert.NotEqual(0, walletInfo.BalanceSatoshis);
+            var explorerInfo = await clients.NBXClient.GetBalanceAsync(walletInfo.DerivationStrategy);
+            Assert.Equal(NBitcoin.Money.Satoshis(walletInfo.BalanceSatoshis), explorerInfo.Total);
+
+            var explorerHeight = await clients.NBXClient.RPCClient.GetBlockCountAsync();
+            
             var lnd = await clients.LndLNClient.GetInfo();
             Assert.Single(lnd.NodeInfoList);
             var i = lnd.NodeInfoList.FirstOrDefault()?.NodeId;

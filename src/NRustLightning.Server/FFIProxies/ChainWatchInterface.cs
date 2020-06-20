@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using DotNetLightning.Utils;
 using NBXplorer;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
@@ -24,7 +25,7 @@ namespace NRustLightning.Server.FFIProxies
         private GetChainUtxo getChainUtxo;
         
         /// <summary>
-        /// This will be incremented every time new tx or outpoint
+        /// This will be incremented every time new tx or outpoint comes in.
         /// </summary>
         private long reEnteredCount = 1;
         
@@ -38,7 +39,6 @@ namespace NRustLightning.Server.FFIProxies
         /// There is no `ConcurrentHashSet` in std lib. So we use dict with meaningless value.
         /// </summary>
         private ConcurrentDictionary<(uint256, uint), byte> watchedOutpoints = new ConcurrentDictionary<(uint256, uint), byte>();
-        // ---
 
         public NBXChainWatchInterface(ExplorerClient nbxplorerClient, ILogger<NBXChainWatchInterface> logger, NRustLightningNetwork network)
         {
@@ -69,16 +69,16 @@ namespace NRustLightning.Server.FFIProxies
                     Interlocked.Increment(ref reEnteredCount);
                 }
             };
-            getChainUtxo = (ref FFISha256dHash hash, ulong id, ref ChainError error, ref FFITxOut txout) =>
+            getChainUtxo = (ref FFISha256dHash chainGenesis, ulong id, ref ChainError error, ref FFITxOut txout) =>
             {
-                if (hash.ToUInt256() != network.NBitcoinNetwork.GenesisHash)
+                if (chainGenesis.ToUInt256() != network.NBitcoinNetwork.GenesisHash)
                 {
                     error = ChainError.NotWatched;
+                    return;
                 }
-                else
-                {
-                    error = ChainError.NotSupported;
-                }
+
+                var shortChannelId = Primitives.ShortChannelId.FromUInt64(id);
+                error = ChainError.NotSupported;
             };
         }
         public ExplorerClient NbxplorerClient { get; }

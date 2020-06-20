@@ -12,7 +12,7 @@ namespace NRustLightning
             CallingConvention = CallingConvention.Cdecl)]
         private static extern unsafe FFIResult _create_peer_manager(
             IntPtr seedPtr,
-            Network* n, 
+            in Network n, 
             UserConfig* userConfig,
             
             ChannelManagerHandle channelManagerHandle,
@@ -29,7 +29,7 @@ namespace NRustLightning
 
         internal static unsafe FFIResult create_peer_manager(
             IntPtr seed,
-            Network* n, 
+            in Network n, 
             UserConfig* userConfig,
             
             ChannelManagerHandle channelManagerHandle,

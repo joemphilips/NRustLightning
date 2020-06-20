@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NBitcoin;
 using NBXplorer;
 using NBXplorer.Models;
 using NRustLightning.Server.Configuration;
@@ -68,6 +69,17 @@ namespace NRustLightning.Server.Services
             explorerClients.TryGetValue(cryptoCode, out var c);
             return c ?? Utils.Utils.Fail<ExplorerClient>($"Unknown cryptoCode {cryptoCode}");
         }
+
+        public ExplorerClient? TryGetClient(string cryptoCode)
+        {
+            explorerClients.TryGetValue(cryptoCode.ToLowerInvariant(), out var c);
+            return c;
+        }
+        
         public ExplorerClient GetClient(NRustLightningNetwork n) => GetClient(n.CryptoCode);
+        public IEnumerable<ExplorerClient> GetAll()
+        {
+            return explorerClients.Values;
+        }
     }
 }

@@ -23,10 +23,12 @@ namespace NRustLightning
         private bool _disposed = false;
 
         public ChannelManager ChannelManager { get; }
+        public BlockNotifier BlockNotifier { get; }
         
         internal PeerManager(
             PeerManagerHandle handle,
             ChannelManager channelManager,
+            BlockNotifier blockNotifier,
             int tickInterval,
             object[] deps
             )
@@ -34,12 +36,13 @@ namespace NRustLightning
             _deps = deps;
             tick = new Timer(_ => Tick(), null, tickInterval, tickInterval);
             _handle = handle ?? throw new ArgumentNullException(nameof(handle));
-            ChannelManager = channelManager;
+            ChannelManager = channelManager ?? throw new ArgumentNullException(nameof(channelManager));
+            BlockNotifier = blockNotifier ?? throw new ArgumentNullException(nameof(blockNotifier));
         }
 
         public static PeerManager Create(
             Span<byte> seed,
-            in Network network,
+            NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
             IBroadcaster broadcaster,
@@ -53,18 +56,19 @@ namespace NRustLightning
             if (seed.Length != 32) throw new InvalidDataException($"seed must be 32 bytes! it was {seed.Length}");
             if (ourNodeSecret.Length != 32) throw new InvalidDataException($"ourNodeSecret must be 32 bytes! it was {seed.Length}");
             var ourNodeId = new NBitcoin.Key(ourNodeSecret.ToArray()).PubKey.ToBytes();
+            var network = nbitcoinNetwork.ToFFINetwork();
             var chanMan = ChannelManager.Create(seed, in network, in config, chainWatchInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
+            var blockNotifier = NRustLightning.BlockNotifier.Create(nbitcoinNetwork, logger, chainWatchInterface);
             unsafe
             {
                 fixed (byte* seedPtr = seed)
-                fixed (Network* n = &network)
                 fixed (UserConfig* configPtr = &config)
                 fixed (byte* secretPtr = ourNodeSecret)
                 fixed (byte* pubkeyPtr = ourNodeId)
                 {
                     Interop.create_peer_manager(
                         (IntPtr)seedPtr,
-                        n,
+                        in network,
                         configPtr,
                         chanMan.Handle,
                         ref chainWatchInterface.InstallWatchTx,
@@ -76,7 +80,7 @@ namespace NRustLightning
                         (IntPtr)pubkeyPtr,
                         out var handle
                         );
-                    return new PeerManager(handle, chanMan, tickIntervalMSec,new object[]{ chainWatchInterface, broadcaster, logger, feeEstimator, });
+                    return new PeerManager(handle, chanMan, blockNotifier, tickIntervalMSec,new object[]{ chainWatchInterface, broadcaster, logger, feeEstimator, });
                 }
             }
         }
@@ -209,6 +213,7 @@ namespace NRustLightning
             {
                 tick.Dispose();
                 ChannelManager.Dispose();
+                BlockNotifier.Dispose();
                 _handle.Dispose();
                 _disposed = true;
             }

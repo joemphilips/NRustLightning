@@ -29,6 +29,8 @@ namespace NRustLightning.Server
             services.AddSingleton<INBXplorerClientProvider, NBXplorerClientProvider>();
             services.AddSingleton<IPeerManagerProvider, PeerManagerProvider>();
             services.AddTransient<RequestResponseLoggingMiddleware>();
+            services.AddHostedService<NBXplorerListener>();
+            services.AddHostedService<RustLightningEventReactors>();
         }
 
         public static void ConfigureNRustLightning(this IServiceCollection services, IConfiguration configuration, ILogger logger)
