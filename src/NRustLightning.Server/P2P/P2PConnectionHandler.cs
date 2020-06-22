@@ -1,22 +1,18 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using NRustLightning.RustLightningTypes;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+
 using NBitcoin;
-using NRustLightning.Interfaces;
+
+using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Logging;
+
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Services;
-using NRustLightning.Utils;
 
 namespace NRustLightning.Server.P2P
 {

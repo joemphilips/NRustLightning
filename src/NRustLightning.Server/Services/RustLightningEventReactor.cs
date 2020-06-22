@@ -88,7 +88,7 @@ namespace NRustLightning.Server.Services
             _network = network;
             _logger = logger;
             _invoiceRepository = invoiceRepository;
-            _peerManager = peerManagerProvider.GetPeerManager("BTC");
+            _peerManager = peerManagerProvider.GetPeerManager(network.CryptoCode);
         }
         
         private async Task HandleEvent(Event e, CancellationToken cancellationToken)
@@ -164,6 +164,7 @@ namespace NRustLightning.Server.Services
         {
             while (await _connectionHandler.EventNotify.Reader.WaitToReadAsync(cancellationToken))
             {
+                var _ = await _connectionHandler.EventNotify.Reader.ReadAsync(cancellationToken);
                 var events = _peerManager.ChannelManager.GetAndClearPendingEvents(_pool);
                 await Task.WhenAll(events.Select(async e => await HandleEvent(e, cancellationToken).ConfigureAwait(false)));
             }

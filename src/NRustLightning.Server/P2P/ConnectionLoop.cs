@@ -1,14 +1,11 @@
 using System;
 using System.IO.Pipelines;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using NRustLightning.Interfaces;
+
 using Microsoft.Extensions.Logging;
 using NRustLightning.Adaptors;
-using NRustLightning.Utils;
 
 namespace NRustLightning.Server.P2P
 {
