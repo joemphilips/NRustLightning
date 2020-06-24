@@ -13,6 +13,7 @@ using NRustLightning.RustLightningTypes;
 using NRustLightning.Utils;
 using Network = NRustLightning.Adaptors.Network;
 using static NRustLightning.Utils.Utils;
+using Array = DotNetLightning.Utils.Array;
 
 namespace NRustLightning
 {
@@ -228,8 +229,8 @@ namespace NRustLightning
                     var ffiResult = Interop.get_and_clear_pending_events(handle, bufOut, bufLength, out var actualLength);
                     return (ffiResult, actualLength);
                 };
-
             var arr = WithVariableLengthReturnBuffer(pool, func, Handle);
+            Console.WriteLine($"Got byte array for events from rl {arr.ToHexString()}");
             return Event.ParseManyUnsafe(arr);
         }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using NRustLightning.Adaptors;
 
 namespace NRustLightning.Utils
@@ -29,35 +30,39 @@ namespace NRustLightning.Utils
             Func<IntPtr, UIntPtr, THandle, (FFIResult, UIntPtr)> func,
             THandle handle)
         {
-            var currentBufferSize = BUFFER_SIZE_UNIT;
+            var initialBufLength = BUFFER_SIZE_UNIT;
 
-            while (true)
+            var (resultBuf, result, actualBufferLength) = InvokeWithLength(pool, initialBufLength, func, handle);
+            if (actualBufferLength > MAX_BUFFER_SIZE)
             {
-                using var memoryOwner = pool.Rent(currentBufferSize);
-                var span = memoryOwner.Memory.Span;
-                fixed (byte* ptr = span)
-                {
-                    var (result, actualNodeIdsLength) = func.Invoke((IntPtr)ptr, (UIntPtr)span.Length, handle);
-                    if ((int)actualNodeIdsLength > MAX_BUFFER_SIZE)
-                    {
-                        throw new FFIException(
-                            $"Tried to return too long buffer form rust {currentBufferSize}. This should never happen.",
-                            result);
-                    }
+                throw new FFIException(
+                    $"Tried to return too long buffer form rust ({actualBufferLength}). This should never happen.",
+                    result);
+            }
 
-                    if (result.IsSuccess)
-                    {
-                        return span.Slice(0, (int)actualNodeIdsLength).ToArray();
-                    }
+            if (result.IsSuccess)
+            {
+                return resultBuf[..actualBufferLength];
+            }
 
-                    if (result.IsBufferTooSmall)
-                    {
-                        currentBufferSize = (int)actualNodeIdsLength;
-                        continue;
-                    }
+            if (result.IsBufferTooSmall)
+            {
+                var (resultBuf2, result2, actualBufferLength2) = InvokeWithLength(pool, actualBufferLength, func, handle);
+                Debug.Assert(actualBufferLength == actualBufferLength2);
+                result2.Check();
+                return resultBuf2[..actualBufferLength];
+            }
+            throw new FFIException($"Unexpected error in FFI Call {result}", result);
+        }
 
-                    result.Check();
-                }
+        private static unsafe (byte[], FFIResult, int) InvokeWithLength<THandle>(MemoryPool<byte> pool, int length, Func<IntPtr, UIntPtr, THandle, (FFIResult, UIntPtr)> func, THandle handle)
+        {
+            using var memoryOwner = pool.Rent(length);
+            var span = memoryOwner.Memory.Span;
+            fixed (byte* ptr = span)
+            {
+                var (result, actualBufferLength) = func.Invoke((IntPtr) ptr, (UIntPtr) span.Length, handle);
+                return (span.ToArray(), result, (int) actualBufferLength);
             }
         }
     }
