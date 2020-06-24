@@ -51,7 +51,8 @@ namespace NRustLightning.Server.Controllers
         public ActionResult<ulong> OpenChannel(string cryptoCode, [FromBody] OpenChannelRequest o)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
-            var chanMan = _peerManagerProvider.GetPeerManager(n).ChannelManager;
+            var peerMan = _peerManagerProvider.GetPeerManager(n);
+            var chanMan = peerMan.ChannelManager;
             var maybeConfig = o.OverrideConfig;
             var userId = RandomUtils.GetUInt64();
             try
@@ -65,6 +66,7 @@ namespace NRustLightning.Server.Controllers
                     chanMan.CreateChannel(o.TheirNetworkKey, o.ChannelValueSatoshis, o.PushMSat,
                         userId, in v);
                 }
+                peerMan.ProcessEvents();
             }
             catch (FFIException ex)
             {

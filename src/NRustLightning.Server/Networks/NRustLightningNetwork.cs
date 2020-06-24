@@ -16,7 +16,7 @@ namespace NRustLightning.Server.Networks
             BaseKeyPath = baseKeyPath;
             BOLT11InvoicePrefix = bolt11InvoicePrefix;
             NBitcoinNetwork = networkSet.GetNetwork(networkType);
-            CryptoCode = networkSet.CryptoCode;
+            CryptoCode = networkSet.CryptoCode.ToLowerInvariant();
         }
         
         public NBXplorerNetwork NbXplorerNetwork { get; }

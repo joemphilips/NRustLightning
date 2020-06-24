@@ -36,7 +36,8 @@ namespace NRustLightning.Server.FFIProxies
                     return _cachedFee;
                 }
 
-                var virtualSize = 1000;
+                // RL assumes fees for 1000 *weight-units* which is 4 times smaller than that of 1000 *virtual bytes*
+                var virtualSize = 250;
                 var newFee = (ulong)resp.FeeRate.GetFee(virtualSize).Satoshi;
                 _cachedFee = newFee;
                 return _cachedFee;

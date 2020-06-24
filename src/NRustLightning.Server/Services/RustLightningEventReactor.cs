@@ -1,11 +1,13 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using DotNetLightning.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using NRustLightning.RustLightningTypes;
 using Microsoft.Extensions.Hosting;
@@ -83,7 +85,7 @@ namespace NRustLightning.Server.Services
             _pool = MemoryPool<byte>.Shared;
             _connectionHandler = connectionHandler;
             _peerManagerProvider = peerManagerProvider;
-            _nbXplorerClient = nbXplorerClientProvider.GetClient(_network);
+            _nbXplorerClient = nbXplorerClientProvider.GetClient(network);
             _walletService = walletService;
             _network = network;
             _logger = logger;
@@ -96,26 +98,26 @@ namespace NRustLightning.Server.Services
             _logger.LogDebug($"Handling event {e}");
             var chanMan = _peerManager.ChannelManager;
             if (e is Event.FundingGenerationReady f) {
-                _logger.LogTrace($"Funding generation ready {f.Item}");
                 var outputAddress = f.Item.OutputScript.GetWitScriptAddress(_network.NBitcoinNetwork);
                 var tx = await _walletService.GetSendingTxAsync(outputAddress, f.Item.ChannelValueSatoshis, _network, cancellationToken);
                 var nOut =
                         tx.Outputs.Select((txo, i) => new {Index = i, Spk = txo.ScriptPubKey} )
                         .First((item) => item.Spk == outputAddress.ScriptPubKey).Index;
                 var fundingTxo = new OutPoint(tx.GetHash(), nOut);
-                if (_pendingFundingTx.TryAdd(tx.GetHash(), tx))
-                {
-                    chanMan.FundingTransactionGenerated(f.Item.TemporaryChannelId.Value.ToBytes(), fundingTxo);
-                }
+                Debug.Assert(_pendingFundingTx.TryAdd(tx.GetHash(), tx));
+                _logger.LogDebug($"Finished creating funding tx {tx.ToHex()}; id: {tx.GetHash()}");
+                
+                chanMan.FundingTransactionGenerated(f.Item.TemporaryChannelId.Value, fundingTxo);
             }
             else if (e is Event.FundingBroadcastSafe fundingBroadcastSafe)
             {
-                if (!_pendingFundingTx.TryGetValue(fundingBroadcastSafe.Item.OutPoint.Item.Hash, out var fundingTx))
+                var h = fundingBroadcastSafe.Item.OutPoint.Item.Hash;
+                if (!_pendingFundingTx.TryGetValue(h, out var fundingTx))
                 {
-                    _logger.LogCritical($"RL asked us to broadcast unknown funding tx! this should never happen.");
+                    _logger.LogCritical($"RL asked us to broadcast unknown funding tx for id: ({h})! this should never happen.");
                     return;
                 }
-                await _nbXplorerClient.BroadcastAsync(fundingTx).ConfigureAwait(false);
+                await _nbXplorerClient.BroadcastAsync(fundingTx, cancellationToken).ConfigureAwait(false);
             }
             else if (e is Event.PaymentReceived paymentReceived)
             {
@@ -157,16 +159,29 @@ namespace NRustLightning.Server.Services
                     // Do nothing. nbxplorer should handle it for us.
                 }
             }
-            throw new Exception("Unreachable!");
+            else
+            {
+                throw new Exception("Unreachable!");
+            }
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            while (await _connectionHandler.EventNotify.Reader.WaitToReadAsync(cancellationToken))
+            _logger.LogDebug($"Starting event reactor for {this._network.CryptoCode}");
+            try
             {
-                var _ = await _connectionHandler.EventNotify.Reader.ReadAsync(cancellationToken);
-                var events = _peerManager.ChannelManager.GetAndClearPendingEvents(_pool);
-                await Task.WhenAll(events.Select(async e => await HandleEvent(e, cancellationToken).ConfigureAwait(false)));
+                while (await _connectionHandler.EventNotify.Reader.WaitToReadAsync(cancellationToken))
+                {
+                    var _ = await _connectionHandler.EventNotify.Reader.ReadAsync(cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var events = _peerManager.ChannelManager.GetAndClearPendingEvents(_pool);
+                    await Task.WhenAll(events.Select(async e =>
+                        await HandleEvent(e, cancellationToken).ConfigureAwait(false)));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical($"{ex.Message}: {ex.StackTrace}");
             }
         }
     }

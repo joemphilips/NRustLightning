@@ -91,7 +91,7 @@ namespace NRustLightning.Server.Configuration
             logger.LogDebug($"Network: {NetworkProvider.NetworkType.ToString()}");
             var supportedChains = config.GetOrDefault<string>("chains", "BTC")
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(t => t.ToUpperInvariant());
+                .Select(t => t.ToLowerInvariant());
             var validChains = new List<string>();
             foreach (var n in NetworkProvider.GetAll())
             {

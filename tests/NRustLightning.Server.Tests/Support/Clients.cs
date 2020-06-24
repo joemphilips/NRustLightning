@@ -53,7 +53,23 @@ namespace NRustLightning.Server.Tests.Support
                 await this.BitcoinRPCClient.GenerateToAddressAsync(1, addr);
             }
 
-            await this.BitcoinRPCClient.GenerateAsync(Network.RegTest.Consensus.CoinbaseMaturity);
+            await this.BitcoinRPCClient.GenerateAsync(Network.RegTest.Consensus.CoinbaseMaturity + 1);
+        }
+
+        public async Task CreateEnoughTxToEstimateFee()
+        {
+            var txPerBlock = 20;
+            var nBlock = 20;
+            for (int i = 0; i < nBlock; i++)
+            {
+                for (int j = 0; j < txPerBlock; j++)
+                {
+                    var addr = new Key().PubKey.GetSegwitAddress(Network.RegTest);
+                    await this.BitcoinRPCClient.SendToAddressAsync(addr, Money.Coins(0.1m));
+                }
+
+                await BitcoinRPCClient.GenerateAsync(1);
+            }
         }
     }
 }

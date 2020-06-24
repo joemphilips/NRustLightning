@@ -154,12 +154,13 @@ namespace NRustLightning
             }
         }
 
-        public unsafe void FundingTransactionGenerated(Span<byte> temporaryChannelId, OutPoint fundingTxo)
+        public unsafe void FundingTransactionGenerated(uint256 temporaryChannelId, OutPoint fundingTxo)
         {
+            var temporaryChannelIdBytes = temporaryChannelId.ToBytes(false);
             if (fundingTxo == null) throw new ArgumentNullException(nameof(fundingTxo));
-            Errors.AssertDataLength(nameof(temporaryChannelId), temporaryChannelId.Length, 32);
+            Errors.AssertDataLength(nameof(temporaryChannelId), temporaryChannelIdBytes.Length, 32);
 
-            fixed (byte* temporaryChannelIdPtr = temporaryChannelId)
+            fixed (byte* temporaryChannelIdPtr = temporaryChannelIdBytes)
             {
                 var ffiOutPoint = new FFIOutPoint(fundingTxo.Hash, (ushort)fundingTxo.N);
                 Interop.funding_transaction_generated((IntPtr)temporaryChannelIdPtr, ffiOutPoint, Handle);

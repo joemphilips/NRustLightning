@@ -85,6 +85,7 @@ namespace NRustLightning.Server.Tests
             Assert.DoesNotContain("legacy", walletInfo.DerivationStrategy.ToString());
             await clients.ConnectAll();
             await clients.PrepareFunds();
+            // await clients.CreateEnoughTxToEstimateFee();
             
             // check wallet info and nbxplorer info is synchronized.
             walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
@@ -92,16 +93,14 @@ namespace NRustLightning.Server.Tests
             var explorerInfo = await clients.NBXClient.GetBalanceAsync(walletInfo.DerivationStrategy);
             Assert.Equal(NBitcoin.Money.Satoshis(walletInfo.BalanceSatoshis), explorerInfo.Total);
 
-            var explorerHeight = await clients.NBXClient.RPCClient.GetBlockCountAsync();
-            
             var lnd = await clients.LndLNClient.GetInfo();
             Assert.Single(lnd.NodeInfoList);
             var i = lnd.NodeInfoList.FirstOrDefault()?.NodeId;
             Assert.NotNull(i);
-            await clients.NRustLightningHttpClient.OpenChannel(new OpenChannelRequest { TheirNetworkKey = i, ChannelValueSatoshis = 100000, PushMSat = 1000});
+            await clients.NRustLightningHttpClient.OpenChannel(new OpenChannelRequest { TheirNetworkKey = i, ChannelValueSatoshis = 1000000, PushMSat = 100000});
             var addr = await clients.NRustLightningHttpClient.GetNewDepositAddressAsync();
             await clients.BitcoinRPCClient.GenerateToAddressAsync(10, addr.Address);
-            await Task.Delay(100);
+            await Task.Delay(5000);
 
             var lndChannelInfo = await clients.LndLNClient.ListChannels();
             Assert.Single(lndChannelInfo);

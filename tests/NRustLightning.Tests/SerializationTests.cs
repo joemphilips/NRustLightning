@@ -48,7 +48,7 @@ namespace NRustLightning.Tests
             
             Assert.True(events[0].IsFundingBroadcastSafe);
             var e0 = (Event.FundingBroadcastSafe) events[0];
-            var txid = NBitcoin.uint256.Parse("4141414141414141414141414141414141414141414141414141414141414141");
+            var txid = NBitcoin.uint256.Parse("4141414141414141414141414141414141414141414141414141414141414142");
             Assert.Equal(0u, e0.Item.OutPoint.Item.N);
             Assert.Equal(txid, e0.Item.OutPoint.Item.Hash);
             Assert.Equal(1111U, e0.Item.UserChannelId);

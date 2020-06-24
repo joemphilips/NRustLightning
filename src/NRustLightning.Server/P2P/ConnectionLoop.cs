@@ -83,7 +83,6 @@ namespace NRustLightning.Server.P2P
             {
                 _logger.LogWarning($"error while processing connection {_id}. Closing");
                 _logger.LogError($"{ex.Message}: {ex.StackTrace}");
-                _eventNotify.TryWrite(1);
                 PeerManager.SocketDisconnected(_socketDescriptor);
             }
             finally
@@ -120,7 +119,6 @@ namespace NRustLightning.Server.P2P
                     if (PeerManager.TryReadEvent(_socketDescriptor, r.Span, out var shouldPause, out var ffiResult))
                     {
                         _socketDescriptor.ReadPaused = shouldPause;
-                        _eventNotify.TryWrite(1);
                     }
                     else
                     {
@@ -130,6 +128,7 @@ namespace NRustLightning.Server.P2P
                     _socketDescriptor.BlockDisconnectSocket = false;
                 }
                 PeerManager.ProcessEvents();
+                _eventNotify.TryWrite(1);
 
                 _transport.Input.AdvanceTo(buf.End);
             }

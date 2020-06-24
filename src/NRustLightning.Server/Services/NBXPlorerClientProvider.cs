@@ -11,6 +11,7 @@ using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Configuration.SubConfiguration;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Networks;
+using NRustLightning.Server.Utils;
 
 namespace NRustLightning.Server.Services
 {
@@ -62,11 +63,16 @@ namespace NRustLightning.Server.Services
                     explorerClients.Add(n.CryptoCode, c);
                 }
             }
+
+            if (explorerClients.Count == 0)
+            {
+                throw new NRustLightningException("Found zero valid nbxplorer instance to connect");
+            }
         }
 
         public ExplorerClient GetClient(string cryptoCode)
         {
-            explorerClients.TryGetValue(cryptoCode, out var c);
+            explorerClients.TryGetValue(cryptoCode.ToLowerInvariant(), out var c);
             return c ?? Utils.Utils.Fail<ExplorerClient>($"Unknown cryptoCode {cryptoCode}");
         }
 
@@ -75,8 +81,6 @@ namespace NRustLightning.Server.Services
             explorerClients.TryGetValue(cryptoCode.ToLowerInvariant(), out var c);
             return c;
         }
-        
-        public ExplorerClient GetClient(NRustLightningNetwork n) => GetClient(n.CryptoCode);
         public IEnumerable<ExplorerClient> GetAll()
         {
             return explorerClients.Values;

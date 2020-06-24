@@ -9,17 +9,17 @@ namespace NRustLightning.Server.FFIProxies
 {
     public class NativeLogger : INativeLogger
     {
-        private readonly ILogger<NativeLogger> logInternal;
+        private readonly ILogger<NativeLogger> _logInternal;
         private Log log;
 
         public NativeLogger(ILogger<NativeLogger> logInternal)
         {
-            this.logInternal = logInternal;
+            this._logInternal = logInternal;
             log = (ref FFILogRecord record) =>
             {
                 if (record.level == FFILogLevel.Off) return;
                 var msg =
-                    $"log in rust-lightning: {record.Args}. module path: {record.ModulePath}. file: {record.File}. line: {record.line} level: {record.level}";
+                    $"{record.Args}. module path: {record.ModulePath}. file: {record.File}. line: {record.line}";
                 
                 logInternal.Log(record.level.AsLogLevel(), msg);
             };
