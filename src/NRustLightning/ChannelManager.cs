@@ -230,7 +230,6 @@ namespace NRustLightning
                     return (ffiResult, actualLength);
                 };
             var arr = WithVariableLengthReturnBuffer(pool, func, Handle);
-            Console.WriteLine($"Got byte array for events from rl {arr.ToHexString()}");
             return Event.ParseManyUnsafe(arr);
         }
 

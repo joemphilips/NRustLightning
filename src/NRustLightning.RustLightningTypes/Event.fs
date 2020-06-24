@@ -1,6 +1,7 @@
 namespace NRustLightning.RustLightningTypes
 
 open System
+open System.Diagnostics
 open System.IO
 open ResultUtils
 open DotNetLightning.Utils.Primitives
@@ -104,15 +105,15 @@ type SpendableOutputDescriptor =
         | 1uy ->
             DynamicOutputP2WSH({
                 DynamicOutputP2WSHData.Outpoint = ls.ReadOutpoint()
-                Key = ls.ReadBytes 32 |> Key
-                WitnessScript = ls.ReadWithLenVarInt() |> Script.FromBytesUnsafe
+                Key = ls.ReadBytes 32 |> fun x -> new Key(x)
+                WitnessScript = ls.ReadWithLen16() |> Script.FromBytesUnsafe
                 ToSelfDelay = ls.ReadUInt16 false
                 Output = ls.ReadTxOut()
             })
         | 2uy ->
             DynamicOutputP2WPKH({
                 Outpoint = ls.ReadOutpoint()
-                Key = ls.ReadBytes 32 |> Key
+                Key = ls.ReadBytes 32 |> fun x -> new Key(x)
                 Output = ls.ReadTxOut()
             })
         | x ->
@@ -205,7 +206,8 @@ type Event =
         | 1uy ->
             FundingBroadcastSafe({
                 FundingBroadcastSafeData.OutPoint =
-                    (ls.ReadUInt256(false), ls.ReadUInt32(false))
+                     // confusingly, the outpoint used here is not consensus-encoded, instead it is rl-specific way.
+                    (ls.ReadUInt256(false), ls.ReadUInt16(false) |> uint32)
                     |> OutPoint
                     |> LNOutPoint
                 UserChannelId = ls.ReadUInt64 false
@@ -213,7 +215,7 @@ type Event =
         | 2uy ->
             PaymentReceived({
                 PaymentReceivedData.PaymentHash = ls.ReadUInt256 false |> PaymentHash
-                PaymentSecret = ls.ReadOption() |> Option.map (fun x -> uint256(x, false))
+                PaymentSecret = ls.ReadOption() |> Option.map (fun x ->  Debug.Assert(x.Length = 32, (sprintf "x.Length %d" x.Length)); uint256(x, false))
                 Amount = ls.ReadUInt64 false |> LNMoney.MilliSatoshis
             })
         | 3uy ->
@@ -249,8 +251,9 @@ type Event =
     static member ParseManyUnsafe(s: byte[]): Event[] =
         if s.Length = 0 then [||] else
         let len = int(UInt16.FromBytesBigEndian(s.[0..1]))
+        if len = 0 then [||] else
         let res = Array.zeroCreate(len)
-        use ms = new MemoryStream(s)
+        use ms = new MemoryStream(s.[2..])
         use ls = new LightningReaderStream(ms)
         for i in 0..(len - 1) do
             res.[i] <- Event.Deserialize ls
