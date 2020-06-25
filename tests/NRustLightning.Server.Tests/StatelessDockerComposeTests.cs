@@ -85,7 +85,7 @@ namespace NRustLightning.Server.Tests
             Assert.DoesNotContain("legacy", walletInfo.DerivationStrategy.ToString());
             await clients.ConnectAll();
             await clients.PrepareFunds();
-            // await clients.CreateEnoughTxToEstimateFee();
+            await clients.CreateEnoughTxToEstimateFee();
             
             // check wallet info and nbxplorer info is synchronized.
             walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();

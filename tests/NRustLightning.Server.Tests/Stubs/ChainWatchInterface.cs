@@ -33,12 +33,10 @@ namespace NRustLightning.Server.Tests.Stubs
                 Console.WriteLine("watch all txn");
             };
 
-            _getChainUtxo = 
-            (ref FFISha256dHash genesisHash, ulong utxoId, ref ChainError err,
-                ref FFITxOut txOut) =>
-            {
-                Console.WriteLine($"get_chain_utxo {Hex.Encode(genesisHash.AsSpan())}");
-            };
+            _getChainUtxo = (ref FFISha256dHash genesisHash, ulong id, ref ChainError error, ref byte scriptPtr, ref UIntPtr scriptLen, ref ulong amountSatoshi) =>
+                {
+                    error = ChainError.NotWatched;
+                };
         }
         public ref InstallWatchTx InstallWatchTx => ref _installWatchTx;
 
