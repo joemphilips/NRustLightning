@@ -59,6 +59,7 @@ namespace NRustLightning
             var network = nbitcoinNetwork.ToFFINetwork();
             var chanMan = ChannelManager.Create(seed, in network, in config, chainWatchInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
             var blockNotifier = NRustLightning.BlockNotifier.Create(nbitcoinNetwork, logger, chainWatchInterface);
+            blockNotifier.RegisterChannelManager(chanMan);
             unsafe
             {
                 fixed (byte* seedPtr = seed)
