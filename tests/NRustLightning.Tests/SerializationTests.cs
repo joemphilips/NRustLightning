@@ -48,8 +48,8 @@ namespace NRustLightning.Tests
             
             Assert.True(events[0].IsFundingBroadcastSafe);
             var e0 = (Event.FundingBroadcastSafe) events[0];
-            var txid = NBitcoin.uint256.Parse("4141414141414141414141414141414141414141414141414141414141414142");
-            Assert.Equal(0u, e0.Item.OutPoint.Item.N);
+            var txid = new uint256(Hex.Decode("4141414141414141414141414141414141414141414141414141414141414142"), false);
+            Assert.Equal(1u, e0.Item.OutPoint.Item.N);
             Assert.Equal(txid, e0.Item.OutPoint.Item.Hash);
             Assert.Equal(1111U, e0.Item.UserChannelId);
 
@@ -77,8 +77,9 @@ namespace NRustLightning.Tests
             
             Assert.True(e5.Item[0].IsStaticOutput);
             var s0 = (SpendableOutputDescriptor.StaticOutput)e5.Item[0];
+            txid = new uint256(Hex.Decode("1e8a6ed582813120a85e1dfed1249f1a32f530ba4b3fbabf4047cfbc1faea28c"));
             Assert.Equal(txid, s0.Item.Outpoint.Item.Hash);
-            Assert.Equal(0u, s0.Item.Outpoint.Item.N);
+            Assert.Equal(1u, s0.Item.Outpoint.Item.N);
             Assert.Equal(s0.Item.Output.Value.Satoshi, 255);
             Assert.Equal(s0.Item.Output.ScriptPubKey, Script.Empty);
             
@@ -86,7 +87,7 @@ namespace NRustLightning.Tests
             var s1 = (SpendableOutputDescriptor.DynamicOutputP2WSH) e5.Item[1];
             
             Assert.Equal(txid, s1.Item.Outpoint.Item.Hash);
-            Assert.Equal(0u, s1.Item.Outpoint.Item.N);
+            Assert.Equal(1u, s1.Item.Outpoint.Item.N);
             
             var key = new Key(Hex.Decode("0101010101010101010101010101010101010101010101010101010101010101"));
             Assert.Equal(key, s1.Item.Key);

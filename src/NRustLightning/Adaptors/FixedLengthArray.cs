@@ -118,6 +118,11 @@ namespace NRustLightning.Adaptors
         }
     }
     
+    /// <summary>
+    /// This is not consensus-compatible representation of OutPoint.
+    /// Instead, the hash is encoded in big endian.
+    /// This is because rl (or LN in general) serializes txid in big-endian
+    /// </summary>
     [StructLayout(LayoutKind.Sequential, Size=34)]
     public unsafe ref struct FFIOutPoint
     {
