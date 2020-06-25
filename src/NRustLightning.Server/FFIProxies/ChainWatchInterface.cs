@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -48,6 +50,7 @@ namespace NRustLightning.Server.FFIProxies
             installWatchTx = (ref FFISha256dHash hash, ref FFIScript script) =>
             {
                 if (isWatchAll) return;
+                logger.LogDebug($"watching new tx {hash.AsArray().ToHexString()}");
                 if (watchedTxs.TryAdd(script.ToScript(), 0))
                 {
                     Interlocked.Increment(ref reEnteredCount);
@@ -55,6 +58,8 @@ namespace NRustLightning.Server.FFIProxies
             };
             installWatchOutPoint = (ref FFIOutPoint outPoint, ref FFIScript script) =>
             {
+                var n = outPoint.ToTuple().Item2;
+                logger.LogDebug($"watching new outpoint {outPoint.GetTxId()}. index: {n}");
                 if (isWatchAll) return;
                 if (watchedOutpoints.TryAdd(outPoint.ToTuple(), 0))
                 {
@@ -69,16 +74,28 @@ namespace NRustLightning.Server.FFIProxies
                     Interlocked.Increment(ref reEnteredCount);
                 }
             };
-            getChainUtxo = (ref FFISha256dHash chainGenesis, ulong id, ref ChainError error, ref FFITxOut txout) =>
+            getChainUtxo = (ref FFISha256dHash chainGenesis, ulong id, ref ChainError error, ref byte scriptPtr, ref UIntPtr scriptLen, ref ulong amountSatoshi) =>
             {
-                if (chainGenesis.ToUInt256() != network.NBitcoinNetwork.GenesisHash)
+                var shortChannelId = Primitives.ShortChannelId.FromUInt64(id);
+                var b = nbxplorerClient.RPCClient.GetBlock(shortChannelId.BlockHeight.Item);
+                if (b.Transactions.Count > shortChannelId.BlockIndex.Item)
                 {
-                    error = ChainError.NotWatched;
+                    error = ChainError.UnknownTx;
+                    return;
+                }
+                var tx = b.Transactions[(int)shortChannelId.BlockIndex.Item];
+                if (tx.Outputs.Count > shortChannelId.TxOutIndex.Item)
+                {
+                    error = ChainError.UnknownTx;
                     return;
                 }
 
-                var shortChannelId = Primitives.ShortChannelId.FromUInt64(id);
-                error = ChainError.NotSupported;
+                var txOut = tx.Outputs[shortChannelId.TxOutIndex.Item];
+                var scriptPubKeyBytes = txOut.ScriptPubKey.ToBytes();
+                scriptLen = (UIntPtr)scriptPubKeyBytes.Length;
+                // copy into unmanaged memory.
+                Unsafe.CopyBlock(ref scriptPtr, ref scriptPubKeyBytes[0], (uint)scriptPubKeyBytes.Length);
+                amountSatoshi = (ulong)txOut.Value.Satoshi;
             };
         }
         public ExplorerClient NbxplorerClient { get; }
