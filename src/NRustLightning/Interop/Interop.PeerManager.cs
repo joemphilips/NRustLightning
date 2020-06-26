@@ -33,11 +33,11 @@ namespace NRustLightning
             UserConfig* userConfig,
             
             ChannelManagerHandle channelManagerHandle,
-            ref InstallWatchTx installWatchTx,
-            ref InstallWatchOutPoint installWatchOutPoint,
-            ref WatchAllTxn watchAllTxn,
-            ref GetChainUtxo getChainUtxo,
-            ref Log log,
+            InstallWatchTx installWatchTx,
+            InstallWatchOutPoint installWatchOutPoint,
+            WatchAllTxn watchAllTxn,
+            GetChainUtxo getChainUtxo,
+            Log log,
             
             IntPtr ourNodeSecret,
             IntPtr ourNodeId,
@@ -71,8 +71,8 @@ namespace NRustLightning
 
         internal static FFIResult new_inbound_connection(
             UIntPtr index,
-            ref SendData sendData,
-            ref DisconnectSocket disconnectSocket,
+            SendData sendData,
+            DisconnectSocket disconnectSocket,
             PeerManagerHandle handle,
             bool check = true
         ) => MaybeCheck(_new_inbound_connection(index, ref sendData, ref disconnectSocket, handle), check);
@@ -89,8 +89,8 @@ namespace NRustLightning
 
         internal static FFIResult new_outbound_connection(
             UIntPtr index,
-            ref SendData sendData,
-            ref DisconnectSocket disconnectSocket,
+            SendData sendData,
+            DisconnectSocket disconnectSocket,
             IntPtr theirNodeId,
             PeerManagerHandle handle,
             out ActOne initialSend,
@@ -106,15 +106,15 @@ namespace NRustLightning
         [DllImport(RustLightning, EntryPoint = "write_buffer_space_avail", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _write_buffer_space_avail(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket, PeerManagerHandle handle);
 
-        internal static FFIResult write_buffer_space_avail(UIntPtr index, ref SendData sendData,
-            ref DisconnectSocket disconnectSocket, PeerManagerHandle handle, bool check = true)
+        internal static FFIResult write_buffer_space_avail(UIntPtr index, SendData sendData,
+            DisconnectSocket disconnectSocket, PeerManagerHandle handle, bool check = true)
             => MaybeCheck(_write_buffer_space_avail(index, ref sendData, ref disconnectSocket, handle), check);
         
         [DllImport(RustLightning, EntryPoint = "read_event", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _read_event(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket,  ref FFIBytes data, out byte shouldPause, PeerManagerHandle handle);
 
-        internal static FFIResult read_event(UIntPtr index, ref SendData sendData,
-            ref DisconnectSocket disconnectSocket, ref FFIBytes data, out byte shouldPause, PeerManagerHandle handle,  bool check = true)
+        internal static FFIResult read_event(UIntPtr index, SendData sendData,
+            DisconnectSocket disconnectSocket, ref FFIBytes data, out byte shouldPause, PeerManagerHandle handle,  bool check = true)
             => MaybeCheck(_read_event(index, ref sendData, ref disconnectSocket, ref data, out shouldPause, handle), check);
         
         [DllImport(RustLightning, EntryPoint = "process_events", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
@@ -127,7 +127,7 @@ namespace NRustLightning
             CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _socket_disconnected(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket, PeerManagerHandle handle);
 
-        internal static FFIResult socket_disconnected(UIntPtr index, ref SendData sendData, ref DisconnectSocket disconnectSocket, PeerManagerHandle handle, bool check = true) =>
+        internal static FFIResult socket_disconnected(UIntPtr index, SendData sendData, DisconnectSocket disconnectSocket, PeerManagerHandle handle, bool check = true) =>
             MaybeCheck(_socket_disconnected(index, ref sendData, ref disconnectSocket, handle), check);
         
         

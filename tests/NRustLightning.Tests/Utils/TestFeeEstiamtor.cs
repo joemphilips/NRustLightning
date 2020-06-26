@@ -10,6 +10,6 @@ namespace NRustLightning.Tests.Utils
         {
             return 1000;
         };
-        public ref GetEstSatPer1000Weight getEstSatPer1000Weight => ref _estimate;
+        public GetEstSatPer1000Weight getEstSatPer1000Weight => _estimate;
     }
 }

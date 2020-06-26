@@ -25,7 +25,7 @@ namespace NRustLightning
         public static BlockNotifier Create(NBitcoin.Network nbitcoinNetwork, ILogger logger, IChainWatchInterface chainWatchInterface)
         {
             var network = Extensions.ToFFINetwork(nbitcoinNetwork);
-            Interop.create_block_notifier(in network, ref logger.Log, ref chainWatchInterface.InstallWatchTx, ref chainWatchInterface.InstallWatchOutPoint, ref chainWatchInterface.WatchAllTxn, ref chainWatchInterface.GetChainUtxo, out var handle);
+            Interop.create_block_notifier(in network, logger.Log, chainWatchInterface.InstallWatchTx, chainWatchInterface.InstallWatchOutPoint, chainWatchInterface.WatchAllTxn, chainWatchInterface.GetChainUtxo, out var handle);
             return new BlockNotifier(handle, new object[]{ logger, chainWatchInterface });
         }
 

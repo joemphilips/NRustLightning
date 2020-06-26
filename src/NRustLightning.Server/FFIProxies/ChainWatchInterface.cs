@@ -107,14 +107,14 @@ namespace NRustLightning.Server.FFIProxies
         }
         public ExplorerClient NbxplorerClient { get; }
         
-        public ref InstallWatchTx InstallWatchTx => ref installWatchTx;
+        public InstallWatchTx InstallWatchTx => installWatchTx;
 
-        public ref InstallWatchOutPoint InstallWatchOutPoint => ref installWatchOutPoint;
+        public InstallWatchOutPoint InstallWatchOutPoint => installWatchOutPoint;
 
-        public ref WatchAllTxn WatchAllTxn => ref watchAllTxn;
+        public WatchAllTxn WatchAllTxn => watchAllTxn;
 
-        public ref GetChainUtxo GetChainUtxo => ref getChainUtxo;
+        public GetChainUtxo GetChainUtxo => getChainUtxo;
 
-        public ref FilterBlock FilterBlock => ref filterBlock;
+        public FilterBlock FilterBlock => filterBlock;
     }
 }

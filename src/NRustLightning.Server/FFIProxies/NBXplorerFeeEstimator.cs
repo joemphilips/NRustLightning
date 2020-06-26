@@ -43,6 +43,6 @@ namespace NRustLightning.Server.FFIProxies
                 return _cachedFee;
             };
         }
-        public ref GetEstSatPer1000Weight getEstSatPer1000Weight => ref _getEstSatPer1000Weight;
+        public GetEstSatPer1000Weight getEstSatPer1000Weight => _getEstSatPer1000Weight;
     }
 }

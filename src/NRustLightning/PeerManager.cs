@@ -72,11 +72,11 @@ namespace NRustLightning
                         in network,
                         configPtr,
                         chanMan.Handle,
-                        ref chainWatchInterface.InstallWatchTx,
-                        ref chainWatchInterface.InstallWatchOutPoint,
-                        ref chainWatchInterface.WatchAllTxn,
-                        ref chainWatchInterface.GetChainUtxo,
-                        ref logger.Log,
+                        chainWatchInterface.InstallWatchTx,
+                        chainWatchInterface.InstallWatchOutPoint,
+                        chainWatchInterface.WatchAllTxn,
+                        chainWatchInterface.GetChainUtxo,
+                        logger.Log,
                         (IntPtr)secretPtr,
                         (IntPtr)pubkeyPtr,
                         out var handle
@@ -94,7 +94,7 @@ namespace NRustLightning
 
         public void NewInboundConnection(ISocketDescriptor descriptor)
         {
-            Interop.new_inbound_connection(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, _handle);
+            Interop.new_inbound_connection(descriptor.Index, descriptor.SendData, descriptor.DisconnectSocket, _handle);
         }
 
         /// <summary>
@@ -106,19 +106,19 @@ namespace NRustLightning
         {
             fixed (byte* p = theirNodeId)
             {
-                Interop.new_outbound_connection(descriptor.Index, ref descriptor.SendData,
-                    ref descriptor.DisconnectSocket, (IntPtr)p, _handle, out var initialSend);
+                Interop.new_outbound_connection(descriptor.Index, descriptor.SendData,
+                    descriptor.DisconnectSocket, (IntPtr)p, _handle, out var initialSend);
                 return initialSend.AsArray();
             }
         }
         public void WriteBufferSpaceAvail(ISocketDescriptor descriptor)
         {
-            Interop.write_buffer_space_avail(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, _handle);
+            Interop.write_buffer_space_avail(descriptor.Index, descriptor.SendData, descriptor.DisconnectSocket, _handle);
         }
 
         public void SocketDisconnected(ISocketDescriptor descriptor)
         {
-            Interop.socket_disconnected(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, _handle);
+            Interop.socket_disconnected(descriptor.Index, descriptor.SendData, descriptor.DisconnectSocket, _handle);
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace NRustLightning
             {
                 var bytes = new FFIBytes((IntPtr)d, (UIntPtr)data.Length);
                 Interop.read_event(
-                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, out var shouldPause, _handle);
+                    descriptor.Index, descriptor.SendData, descriptor.DisconnectSocket, ref bytes, out var shouldPause, _handle);
                 return shouldPause == 1;
             }
         }
@@ -146,7 +146,7 @@ namespace NRustLightning
                 var bytes = new FFIBytes((IntPtr)d, (UIntPtr)data.Length);
                 result =
                 Interop.read_event(
-                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, out var shouldPauseB, _handle, false); 
+                    descriptor.Index, descriptor.SendData, descriptor.DisconnectSocket, ref bytes, out var shouldPauseB, _handle, false); 
                 shouldPause = shouldPauseB == 1;
             }
             return result.IsSuccess;

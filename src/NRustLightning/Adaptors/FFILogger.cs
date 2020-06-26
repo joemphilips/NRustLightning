@@ -30,7 +30,7 @@ namespace NRustLightning.Adaptors
 
         /// The line containing the message.
         public readonly uint line;
-
+ 
         public string Args => Marshal.PtrToStringUTF8(args);
         public string ModulePath => Marshal.PtrToStringUTF8(module_path);
         public string File => Marshal.PtrToStringUTF8(file);

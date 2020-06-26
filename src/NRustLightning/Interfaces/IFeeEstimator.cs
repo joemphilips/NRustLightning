@@ -13,6 +13,14 @@ namespace NRustLightning.Interfaces
     /// </summary>
     public interface IFeeEstimator
     {
-        ref GetEstSatPer1000Weight getEstSatPer1000Weight { get; }
+        GetEstSatPer1000Weight getEstSatPer1000Weight { get; }
+    }
+
+    public abstract class FeeEstimator : IFeeEstimator
+    {
+
+        protected abstract ulong GetEstSatPer1000WeightImpl(FFIConfirmationTarget confirmationTarget);
+
+        public GetEstSatPer1000Weight getEstSatPer1000Weight => GetEstSatPer1000WeightImpl;
     }
 }

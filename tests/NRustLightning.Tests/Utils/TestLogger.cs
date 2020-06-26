@@ -22,7 +22,7 @@ namespace NRustLightning.Tests.Utils
             };
         }
 
-        public ref Log Log => ref _log;
+        public Log Log => _log;
     }
 
 }

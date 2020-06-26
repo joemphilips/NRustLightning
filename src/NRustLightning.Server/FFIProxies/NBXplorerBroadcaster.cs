@@ -20,6 +20,6 @@ namespace NRustLightning.Server.FFIProxies
                 _client.Broadcast(tx.AsTransaction(client.Network.NBitcoinNetwork));
             };
         }
-        public ref BroadcastTransaction BroadcastTransaction => ref _broadcastTransaction;
+        public BroadcastTransaction BroadcastTransaction => _broadcastTransaction;
     }
 }

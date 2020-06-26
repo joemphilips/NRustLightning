@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using NBitcoin;
 using NRustLightning.Adaptors;
 
 namespace NRustLightning.Interfaces
@@ -36,12 +39,42 @@ namespace NRustLightning.Interfaces
 
     public abstract class ChainWatchInterface : IChainWatchInterface
     {
+
+        protected abstract void InstallWatchTxImpl(uint256 txid, Script spk);
+        protected abstract void InstallWatchOutPointImpl(OutPoint outpoint, Script spk);
+
+        protected abstract bool TryGetChainUtxoImpl(uint256 genesisBlockHash, ulong utxoId, out ChainError error, out Script scriptPubKey, out Money amount);
+
+        protected abstract (IList<Transaction>, IList<uint>) FilterBlockImpl(Block b);
+
+        protected virtual void InstallWatchTxCore(ref FFISha256dHash txid, ref FFIScript spk)
+        {
+            InstallWatchTxImpl(txid.ToUInt256(), spk.ToScript());
+        }
+
+        protected virtual void InstallWatchOutPointCore(ref FFIOutPoint ffiOutPoint, ref FFIScript outScript)
+        {
+            var t = ffiOutPoint.ToTuple();
+            var outpoint = new OutPoint(t.Item1, t.Item2);
+            InstallWatchOutPointImpl(outpoint, outScript.ToScript());
+        }
         
-        public 
+        protected void WatchAll() {}
+
+        protected virtual void GetChainUtxoCore(ref FFISha256dHash genesisHash, ulong utxoId, ref ChainError error,
+            ref byte scriptPtr, ref UIntPtr scriptLen, ref ulong amountSatoshis)
+        {
+        }
+
+        protected virtual void FilterBlockCore(ref byte blockPtr, UIntPtr blockLen, ref byte matchedTxPtr, ref UIntPtr matchedTxLen, ref byte matchedIndexPtr, ref UIntPtr matchedIndexLen)
+        {
+            throw new NotImplementedException();
+        }
+        
         public InstallWatchTx InstallWatchTx => this.InstallWatchTxCore;
-        public InstallWatchOutPoint InstallWatchOutPoint { get; }
-        public WatchAllTxn WatchAllTxn { get; }
-        public GetChainUtxo GetChainUtxo { get; }
-        public FilterBlock FilterBlock { get; }
+        public InstallWatchOutPoint InstallWatchOutPoint => InstallWatchOutPointCore;
+        public WatchAllTxn WatchAllTxn => WatchAll;
+        public GetChainUtxo GetChainUtxo => GetChainUtxoCore;
+        public FilterBlock FilterBlock => FilterBlockCore;
     }
 }

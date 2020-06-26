@@ -39,13 +39,13 @@ namespace NRustLightning.Server.Tests.Stubs
                     error = ChainError.NotWatched;
                 };
         }
-        public ref InstallWatchTx InstallWatchTx => ref _installWatchTx;
+        public InstallWatchTx InstallWatchTx => _installWatchTx;
 
-        public ref InstallWatchOutPoint InstallWatchOutPoint => ref _installWatchOutpoint;
+        public InstallWatchOutPoint InstallWatchOutPoint => _installWatchOutpoint;
 
-        public ref WatchAllTxn WatchAllTxn => ref _watchAllTxn;
+        public WatchAllTxn WatchAllTxn => _watchAllTxn;
 
-        public ref GetChainUtxo GetChainUtxo => ref _getChainUtxo;
-        public ref FilterBlock FilterBlock => ref _filterBlock;
+        public GetChainUtxo GetChainUtxo => _getChainUtxo;
+        public FilterBlock FilterBlock => _filterBlock;
     }
 }

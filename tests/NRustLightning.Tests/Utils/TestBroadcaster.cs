@@ -23,8 +23,8 @@ namespace NRustLightning.Tests.Utils
                          BroadcastedTxHex.Add(hex);
                      };
             }
-            ref BroadcastTransaction IBroadcaster.BroadcastTransaction
-                => ref _broadcast_ptr;
+            BroadcastTransaction IBroadcaster.BroadcastTransaction
+                => _broadcast_ptr;
         }
 
 }

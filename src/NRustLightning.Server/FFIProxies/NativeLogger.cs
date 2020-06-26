@@ -25,7 +25,7 @@ namespace NRustLightning.Server.FFIProxies
             };
         }
 
-        public ref Log Log => ref log;
+        public Log Log => log;
     }
     
 }
