@@ -25,6 +25,7 @@ namespace NRustLightning.Server.FFIProxies
         private InstallWatchOutPoint installWatchOutPoint;
         private WatchAllTxn watchAllTxn;
         private GetChainUtxo getChainUtxo;
+        private FilterBlock filterBlock;
         
         /// <summary>
         /// This will be incremented every time new tx or outpoint comes in.
@@ -97,6 +98,12 @@ namespace NRustLightning.Server.FFIProxies
                 Unsafe.CopyBlock(ref scriptPtr, ref scriptPubKeyBytes[0], (uint)scriptPubKeyBytes.Length);
                 amountSatoshi = (ulong)txOut.Value.Satoshi;
             };
+
+            filterBlock = (ref byte ptr, UIntPtr len, ref byte txPtr, ref UIntPtr txLen, ref byte indexPtr,
+                ref UIntPtr indexLen) =>
+            {
+                throw new NotImplementedException("TODO");
+            };
         }
         public ExplorerClient NbxplorerClient { get; }
         
@@ -108,5 +115,6 @@ namespace NRustLightning.Server.FFIProxies
 
         public ref GetChainUtxo GetChainUtxo => ref getChainUtxo;
 
+        public ref FilterBlock FilterBlock => ref filterBlock;
     }
 }

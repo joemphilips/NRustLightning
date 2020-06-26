@@ -15,6 +15,7 @@ namespace NRustLightning.Server.Tests.Stubs
 
         private WatchAllTxn _watchAllTxn;
         private GetChainUtxo _getChainUtxo;
+        private FilterBlock _filterBlock;
         public TestChainWatchInterface()
         {
             _installWatchTx =
@@ -45,5 +46,6 @@ namespace NRustLightning.Server.Tests.Stubs
         public ref WatchAllTxn WatchAllTxn => ref _watchAllTxn;
 
         public ref GetChainUtxo GetChainUtxo => ref _getChainUtxo;
+        public ref FilterBlock FilterBlock => ref _filterBlock;
     }
 }

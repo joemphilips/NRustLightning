@@ -26,4 +26,17 @@ namespace NRustLightning.Adaptors
     /// <param name="amountSatoshis">output from the function: the output amount in satoshis</param>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void GetChainUtxo(ref FFISha256dHash genesisHash, ulong utxoId, ref ChainError error, ref byte scriptPtr, ref UIntPtr scriptLen, ref ulong amountSatoshis);
+
+    /// <summary>
+    /// Filter the given block and returns 1. matched watching transactions, 2. its index in the block.
+    /// txs and indexes are binary serialized with length(number of elements) prefixed with ushort.
+    /// </summary>
+    /// <param name="blockPtr"></param>
+    /// <param name="blockLen"></param>
+    /// <param name="matchedTxPtr"></param>
+    /// <param name="matchedTxLen"></param>
+    /// <param name="matchedIndexPtr"></param>
+    /// <param name="matchedIndexLen"></param>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void FilterBlock(ref byte blockPtr, UIntPtr blockLen, ref byte matchedTxPtr, ref UIntPtr matchedTxLen, ref byte matchedIndexPtr, ref UIntPtr matchedIndexLen);
 }

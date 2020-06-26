@@ -30,5 +30,7 @@ namespace NRustLightning.Interfaces
         /// final two the output within the tx.
         /// </summary>
         ref GetChainUtxo GetChainUtxo { get; }
+        
+        ref FilterBlock FilterBlock { get; }
     }
 }

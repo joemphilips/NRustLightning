@@ -14,6 +14,7 @@ namespace NRustLightning.Tests.Utils
 
         private WatchAllTxn _watchAllTxn;
         private GetChainUtxo _getChainUtxo;
+        private FilterBlock _filterBlock;
         public TestChainWatchInterface()
         {
             _installWatchTx =
@@ -36,6 +37,11 @@ namespace NRustLightning.Tests.Utils
             {
                 Console.WriteLine($"get_chain_utxo {Hex.Encode(genesisHash.AsSpan())}");
             };
+            _filterBlock = (ref byte ptr, UIntPtr len, ref byte txPtr, ref UIntPtr txLen, ref byte indexPtr,
+                ref UIntPtr indexLen) =>
+            {
+                Console.WriteLine($"Filter block");
+            };
         }
         public ref InstallWatchTx InstallWatchTx => ref _installWatchTx;
 
@@ -44,5 +50,6 @@ namespace NRustLightning.Tests.Utils
         public ref WatchAllTxn WatchAllTxn => ref _watchAllTxn;
 
         public ref GetChainUtxo GetChainUtxo => ref _getChainUtxo;
+        public ref FilterBlock FilterBlock => ref _filterBlock;
     }
 }
