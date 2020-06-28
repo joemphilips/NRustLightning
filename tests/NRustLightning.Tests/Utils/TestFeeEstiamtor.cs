@@ -6,10 +6,9 @@ namespace NRustLightning.Tests.Utils
 {
     internal class TestFeeEstimator : IFeeEstimator
     {
-        private static GetEstSatPer1000Weight _estimate = x =>
+        public uint GetEstSatPer1000Weight(FFIConfirmationTarget confirmationTarget)
         {
             return 1000;
-        };
-        public GetEstSatPer1000Weight getEstSatPer1000Weight => _estimate;
+        }
     }
 }

@@ -2,30 +2,27 @@ using System;
 using Microsoft.Extensions.Logging;
 using NBitcoin.Logging;
 using NRustLightning.Adaptors;
+using NRustLightning.Interfaces;
 using NRustLightning.Server.Extensions;
-using INativeLogger = NRustLightning.Interfaces.ILogger;
+using ILogger = NRustLightning.Interfaces.ILogger;
 
 namespace NRustLightning.Server.FFIProxies
 {
-    public class NativeLogger : INativeLogger
+    public class NativeLogger : ILogger
     {
         private readonly ILogger<NativeLogger> _logInternal;
-        private Log log;
 
         public NativeLogger(ILogger<NativeLogger> logInternal)
         {
             this._logInternal = logInternal;
-            log = (ref FFILogRecord record) =>
-            {
-                if (record.level == FFILogLevel.Off) return;
-                var msg =
-                    $"{record.Args}. module path: {record.ModulePath}. file: {record.File}. line: {record.line}";
-                
-                logInternal.Log(record.level.AsLogLevel(), msg);
-            };
         }
-
-        public Log Log => log;
+        void ILogger.Log(FFILogLevel logLevel, string msg, string originalModulePath, string originalFileName, uint originalLineNumber)
+        {
+            if (logLevel == FFILogLevel.Off) return;
+            var msgFormatted =
+                $"{msg}. module path: {originalModulePath}. file: {originalFileName}. line: {originalLineNumber}";
+            _logInternal.Log(logLevel.AsLogLevel(), msgFormatted);
+        }
     }
     
 }

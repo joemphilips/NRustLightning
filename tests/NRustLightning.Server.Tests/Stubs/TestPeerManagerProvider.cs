@@ -22,7 +22,7 @@ namespace NRustLightning.Server.Tests.Stubs
         {
             _broadcaster = broadcaster;
             _feeEstimator = feeEstimator;
-            _chainWatchInterface = chainWatchInterface;
+            _chainWatchInterface= chainWatchInterface;
             var seed = new byte[32];
             var n= NBitcoin.Network.RegTest;
             var conf = config.Value.RustLightningConfig;

@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
+using NBitcoin;
 using NRustLightning.Handles;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
 using NRustLightning.Utils;
+using Network = NBitcoin.Network;
 
 namespace NRustLightning.Server.Tests.Stubs
             
@@ -10,42 +13,45 @@ namespace NRustLightning.Server.Tests.Stubs
     public class TestChainWatchInterface : IChainWatchInterface
     {
 
-        private InstallWatchTx _installWatchTx;
-        private InstallWatchOutPoint _installWatchOutpoint;
-
-        private WatchAllTxn _watchAllTxn;
-        private GetChainUtxo _getChainUtxo;
-        private FilterBlock _filterBlock;
-        public TestChainWatchInterface()
+        public TestChainWatchInterface(Network n)
         {
-            _installWatchTx =
-            (ref FFISha256dHash txid,  ref FFIScript scriptPubKey) =>
-            {
-                Console.WriteLine($"Installing watch tx with txid ({Hex.Encode(txid.AsSpan())}) scriptPubKey {Hex.Encode(scriptPubKey.AsSpan())}");
-            };
-
-            _installWatchOutpoint =
-            (ref FFIOutPoint outpoint, ref FFIScript script) =>
-            {
-            };
-            _watchAllTxn =
-            () =>
-            {
-                Console.WriteLine("watch all txn");
-            };
-
-            _getChainUtxo = (ref FFISha256dHash genesisHash, ulong id, ref ChainError error, ref byte scriptPtr, ref UIntPtr scriptLen, ref ulong amountSatoshi) =>
-                {
-                    error = ChainError.NotWatched;
-                };
+            Network = n ?? throw new ArgumentNullException(nameof(n));
         }
-        public InstallWatchTx InstallWatchTx => _installWatchTx;
 
-        public InstallWatchOutPoint InstallWatchOutPoint => _installWatchOutpoint;
+        public Network Network { get; }
 
-        public WatchAllTxn WatchAllTxn => _watchAllTxn;
+        public void InstallWatchTxImpl(uint256 txid, Script spk)
+        {
+            Console.WriteLine($"Installing watch tx with txid ({txid}) scriptPubKey {spk}");
+        }
 
-        public GetChainUtxo GetChainUtxo => _getChainUtxo;
-        public FilterBlock FilterBlock => _filterBlock;
+        public void InstallWatchOutPointImpl(OutPoint outpoint, Script spk)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryGetChainUtxoImpl(uint256 genesisBlockHash, ulong utxoId, ref ChainError error, out Script scriptPubKey,
+            out Money amount)
+        {
+            error = ChainError.NotWatched;
+            scriptPubKey = null;
+            amount = null;
+            return false;
+        }
+
+        public void WatchAllTxnImpl()
+        {
+            Console.WriteLine("watch all txn");
+        }
+
+        public List<uint> FilterBlockImpl(Block b)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ReEntered()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -31,5 +31,14 @@ namespace NRustLightning.Adaptors
             
             throw new Exception($"Unknown network type {n.NetworkType}");
         }
+
+        public static NBitcoin.Network ToNBitcoinNetwork(this Network n) =>
+            n switch
+            {
+                Network.MainNet => NBitcoin.Network.Main,
+                Network.TestNet => NBitcoin.Network.TestNet,
+                Network.RegTest => NBitcoin.Network.RegTest,
+                _ => throw new  Exception($"Invalid data as network ({n})")
+            };
     }
 }

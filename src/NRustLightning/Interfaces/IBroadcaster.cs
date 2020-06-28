@@ -6,38 +6,34 @@ using Network = NBitcoin.Network;
 
 namespace NRustLightning.Interfaces
 {
-    /// <summary>
-    /// User defined broadcaster for broadcasting transaction.
-    /// Important: It has to hold the FFIBroadcastTransaction delegate as a static field.
-    /// See BroadcasterTest for example.
-    ///
-    /// keep in mind that the static delegate defined in this class may call the
-    /// delegate from multiple threads at the same time, so it must make thread safe,
-    /// If you want to hold mutable state in it.
-    ///
-    /// You usually want to inherit from abstract class <see cref="Broadcaster"/> instead of this.
-    /// Use only when the class wants to inherit from other abstract class and thus you have to use the interface.
-    /// </summary>
-    public interface IBroadcaster
+    internal interface IBroadcasterDelegatesHolder
     {
         BroadcastTransaction BroadcastTransaction { get; }
     }
 
-    public abstract class Broadcaster : IBroadcaster
+    /// <summary>
+    /// User defined broadcaster for broadcasting transaction.
+    /// </summary>
+    public interface IBroadcaster
     {
+        void BroadcastTransaction(Transaction tx);
+    }
+    
+    internal class BroadcasterDelegatesHolder : IBroadcasterDelegatesHolder
+    {
+        private readonly IBroadcaster _broadcaster;
         private readonly Network _n;
-        public Broadcaster(NBitcoin.Network n)
+        private readonly BroadcastTransaction _broadcastTransaction;
+        public BroadcasterDelegatesHolder(IBroadcaster broadcaster, NBitcoin.Network n)
         {
-            _n = n;
+            _broadcaster = broadcaster ?? throw new ArgumentNullException(nameof(broadcaster));
+            _n = n ?? throw new ArgumentNullException(nameof(n));
+            _broadcastTransaction = (ref FFITransaction ffiTx) =>
+            {
+                var tx = ffiTx.AsTransaction(_n);
+                broadcaster.BroadcastTransaction(tx);
+            };
         }
-        public abstract void BroadcastTransactionImpl(Transaction tx);
-
-        public virtual void BroadcastTransactionCore(ref FFITransaction ffiTx)
-        {
-            var tx = ffiTx.AsTransaction(_n);
-            BroadcastTransactionImpl(tx);
-        }
-
-        public BroadcastTransaction BroadcastTransaction => this.BroadcastTransactionCore;
+        public BroadcastTransaction BroadcastTransaction => _broadcastTransaction;
     }
 }

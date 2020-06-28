@@ -12,6 +12,7 @@ using NRustLightning;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
 using NRustLightning.Tests.Utils;
+using NRustLightning.Utils;
 using Network = NRustLightning.Adaptors.Network;
 
 namespace NRustLightning.Tests
@@ -45,10 +46,10 @@ namespace NRustLightning.Tests
             var logger = new TestLogger();
             var broadcaster = new TestBroadcaster();
             var feeEstiamtor = new TestFeeEstimator();
-            var chainWatchInterface = new TestChainWatchInterface();
+            var n = NBitcoin.Network.TestNet;
+            var chainWatchInterface = new ChainWatchInterfaceUtil(n);
             var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
-            var n = Network.TestNet;
-            var channelManager = ChannelManager.Create(seed, in n, in TestUserConfig.Default, chainWatchInterface, logger, broadcaster, feeEstiamtor, 400000);
+            var channelManager = ChannelManager.Create(seed, n, in TestUserConfig.Default, chainWatchInterface, logger, broadcaster, feeEstiamtor, 400000);
             return channelManager;
         }
         

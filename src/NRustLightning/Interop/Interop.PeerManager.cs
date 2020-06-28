@@ -20,6 +20,9 @@ namespace NRustLightning
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
+            ref FilterBlock filterBlock,
+            ref ReEntered reEntered,
+            
             ref Log log,
             
             IntPtr ourNodeSecret,
@@ -37,6 +40,9 @@ namespace NRustLightning
             InstallWatchOutPoint installWatchOutPoint,
             WatchAllTxn watchAllTxn,
             GetChainUtxo getChainUtxo,
+            FilterBlock filterBlock,
+            ReEntered reEntered,
+            
             Log log,
             
             IntPtr ourNodeSecret,
@@ -54,6 +60,9 @@ namespace NRustLightning
                 ref installWatchOutPoint,
                 ref watchAllTxn,
                 ref getChainUtxo,
+                ref filterBlock,
+                ref reEntered,
+                
                 ref log,
                 ourNodeSecret,
                 ourNodeId,

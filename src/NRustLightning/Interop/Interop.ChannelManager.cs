@@ -20,13 +20,16 @@ namespace NRustLightning
             ExactSpelling = true)]
         private static unsafe extern FFIResult _create_ffi_channel_manager(
             IntPtr seed,
-            Network* n,
+            in Network n,
             UserConfig* config,
             
             ref InstallWatchTx installWatchTx,
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
+            ref FilterBlock filterBlock,
+            ref ReEntered reEntered,
+            
             ref BroadcastTransaction broadcastTransaction,
             ref Log log,
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
@@ -36,12 +39,16 @@ namespace NRustLightning
 
         internal static unsafe FFIResult create_ffi_channel_manager(
             IntPtr seed,
-            Network* n,
+            in Network n,
             UserConfig* config,
+            
             InstallWatchTx installWatchTx,
             InstallWatchOutPoint installWatchOutPoint,
             WatchAllTxn watchAllTxn,
             GetChainUtxo getChainUtxo,
+            FilterBlock filterBlock,
+            ReEntered reEntered,
+            
             BroadcastTransaction broadcastTransaction,
             Log log,
             GetEstSatPer1000Weight getEstSatPer1000Weight,
@@ -50,7 +57,7 @@ namespace NRustLightning
             bool check = true
         )
         {
-            return MaybeCheck(_create_ffi_channel_manager(seed, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref broadcastTransaction, ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
+            return MaybeCheck(_create_ffi_channel_manager(seed, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref  reEntered, ref broadcastTransaction,ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
         }
         
         [DllImport(RustLightning,
@@ -225,9 +232,9 @@ namespace NRustLightning
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "update_fee",
             ExactSpelling = true)]
-        static extern FFIResult _update_fee(IntPtr channelId, ulong feeratePerkw, ChannelManagerHandle handle);
+        static extern FFIResult _update_fee(IntPtr channelId, uint feeratePerkw, ChannelManagerHandle handle);
 
-        internal static FFIResult update_fee(IntPtr channelId, ulong feeratePerKw, ChannelManagerHandle handle, bool check = true)
+        internal static FFIResult update_fee(IntPtr channelId, uint feeratePerKw, ChannelManagerHandle handle, bool check = true)
         {
             return MaybeCheck(_update_fee(channelId, feeratePerKw, handle), check);
         }

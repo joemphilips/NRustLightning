@@ -129,6 +129,7 @@ namespace NRustLightning.Server.Tests
                 webHost.UseStartup<Startup>();
                 webHost.ConfigureTestServices(services =>
                 {
+                    services.AddSingleton(Network.RegTest);
                     services.AddSingleton<IKeysRepository, InMemoryKeysRepository>();
                     services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
                     services.AddSingleton<IMacaroonSecretRepository, InMemoryMacaroonSecretRepository>();

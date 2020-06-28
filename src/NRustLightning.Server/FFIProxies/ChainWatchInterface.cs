@@ -14,12 +14,13 @@ using NRustLightning.Server.Services;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NRustLightning.Server.Networks;
+using Network = NBitcoin.Network;
 
 namespace NRustLightning.Server.FFIProxies
 {
-    public class NBXChainWatchInterface : IChainWatchInterface
+    public class NbxChainWatchInterface : IChainWatchInterface
     {
-        private readonly ILogger<NBXChainWatchInterface> logger;
+        private readonly ILogger<NbxChainWatchInterface> logger;
         private readonly NRustLightningNetwork network;
         private InstallWatchTx installWatchTx;
         private InstallWatchOutPoint installWatchOutPoint;
@@ -43,7 +44,7 @@ namespace NRustLightning.Server.FFIProxies
         /// </summary>
         private ConcurrentDictionary<(uint256, uint), byte> watchedOutpoints = new ConcurrentDictionary<(uint256, uint), byte>();
 
-        public NBXChainWatchInterface(ExplorerClient nbxplorerClient, ILogger<NBXChainWatchInterface> logger, NRustLightningNetwork network)
+        public NbxChainWatchInterface(ExplorerClient nbxplorerClient, ILogger<NbxChainWatchInterface> logger, NRustLightningNetwork network)
         {
             this.logger = logger;
             this.network = network;
@@ -98,13 +99,8 @@ namespace NRustLightning.Server.FFIProxies
                 Unsafe.CopyBlock(ref scriptPtr, ref scriptPubKeyBytes[0], (uint)scriptPubKeyBytes.Length);
                 amountSatoshi = (ulong)txOut.Value.Satoshi;
             };
-
-            filterBlock = (ref byte ptr, UIntPtr len, ref byte txPtr, ref UIntPtr txLen, ref byte indexPtr,
-                ref UIntPtr indexLen) =>
-            {
-                throw new NotImplementedException("TODO");
-            };
         }
+        
         public ExplorerClient NbxplorerClient { get; }
         
         public InstallWatchTx InstallWatchTx => installWatchTx;
@@ -116,5 +112,56 @@ namespace NRustLightning.Server.FFIProxies
         public GetChainUtxo GetChainUtxo => getChainUtxo;
 
         public FilterBlock FilterBlock => filterBlock;
+        public Network Network { get; }
+        public void InstallWatchTxImpl(uint256 txid, Script spk)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void InstallWatchOutPointImpl(OutPoint outpoint, Script spk)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryGetChainUtxoImpl(uint256 genesisBlockHash, ulong utxoId, ref ChainError error, out Script script,
+            out Money amountSatoshi)
+        {
+            script = null;
+            amountSatoshi = null;
+            var shortChannelId = Primitives.ShortChannelId.FromUInt64(utxoId);
+            var b = NbxplorerClient.RPCClient.GetBlock(shortChannelId.BlockHeight.Item);
+            if (b.Transactions.Count > shortChannelId.BlockIndex.Item)
+            {
+                error = ChainError.UnknownTx;
+                return false;
+            }
+            var tx = b.Transactions[(int)shortChannelId.BlockIndex.Item];
+            if (tx.Outputs.Count > shortChannelId.TxOutIndex.Item)
+            {
+                error = ChainError.UnknownTx;
+                return false;
+            }
+
+            var txOut = tx.Outputs[shortChannelId.TxOutIndex.Item];
+
+            script = txOut.ScriptPubKey;
+            amountSatoshi = (ulong)txOut.Value.Satoshi;
+            return true;
+        }
+
+        public void WatchAllTxnImpl()
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<uint> FilterBlockImpl(Block b)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ReEntered()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

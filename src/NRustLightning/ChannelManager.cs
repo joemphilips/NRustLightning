@@ -28,39 +28,68 @@ namespace NRustLightning
             _deps = deps ?? new object[] {};
             Handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
-        
+
         public static ChannelManager Create(
             Span<byte> seed,
-            in Network network,
+            NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
             ILogger logger,
             IBroadcaster broadcaster,
             IFeeEstimator feeEstimator,
             ulong currentBlockHeight
+        )
+        {
+            
+            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
+            var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
+            var feeEstimatorDelegatesHolder = new FeeEstimatorDelegatesHolder(feeEstimator);
+            return Create(
+                seed,
+                nbitcoinNetwork,
+                in config,
+                chainWatchInterfaceDelegatesHolder,
+                loggerDelegatesHolder,
+                broadcasterDelegatesHolder,
+                feeEstimatorDelegatesHolder,
+                currentBlockHeight
+                );
+        }
+        internal static ChannelManager Create(
+            Span<byte> seed,
+            NBitcoin.Network nbitcoinNetwork,
+            in UserConfig config,
+            IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
+            ILoggerDelegatesHolder loggerDelegatesHolder,
+            IBroadcasterDelegatesHolder broadcasterDelegatesHolder,
+            IFeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder,
+            ulong currentBlockHeight
             )
         {
             Errors.AssertDataLength(nameof(seed), seed.Length, 32);
+            var n = nbitcoinNetwork.ToFFINetwork();
             unsafe
             {
                 fixed (byte* b = seed)
-                fixed (Network* n = &network)
                 fixed (UserConfig* configPtr = &config)
                 {
                     Interop.create_ffi_channel_manager(
                         (IntPtr)b,
-                        n,
+                        in n,
                         configPtr,
-                        chainWatchInterface.InstallWatchTx,
-                        chainWatchInterface.InstallWatchOutPoint,
-                        chainWatchInterface.WatchAllTxn,
-                        chainWatchInterface.GetChainUtxo,
-                        broadcaster.BroadcastTransaction,
-                        logger.Log,
-                        feeEstimator.getEstSatPer1000Weight,
+                        chainWatchInterfaceDelegatesHolder.InstallWatchTx,
+                        chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
+                        chainWatchInterfaceDelegatesHolder.WatchAllTxn,
+                        chainWatchInterfaceDelegatesHolder.GetChainUtxo,
+                        chainWatchInterfaceDelegatesHolder.FilterBlock,
+                        chainWatchInterfaceDelegatesHolder.ReEntered,
+                        broadcasterDelegatesHolder.BroadcastTransaction,
+                        loggerDelegatesHolder.Log,
+                        feeEstimatorDelegatesHolder.getEstSatPer1000Weight,
                         currentBlockHeight,
                         out var handle);
-                    return new ChannelManager(handle, new object[] {chainWatchInterface, logger, broadcaster, feeEstimator});
+                    return new ChannelManager(handle, new object[] {chainWatchInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder});
                 }
             }
         }
@@ -212,7 +241,7 @@ namespace NRustLightning
             }
         }
 
-        public unsafe void UpdateFee(uint256 channelId, ulong feeRatePerKw)
+        public unsafe void UpdateFee(uint256 channelId, uint feeRatePerKw)
         {
             if (channelId == null) throw new ArgumentNullException(nameof(channelId));
             var b = channelId.ToBytes();

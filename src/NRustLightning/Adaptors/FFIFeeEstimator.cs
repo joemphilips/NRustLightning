@@ -11,5 +11,5 @@ namespace NRustLightning.Adaptors
     }
     
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate ulong GetEstSatPer1000Weight(FFIConfirmationTarget tx);
+    public delegate uint GetEstSatPer1000Weight(FFIConfirmationTarget tx);
 }

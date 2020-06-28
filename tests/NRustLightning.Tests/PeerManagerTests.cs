@@ -9,6 +9,7 @@ using NBitcoin.DataEncoders;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
 using NRustLightning.Tests.Utils;
+using NRustLightning.Utils;
 using Xunit;
 using Xunit.Abstractions;
 using Network = NRustLightning.Adaptors.Network;
@@ -42,9 +43,10 @@ namespace NRustLightning.Tests
             var logger = new TestLogger();
             var broadcaster = new TestBroadcaster();
             var feeEstiamtor = new TestFeeEstimator();
-            var chainWatchInterface = new TestChainWatchInterface();
-            var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
             var n = NBitcoin.Network.TestNet;
+            
+            var chainWatchInterface = new ChainWatchInterfaceUtil(n);
+            var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
             var ourNodeSecret = _keys[0].ToBytes();
             var peerManager =
                 PeerManager.Create(

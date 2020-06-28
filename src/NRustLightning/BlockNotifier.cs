@@ -22,11 +22,19 @@ namespace NRustLightning
             _deps = deps;
         }
 
-        public static BlockNotifier Create(NBitcoin.Network nbitcoinNetwork, ILogger logger, IChainWatchInterface chainWatchInterface)
+        public static BlockNotifier Create(NBitcoin.Network nbitcoinNetwork, ILogger logger,
+            IChainWatchInterface chainWatchInterface)
+        {
+            var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
+            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            return Create(nbitcoinNetwork, loggerDelegatesHolder, chainWatchInterfaceDelegatesHolder);
+        }
+
+        internal static BlockNotifier Create(NBitcoin.Network nbitcoinNetwork, ILoggerDelegatesHolder loggerDelegatesHolder, IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder)
         {
             var network = Extensions.ToFFINetwork(nbitcoinNetwork);
-            Interop.create_block_notifier(in network, logger.Log, chainWatchInterface.InstallWatchTx, chainWatchInterface.InstallWatchOutPoint, chainWatchInterface.WatchAllTxn, chainWatchInterface.GetChainUtxo, out var handle);
-            return new BlockNotifier(handle, new object[]{ logger, chainWatchInterface });
+            Interop.create_block_notifier(in network, loggerDelegatesHolder.Log, chainWatchInterfaceDelegatesHolder.InstallWatchTx, chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint, chainWatchInterfaceDelegatesHolder.WatchAllTxn, chainWatchInterfaceDelegatesHolder.GetChainUtxo, chainWatchInterfaceDelegatesHolder.FilterBlock ,chainWatchInterfaceDelegatesHolder.ReEntered, out var handle);
+            return new BlockNotifier(handle, new object[]{ loggerDelegatesHolder, chainWatchInterfaceDelegatesHolder });
         }
 
         public void RegisterChannelManager(ChannelManager channelManager)

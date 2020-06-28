@@ -1,21 +1,32 @@
+using System;
 using NRustLightning.Adaptors;
 
 namespace NRustLightning.Interfaces
 {
-    public interface ILogger
+    internal interface ILoggerDelegatesHolder
     {
         Log Log { get; }
     }
 
-    public abstract class Logger : ILogger
+    public interface ILogger
     {
-        protected abstract void LogImpl(FFILogLevel logLevel, string msg, string originalModulePath, string originalFileName, uint originalLineNumber);
+        void Log(FFILogLevel logLevel, string msg, string originalModulePath, string originalFileName, uint originalLineNumber);
+    }
 
-        protected virtual void LogCore(ref FFILogRecord record)
+    internal class LoggerDelegatesHolder : ILoggerDelegatesHolder
+    {
+        private readonly ILogger _logger;
+
+        private Log _log;
+        public LoggerDelegatesHolder(ILogger logger)
         {
-            LogImpl(record.level, record.Args, record.ModulePath, record.File, record.line);
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _log = (ref FFILogRecord record) =>
+            {
+                _logger.Log(record.level, record.Args, record.ModulePath, record.File, record.line);
+            };
         }
 
-        public Log Log => LogCore;
+        public Log Log => _log;
     }
 }

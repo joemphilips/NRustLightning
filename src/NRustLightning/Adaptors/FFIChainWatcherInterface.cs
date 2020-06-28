@@ -14,7 +14,7 @@ namespace NRustLightning.Adaptors
     
     /// <summary>
     /// We want to return the `Result` type here.
-    /// But since there is no straight forward way to do it, we must set value to the pointer instead.
+    /// But since there is no straight forward way to pass it through ffi boundary, we must set value to the pointer instead.
     /// In Failure case, we just set chain error and leave other items as is.
     /// Otherwise we must never set error value and set values for other three (script, scriptLen, txOutIndex).
     /// </summary>
@@ -28,15 +28,16 @@ namespace NRustLightning.Adaptors
     public delegate void GetChainUtxo(ref FFISha256dHash genesisHash, ulong utxoId, ref ChainError error, ref byte scriptPtr, ref UIntPtr scriptLen, ref ulong amountSatoshis);
 
     /// <summary>
-    /// Filter the given block and returns 1. matched watching transactions, 2. its index in the block.
-    /// txs and indexes are binary serialized with length(number of elements) prefixed with ushort.
+    /// Filter the given block and returns indexes of the transactions in the block those matched our interest. (i.e.
+    /// the ones which we installed by `Install*` functions before.)
     /// </summary>
-    /// <param name="blockPtr"></param>
-    /// <param name="blockLen"></param>
-    /// <param name="matchedTxPtr"></param>
-    /// <param name="matchedTxLen"></param>
-    /// <param name="matchedIndexPtr"></param>
-    /// <param name="matchedIndexLen"></param>
+    /// <param name="blockPtr">pointer to the binary-serialized block that we must filter</param>
+    /// <param name="blockLen">length of the binary-serialized block</param>
+    /// <param name="matchedIndexPtr">The pointer to the unmanaged buffer into which C# must wright the data into it.</param>
+    /// <param name="matchedIndexLen">The length of the resulted buffer.</param>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void FilterBlock(ref byte blockPtr, UIntPtr blockLen, ref byte matchedTxPtr, ref UIntPtr matchedTxLen, ref byte matchedIndexPtr, ref UIntPtr matchedIndexLen);
+    public delegate void FilterBlock(ref byte blockPtr, UIntPtr blockLen, ref UIntPtr matchedIndexPtr, ref UIntPtr matchedIndexLen);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate UIntPtr ReEntered();
 }

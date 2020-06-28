@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using DotNetLightning.Utils;
 using NBitcoin;
+using Newtonsoft.Json.Serialization;
 using NRustLightning.Adaptors;
 using NRustLightning.Handles;
 using NRustLightning.RustLightningTypes;
@@ -88,11 +89,13 @@ namespace NRustLightning.Tests
             
             Assert.Equal(txid, s1.Item.Outpoint.Item.Hash);
             Assert.Equal(1u, s1.Item.Outpoint.Item.N);
+
+            var perCommitmentPoint = new Primitives.CommitmentPubKey(new PubKey("02aca35d6de21baefaf65db590611fabd42ed4d52683c36caff58761d309314f65"));
+            Assert.Equal(perCommitmentPoint, s1.Item.PerCommitmentPoint);
+            Assert.Equal((3u, 4u), s1.Item.KeyDerivationParams.ToValueTuple());
             
-            var key = new Key(Hex.Decode("0101010101010101010101010101010101010101010101010101010101010101"));
-            Assert.Equal(key, s1.Item.Key);
-            
-            Assert.Equal(Script.Empty, s1.Item.WitnessScript);
+            var remoteRevocationPubKey = new PubKey("02812cb18bf5c19374b34419095a09aa0b0d5559a24ce0ef558845230b0a096161");
+            Assert.Equal(remoteRevocationPubKey, s1.Item.RemoteRevocationPubKey);
             
             Assert.Equal(144, s1.Item.ToSelfDelay);
             Assert.Equal(s1.Item.Output.Value.Satoshi, 255);

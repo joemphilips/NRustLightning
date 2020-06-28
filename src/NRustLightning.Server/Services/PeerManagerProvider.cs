@@ -28,9 +28,9 @@ namespace NRustLightning.Server.Services
             foreach (var n in networkProvider.GetAll())
             {
                 var nbx = nbXplorerClientProvider.GetClient(n);
-                var b = new NBXplorerBroadcaster(nbx, loggerFactory.CreateLogger<NBXplorerBroadcaster>());
-                var feeEst = new NBXplorerFeeEstimator(nbx, loggerFactory.CreateLogger<NBXplorerFeeEstimator>());
-                var chainWatchInterface = new NBXChainWatchInterface(nbx, loggerFactory.CreateLogger<NBXChainWatchInterface>(), n);
+                var b = new NbXplorerBroadcaster(nbx, loggerFactory.CreateLogger<NbXplorerBroadcaster>());
+                var feeEst = new NbXplorerFeeEstimator(nbx, loggerFactory.CreateLogger<NbXplorerFeeEstimator>());
+                var chainWatchInterface = new NbxChainWatchInterface(nbx, loggerFactory.CreateLogger<NbxChainWatchInterface>(), n);
                 var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
                 var seed = new byte[32];
                 RandomUtils.GetBytes(seed);

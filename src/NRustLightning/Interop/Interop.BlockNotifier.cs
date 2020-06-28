@@ -19,6 +19,8 @@ namespace NRustLightning
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
             ref GetChainUtxo getChainUtxo,
+            ref FilterBlock filterBlock,
+            ref ReEntered reEntered,
             out BlockNotifierHandle handle
             );
 
@@ -29,9 +31,11 @@ namespace NRustLightning
             InstallWatchOutPoint installWatchOutPoint,
             WatchAllTxn watchAllTxn,
             GetChainUtxo getChainUtxo,
+            FilterBlock filterBlock,
+            ReEntered reEntered,
             out BlockNotifierHandle handle,
             bool check = true
-        ) => MaybeCheck(_create_block_notifier(in network, ref log, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, out handle), check);
+        ) => MaybeCheck(_create_block_notifier(in network, ref log, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref reEntered, out handle), check);
 
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,

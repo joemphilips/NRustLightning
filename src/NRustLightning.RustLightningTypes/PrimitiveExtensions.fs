@@ -101,9 +101,19 @@ type PrimitiveExtensions() =
     static member GetBytesBigEndian(this: uint64) =
         let d = BitConverter.GetBytes(this)
         if BitConverter.IsLittleEndian then (d |> Array.rev) else d
+        
     [<Extension>]
     static member GetBytesBigEndian(this: int64) =
         (uint64 this).GetBytesBigEndian()
+        
+    [<Extension>]
+    static member GetBytesBigEndian(this: UIntPtr) =
+        if UIntPtr.Size = 32 then
+            (uint32 this).GetBytesBigEndian()
+        else if UIntPtr.Size = 64 then
+            (uint64 this).GetBytesBigEndian()
+        else
+            failwithf "Unexpected size for UIntPtr %d" UIntPtr.Size
         
     [<Extension>]
     static member ToVarInt(x: uint64) =

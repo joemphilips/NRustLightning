@@ -4,6 +4,9 @@ using System.Linq;
 using System.Security.Permissions;
 using System.Threading;
 using NBitcoin;
+using NRustLightning.Adaptors;
+using NRustLightning.Interfaces;
+using Network = NBitcoin.Network;
 
 namespace NRustLightning.Utils
 {
@@ -11,26 +14,27 @@ namespace NRustLightning.Utils
     /// This is a port of the class with the same name in rust-lightning.
     /// Useful for implementing ChainWatchInterface
     /// </summary>
-    public class ChainWatchInterfaceUtil
+    public class ChainWatchInterfaceUtil : IChainWatchInterface
     {
-        private readonly Network _network;
+        public Network Network { get; }
         private ChainWatchedUtil watched = new ChainWatchedUtil();
         private int _reentered = 1;
 
         public ChainWatchInterfaceUtil(Network network)
         {
-            _network = network ?? throw new ArgumentNullException(nameof(network));
+            Network = network ?? throw new ArgumentNullException(nameof(network));
         }
 
-        public void InstallWatchTx(uint256 txid, Script scriptPubKey)
+
+        void IChainWatchInterface.InstallWatchTxImpl(uint256 txid, Script scriptPubKey)
         {
             if (watched.RegisterTx(txid, scriptPubKey))
             {
                 Interlocked.Increment(ref _reentered);
             }
         }
-
-        public void InstallWatchOutpoint(OutPoint outpoint, Script outScript)
+        
+        void IChainWatchInterface.InstallWatchOutPointImpl(OutPoint outpoint, Script outScript)
         {
             if (watched.RegisterOutPoint(outpoint))
             {
@@ -38,7 +42,7 @@ namespace NRustLightning.Utils
             }
         }
 
-        public void WatchAllTxn()
+        void IChainWatchInterface.WatchAllTxnImpl()
         {
             if (watched.WatchAll())
             {
@@ -47,24 +51,28 @@ namespace NRustLightning.Utils
         }
 
 
-        public (List<Transaction>, List<uint>) FilterBlock(Block block)
+        List<uint> IChainWatchInterface.FilterBlockImpl(Block block)
         {
-            var matched = new List<Transaction>();
             var matchedIndex = new List<uint>();
             foreach (var (tx, i) in block.Transactions.Select((tx, i) => (tx, i)))
             {
                 if (watched.DoesMatchTx(tx))
                 {
-                    matched.Add(tx);
                     matchedIndex.Add((uint) i);
                 }
             }
-
-            return (matched, matchedIndex);
+            return matchedIndex;
         }
 
-        public UIntPtr Reentered {
-            get => (UIntPtr) _reentered;
+        bool IChainWatchInterface.TryGetChainUtxoImpl(uint256 genesisBlockHash, ulong utxoId, ref ChainError error, out Script scriptPubKey,
+            out Money amount)
+        {
+            throw new NotSupportedException();
+        }
+
+        bool IChainWatchInterface.ReEntered()
+        {
+            return _reentered == 1;
         }
     }
 

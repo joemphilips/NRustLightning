@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using NBitcoin;
 using NRustLightning.Adaptors;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
@@ -12,19 +13,10 @@ namespace NRustLightning.Tests.Utils
         {
             public ConcurrentBag<string> BroadcastedTxHex { get; } = new ConcurrentBag<string>();
 
-            public BroadcastTransaction _broadcast_ptr;
-
-            public TestBroadcaster()
+            public void BroadcastTransaction(Transaction tx)
             {
-                _broadcast_ptr =
-                    (ref FFITransaction tx) =>
-                     {
-                         var hex = Hex.Encode(tx.AsSpan());
-                         BroadcastedTxHex.Add(hex);
-                     };
+                BroadcastedTxHex.Add(tx.ToHex());
             }
-            BroadcastTransaction IBroadcaster.BroadcastTransaction
-                => _broadcast_ptr;
         }
 
 }

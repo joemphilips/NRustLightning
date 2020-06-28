@@ -3,6 +3,7 @@ namespace NRustLightning.RustLightningTypes
 open System
 open System.Diagnostics
 open System.IO
+open System.Security.Cryptography.X509Certificates
 open ResultUtils
 open DotNetLightning.Utils.Primitives
 open DotNetLightning.Core.Utils.Extensions
@@ -53,16 +54,17 @@ type StaticOutputData = {
 }
 type DynamicOutputP2WSHData = {
     Outpoint: LNOutPoint
-    Key: Key
-    WitnessScript: Script
+    PerCommitmentPoint: CommitmentPubKey
     ToSelfDelay: uint16
     Output: TxOut
+    KeyDerivationParams: uint64 * uint64
+    RemoteRevocationPubKey: PubKey
 }
 
-type DynamicOutputP2WPKHData = {
+type StaticOutputRemotePaymentData = {
     Outpoint: LNOutPoint
-    Key: Key
     Output: TxOut
+    KeyDerivationParams: uint64 * uint64
 }
 
 /// When on-chain outputs are created by rust-lightning (which our counterparty is not able to claim at any point in
@@ -88,13 +90,13 @@ type SpendableOutputDescriptor =
     /// These are generally the result of "revocable" output to us, spendable only by us unless
     /// it is an output from us having broadcast an old state (which should never happen).
     | DynamicOutputP2WSH of DynamicOutputP2WSHData
-    | DynamicOutputP2WPKH of DynamicOutputP2WPKHData
+    | StaticOutputRemotePayment of StaticOutputRemotePaymentData
     with
     member this.OutPoint =
         match this with
         | StaticOutput({ Outpoint = o }) -> o
         | DynamicOutputP2WSH({ Outpoint = o }) -> o
-        | DynamicOutputP2WPKH({ Outpoint = o }) -> o
+        | StaticOutputRemotePayment({ Outpoint = o }) -> o
     static member Deserialize(ls: LightningReaderStream): SpendableOutputDescriptor =
         match ls.ReadByte() with
         | 0uy ->
@@ -105,16 +107,17 @@ type SpendableOutputDescriptor =
         | 1uy ->
             DynamicOutputP2WSH({
                 DynamicOutputP2WSHData.Outpoint = ls.ReadOutpoint()
-                Key = ls.ReadBytes 32 |> fun x -> new Key(x)
-                WitnessScript = ls.ReadWithLen16() |> Script.FromBytesUnsafe
+                PerCommitmentPoint = ls.ReadCommitmentPubKey()
                 ToSelfDelay = ls.ReadUInt16 false
                 Output = ls.ReadTxOut()
+                KeyDerivationParams = (ls.ReadUInt64(false), ls.ReadUInt64(false))
+                RemoteRevocationPubKey = ls.ReadPubKey()
             })
         | 2uy ->
-            DynamicOutputP2WPKH({
+            StaticOutputRemotePayment({
                 Outpoint = ls.ReadOutpoint()
-                Key = ls.ReadBytes 32 |> fun x -> new Key(x)
                 Output = ls.ReadTxOut()
+                KeyDerivationParams = (ls.ReadUInt64(false), ls.ReadUInt64(false))
             })
         | x ->
             failwithf "Unknown SpendableOutputDescriptor type %A ! this should never happen"  x
@@ -145,15 +148,20 @@ type SpendableOutputDescriptor =
         | DynamicOutputP2WSH d ->
             ls.Write(1uy)
             ls.Write(d.Outpoint.Value.ToBytes())
-            ls.Write(d.Key.ToBytes())
-            ls.WriteWithLenVarInt(d.WitnessScript.ToBytes())
+            ls.Write(d.PerCommitmentPoint.ToByteArray())
             ls.Write(d.ToSelfDelay, false)
             ls.Write(d.Output.ToBytes())
-        | DynamicOutputP2WPKH d ->
+            let (a, b) = d.KeyDerivationParams
+            ls.Write(a.GetBytesBigEndian())
+            ls.Write(b.GetBytesBigEndian())
+            ls.Write(d.RemoteRevocationPubKey)
+        | StaticOutputRemotePayment d ->
             ls.Write(2uy)
             ls.Write(d.Outpoint.Value.ToBytes())
-            ls.Write(d.Key.ToBytes())
             ls.Write(d.Output.ToBytes())
+            let (a, b) = d.KeyDerivationParams
+            ls.Write(a.GetBytesBigEndian())
+            ls.Write(b.GetBytesBigEndian())
 
 /// An Event which you should probably take some action in response to.
 type Event =

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NBitcoin;
 using NRustLightning.Interfaces;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Repository;
@@ -27,6 +28,7 @@ namespace NRustLightning.Server.Tests
             webHost.UseStartup<Startup>();
             webHost.ConfigureTestServices(services =>
             {
+                services.AddSingleton<Network>(Network.RegTest);
                 services.AddSingleton<IKeysRepository, InMemoryKeysRepository>();
                 services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
                 services.AddSingleton<IMacaroonSecretRepository, InMemoryMacaroonSecretRepository>();

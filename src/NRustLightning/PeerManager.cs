@@ -57,8 +57,14 @@ namespace NRustLightning
             if (ourNodeSecret.Length != 32) throw new InvalidDataException($"ourNodeSecret must be 32 bytes! it was {seed.Length}");
             var ourNodeId = new NBitcoin.Key(ourNodeSecret.ToArray()).PubKey.ToBytes();
             var network = nbitcoinNetwork.ToFFINetwork();
-            var chanMan = ChannelManager.Create(seed, in network, in config, chainWatchInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
-            var blockNotifier = NRustLightning.BlockNotifier.Create(nbitcoinNetwork, logger, chainWatchInterface);
+            
+            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
+            var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
+            var feeEstimatorDelegatesHolder = new FeeEstimatorDelegatesHolder(feeEstimator);
+            
+            var chanMan = ChannelManager.Create(seed, nbitcoinNetwork, in config, chainWatchInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder, currentBlockHeight);
+            var blockNotifier = BlockNotifier.Create(nbitcoinNetwork, loggerDelegatesHolder, chainWatchInterfaceDelegatesHolder);
             blockNotifier.RegisterChannelManager(chanMan);
             unsafe
             {
@@ -72,16 +78,18 @@ namespace NRustLightning
                         in network,
                         configPtr,
                         chanMan.Handle,
-                        chainWatchInterface.InstallWatchTx,
-                        chainWatchInterface.InstallWatchOutPoint,
-                        chainWatchInterface.WatchAllTxn,
-                        chainWatchInterface.GetChainUtxo,
-                        logger.Log,
+                        chainWatchInterfaceDelegatesHolder.InstallWatchTx,
+                        chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
+                        chainWatchInterfaceDelegatesHolder.WatchAllTxn,
+                        chainWatchInterfaceDelegatesHolder.GetChainUtxo,
+                        chainWatchInterfaceDelegatesHolder.FilterBlock,
+                        chainWatchInterfaceDelegatesHolder.ReEntered,
+                        loggerDelegatesHolder.Log,
                         (IntPtr)secretPtr,
                         (IntPtr)pubkeyPtr,
                         out var handle
                         );
-                    return new PeerManager(handle, chanMan, blockNotifier, tickIntervalMSec,new object[]{ chainWatchInterface, broadcaster, logger, feeEstimator, });
+                    return new PeerManager(handle, chanMan, blockNotifier, tickIntervalMSec,new object[]{ chainWatchInterfaceDelegatesHolder, broadcasterDelegatesHolder, loggerDelegatesHolder, feeEstimatorDelegatesHolder, });
                 }
             }
         }
