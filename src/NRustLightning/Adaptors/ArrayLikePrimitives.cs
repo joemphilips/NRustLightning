@@ -3,10 +3,13 @@
  */
 
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using DotNetLightning.Serialize;
 using NBitcoin;
+using NBitcoin.Protocol;
 using NRustLightning.Adaptors;
 namespace NRustLightning.Adaptors
 {
@@ -17,7 +20,13 @@ namespace NRustLightning.Adaptors
         internal readonly UIntPtr len;
 
         public Script ToScript()
-            => Script.FromBytesUnsafe(this.AsArray());
+        {
+            using var m = new MemoryStream(this.AsArray());
+            var stream = new BitcoinStream(m, false);
+            var s = Script.Empty;
+            stream.ReadWrite(ref s);
+            return s;
+        }
     }
 
     

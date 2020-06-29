@@ -14,113 +14,39 @@ using NRustLightning.Server.Services;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NRustLightning.Server.Networks;
+using NRustLightning.Utils;
 using Network = NBitcoin.Network;
 
 namespace NRustLightning.Server.FFIProxies
 {
     public class NbxChainWatchInterface : IChainWatchInterface
     {
-        private readonly ILogger<NbxChainWatchInterface> logger;
-        private readonly NRustLightningNetwork network;
-        private InstallWatchTx installWatchTx;
-        private InstallWatchOutPoint installWatchOutPoint;
-        private WatchAllTxn watchAllTxn;
-        private GetChainUtxo getChainUtxo;
-        private FilterBlock filterBlock;
+        private readonly ILogger<NbxChainWatchInterface> _logger;
+        private readonly NRustLightningNetwork _network;
         
-        /// <summary>
-        /// This will be incremented every time new tx or outpoint comes in.
-        /// </summary>
-        private long reEnteredCount = 1;
-        
-        // --- ChainWatchedUtil members ---
-        private bool isWatchAll = false;
-        /// <summary>
-        /// There is no `ConcurrentHashSet` in std lib. So we use dict with meaningless value.
-        /// </summary>
-        private ConcurrentDictionary<Script, byte> watchedTxs = new ConcurrentDictionary<Script, byte>();
-        /// <summary>
-        /// There is no `ConcurrentHashSet` in std lib. So we use dict with meaningless value.
-        /// </summary>
-        private ConcurrentDictionary<(uint256, uint), byte> watchedOutpoints = new ConcurrentDictionary<(uint256, uint), byte>();
+        private IChainWatchInterface util;
 
         public NbxChainWatchInterface(ExplorerClient nbxplorerClient, ILogger<NbxChainWatchInterface> logger, NRustLightningNetwork network)
         {
-            this.logger = logger;
-            this.network = network;
+            _logger = logger;
+            _network = network;
             NbxplorerClient = nbxplorerClient;
-            installWatchTx = (ref FFISha256dHash hash, ref FFIScript script) =>
-            {
-                if (isWatchAll) return;
-                logger.LogDebug($"watching new tx {hash.AsArray().ToHexString()}");
-                if (watchedTxs.TryAdd(script.ToScript(), 0))
-                {
-                    Interlocked.Increment(ref reEnteredCount);
-                }
-            };
-            installWatchOutPoint = (ref FFIOutPoint outPoint, ref FFIScript script) =>
-            {
-                var n = outPoint.ToTuple().Item2;
-                logger.LogDebug($"watching new outpoint {outPoint.GetTxId()}. index: {n}");
-                if (isWatchAll) return;
-                if (watchedOutpoints.TryAdd(outPoint.ToTuple(), 0))
-                {
-                    Interlocked.Increment(ref reEnteredCount);
-                }
-            };
-            watchAllTxn = () =>
-            {
-                if (!isWatchAll)
-                {
-                    isWatchAll = true;
-                    Interlocked.Increment(ref reEnteredCount);
-                }
-            };
-            getChainUtxo = (ref FFISha256dHash chainGenesis, ulong id, ref ChainError error, ref byte scriptPtr, ref UIntPtr scriptLen, ref ulong amountSatoshi) =>
-            {
-                var shortChannelId = Primitives.ShortChannelId.FromUInt64(id);
-                var b = nbxplorerClient.RPCClient.GetBlock(shortChannelId.BlockHeight.Item);
-                if (b.Transactions.Count > shortChannelId.BlockIndex.Item)
-                {
-                    error = ChainError.UnknownTx;
-                    return;
-                }
-                var tx = b.Transactions[(int)shortChannelId.BlockIndex.Item];
-                if (tx.Outputs.Count > shortChannelId.TxOutIndex.Item)
-                {
-                    error = ChainError.UnknownTx;
-                    return;
-                }
-
-                var txOut = tx.Outputs[shortChannelId.TxOutIndex.Item];
-                var scriptPubKeyBytes = txOut.ScriptPubKey.ToBytes();
-                scriptLen = (UIntPtr)scriptPubKeyBytes.Length;
-                // copy into unmanaged memory.
-                Unsafe.CopyBlock(ref scriptPtr, ref scriptPubKeyBytes[0], (uint)scriptPubKeyBytes.Length);
-                amountSatoshi = (ulong)txOut.Value.Satoshi;
-            };
+            util = new ChainWatchInterfaceUtil(network.NBitcoinNetwork);
         }
         
         public ExplorerClient NbxplorerClient { get; }
         
-        public InstallWatchTx InstallWatchTx => installWatchTx;
-
-        public InstallWatchOutPoint InstallWatchOutPoint => installWatchOutPoint;
-
-        public WatchAllTxn WatchAllTxn => watchAllTxn;
-
-        public GetChainUtxo GetChainUtxo => getChainUtxo;
-
-        public FilterBlock FilterBlock => filterBlock;
-        public Network Network { get; }
+        public Network Network => _network.NBitcoinNetwork;
         public void InstallWatchTxImpl(uint256 txid, Script spk)
         {
-            throw new NotImplementedException();
+            _logger.LogDebug($"watching new tx of id: {txid}. output scriptPubKey is {spk.ToHex()}");
+            util.InstallWatchTxImpl(txid, spk);
         }
 
         public void InstallWatchOutPointImpl(OutPoint outpoint, Script spk)
         {
-            throw new NotImplementedException();
+            _logger.LogDebug($"watching new outpoint (prevHash: {outpoint.Hash}, prevOutIndex: {outpoint.N})");
+            util.InstallWatchOutPointImpl(outpoint, spk);
         }
 
         public bool TryGetChainUtxoImpl(uint256 genesisBlockHash, ulong utxoId, ref ChainError error, out Script script,
@@ -151,17 +77,18 @@ namespace NRustLightning.Server.FFIProxies
 
         public void WatchAllTxnImpl()
         {
-            throw new NotImplementedException();
+            util.WatchAllTxnImpl();
         }
 
         public List<uint> FilterBlockImpl(Block b)
         {
-            throw new NotImplementedException();
+            _logger.LogDebug($"Filtering Block {b.Header}");
+            return util.FilterBlockImpl(b);
         }
 
-        public bool ReEntered()
+        public int ReEntered()
         {
-            throw new NotImplementedException();
+            return util.ReEntered();
         }
     }
 }

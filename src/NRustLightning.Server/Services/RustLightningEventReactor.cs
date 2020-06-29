@@ -37,7 +37,6 @@ namespace NRustLightning.Server.Services
                     var reactor = new RustLightningEventReactor(
                         serviceProvider.GetRequiredService<P2PConnectionHandler>(),
                         serviceProvider.GetRequiredService<IPeerManagerProvider>(),
-                        serviceProvider.GetRequiredService<INBXplorerClientProvider>(),
                         serviceProvider.GetRequiredService<IWalletService>(),
                         n,
                         loggerFactory.CreateLogger(nameof(RustLightningEventReactor)+ $":{n.CryptoCode}"),
@@ -70,13 +69,11 @@ namespace NRustLightning.Server.Services
         private readonly IInvoiceRepository _invoiceRepository;
 
         private readonly Dictionary<uint256, Transaction> _pendingFundingTx = new Dictionary<uint256, Transaction>();
-        private ExplorerClient _nbXplorerClient;
         private Random _random  = new Random();
 
         public RustLightningEventReactor(
             P2PConnectionHandler connectionHandler,
             IPeerManagerProvider peerManagerProvider,
-            INBXplorerClientProvider nbXplorerClientProvider,
             IWalletService walletService,
             NRustLightningNetwork network,
             ILogger logger,
@@ -85,7 +82,6 @@ namespace NRustLightning.Server.Services
             _pool = MemoryPool<byte>.Shared;
             _connectionHandler = connectionHandler;
             _peerManagerProvider = peerManagerProvider;
-            _nbXplorerClient = nbXplorerClientProvider.GetClient(network);
             _walletService = walletService;
             _network = network;
             _logger = logger;
@@ -97,12 +93,14 @@ namespace NRustLightning.Server.Services
         {
             _logger.LogDebug($"Handling event {e}");
             var chanMan = _peerManager.ChannelManager;
-            if (e is Event.FundingGenerationReady f) {
-                var outputAddress = f.Item.OutputScript.GetWitScriptAddress(_network.NBitcoinNetwork);
+            if (e is Event.FundingGenerationReady f)
+            {
+                var witScriptId = PayToWitScriptHashTemplate.Instance.ExtractScriptPubKeyParameters(f.Item.OutputScript) ?? Utils.Utils.Fail<WitScriptId>($"Failed to extract wit script from {f.Item.OutputScript.ToHex()}! this should never happen.");
+                var outputAddress = witScriptId.GetAddress(_network.NBitcoinNetwork);
                 var tx = await _walletService.GetSendingTxAsync(outputAddress, f.Item.ChannelValueSatoshis, _network, cancellationToken);
                 var nOut =
-                        tx.Outputs.Select((txo, i) => new {Index = i, Spk = txo.ScriptPubKey} )
-                        .First((item) => item.Spk == outputAddress.ScriptPubKey).Index;
+                        tx.Outputs.Select((txo, i) => (txo, i))
+                        .First(item => item.txo.ScriptPubKey == outputAddress.ScriptPubKey).i;
                 var fundingTxo = new OutPoint(tx.GetHash(), nOut);
                 Debug.Assert(_pendingFundingTx.TryAdd(tx.GetHash(), tx));
                 _logger.LogDebug($"Finished creating funding tx {tx.ToHex()}; id: {tx.GetHash()}");
@@ -117,7 +115,7 @@ namespace NRustLightning.Server.Services
                     _logger.LogCritical($"RL asked us to broadcast unknown funding tx for id: ({h})! this should never happen.");
                     return;
                 }
-                await _nbXplorerClient.BroadcastAsync(fundingTx, cancellationToken).ConfigureAwait(false);
+                await _walletService.BroadcastAsync(fundingTx, _network).ConfigureAwait(false);
             }
             else if (e is Event.PaymentReceived paymentReceived)
             {

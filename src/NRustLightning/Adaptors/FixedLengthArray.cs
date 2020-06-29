@@ -81,7 +81,7 @@ namespace NRustLightning.Adaptors
            return new Span<byte>(Unsafe.AsPointer(ref this.Data[0]), 32);
         }
 
-        public uint256 ToUInt256() => new uint256(this.AsArray());
+        public uint256 ToUInt256() => new uint256(this.AsArray(), false);
     }
 
     [StructLayout(LayoutKind.Sequential)]

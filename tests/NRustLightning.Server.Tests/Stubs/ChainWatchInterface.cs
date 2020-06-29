@@ -49,7 +49,7 @@ namespace NRustLightning.Server.Tests.Stubs
             throw new NotImplementedException();
         }
 
-        public bool ReEntered()
+        public int ReEntered()
         {
             throw new NotImplementedException();
         }

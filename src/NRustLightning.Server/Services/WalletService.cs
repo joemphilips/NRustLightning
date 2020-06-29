@@ -24,6 +24,7 @@ namespace NRustLightning.Server.Services
         Task<Transaction> GetSendingTxAsync(BitcoinAddress destination, Money amount, NRustLightningNetwork network, CancellationToken cancellationToken = default);
         Task<Money> GetBalanceAsync(NRustLightningNetwork network, CancellationToken ct = default);
         Task<BitcoinAddress> GetNewAddressAsync(NRustLightningNetwork network, CancellationToken ct = default);
+        Task BroadcastAsync(Transaction tx, NRustLightningNetwork network);
     }
 
     public class WalletService : IWalletService
@@ -120,6 +121,11 @@ namespace NRustLightning.Server.Services
             var deriv = await GetOurDerivationStrategyAsync(network, ct);
             var a = await cli.GetUnusedAsync(deriv, DerivationFeature.Deposit, 0, false, ct);
             return a.Address;
+        }
+
+        public Task BroadcastAsync(Transaction tx, NRustLightningNetwork n)
+        {
+            return _nbXplorerClientProvider.GetClient(n).BroadcastAsync(tx);
         }
 
         private PSBT SignPSBT(PSBT psbt, NRustLightningNetwork network)

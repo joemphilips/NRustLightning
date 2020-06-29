@@ -55,7 +55,7 @@ namespace NRustLightning.Interfaces
         void WatchAllTxnImpl();
         
         List<uint> FilterBlockImpl(Block b);
-        bool ReEntered();
+        int ReEntered();
     }
 
     /// <summary>
@@ -84,6 +84,7 @@ namespace NRustLightning.Interfaces
                     var block = Block.Load(blockS.ToArray(), chainWatchInterface.Network);
                     
                     var indexes = chainWatchInterface.FilterBlockImpl(block).Select(uintIndex => (UIntPtr)uintIndex).ToArray();
+                    Console.WriteLine($"Found {indexes.Length} matching tx");
                     if (indexes.Length == 0)
                     {
                         indexLen = UIntPtr.Zero;
@@ -130,7 +131,7 @@ namespace NRustLightning.Interfaces
                 chainWatchInterface.WatchAllTxnImpl();
             };
 
-            _reEntered = () => chainWatchInterface.ReEntered() ? (UIntPtr)1 : UIntPtr.Zero;
+            _reEntered = () => (UIntPtr)chainWatchInterface.ReEntered();
         }
 
         

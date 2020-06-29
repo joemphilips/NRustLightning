@@ -50,7 +50,6 @@ namespace NRustLightning.Utils
             }
         }
 
-
         List<uint> IChainWatchInterface.FilterBlockImpl(Block block)
         {
             var matchedIndex = new List<uint>();
@@ -70,9 +69,9 @@ namespace NRustLightning.Utils
             throw new NotSupportedException();
         }
 
-        bool IChainWatchInterface.ReEntered()
+        int IChainWatchInterface.ReEntered()
         {
-            return _reentered == 1;
+            return _reentered;
         }
     }
 
@@ -90,7 +89,7 @@ namespace NRustLightning.Utils
         internal HashSet<Script> watchedTxn = new HashSet<Script>();
         internal HashSet<OutPoint> watchedOutPoints = new HashSet<OutPoint>();
 
-        public bool RegisterTx(uint256 txId, Script scriptPubKey)
+        public bool RegisterTx(uint256 _txId, Script scriptPubKey)
         {
             if (watchAll) { return false; }
             lock (watchedTxnLock)

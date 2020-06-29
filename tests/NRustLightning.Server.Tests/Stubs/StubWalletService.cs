@@ -51,5 +51,10 @@ namespace NRustLightning.Server.Tests.Stubs
             _derivationCount++;
             return t;
         }
+
+        public Task BroadcastAsync(Transaction tx, NRustLightningNetwork network)
+        {
+            return Task.CompletedTask;
+        }
     }
 }
