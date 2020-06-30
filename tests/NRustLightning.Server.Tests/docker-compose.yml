@@ -71,6 +71,7 @@ services:
       - --restlisten=0.0.0.0:${LND_REST_PORT:?no_lnd_rest_port}
       # for debugging with cli.
       - --rpclisten=0.0.0.0:32777
+      - --listen=0.0.0.0:9888
       - --bitcoin.regtest
       - --bitcoin.node=bitcoind
       - --bitcoind.rpchost=bitcoind:${BITCOIND_RPC_PORT}

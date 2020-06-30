@@ -98,9 +98,10 @@ namespace NRustLightning.Server.Tests
             var i = lnd.NodeInfoList.FirstOrDefault()?.NodeId;
             Assert.NotNull(i);
             await clients.NRustLightningHttpClient.OpenChannel(new OpenChannelRequest { TheirNetworkKey = i, ChannelValueSatoshis = 1000000, PushMSat = 100000});
+            await Task.Delay(20000);
             var addr = await clients.NRustLightningHttpClient.GetNewDepositAddressAsync();
             await clients.BitcoinRPCClient.GenerateToAddressAsync(10, addr.Address);
-            await Task.Delay(5000);
+            await Task.Delay(7000);
 
             var lndChannelInfo = await clients.LndLNClient.ListChannels();
             Assert.Single(lndChannelInfo);
