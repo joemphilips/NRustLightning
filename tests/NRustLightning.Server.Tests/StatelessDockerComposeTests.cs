@@ -95,16 +95,24 @@ namespace NRustLightning.Server.Tests
 
             var lnd = await clients.LndLNClient.GetInfo();
             Assert.Single(lnd.NodeInfoList);
-            var i = lnd.NodeInfoList.FirstOrDefault()?.NodeId;
-            Assert.NotNull(i);
-            await clients.NRustLightningHttpClient.OpenChannel(new OpenChannelRequest { TheirNetworkKey = i, ChannelValueSatoshis = 1000000, PushMSat = 100000});
-            await Task.Delay(20000);
+            var theirNodeKey = lnd.NodeInfoList.FirstOrDefault()?.NodeId;
+            Assert.NotNull(theirNodeKey);
+            await clients.NRustLightningHttpClient.OpenChannel(new OpenChannelRequest { TheirNetworkKey = theirNodeKey, ChannelValueSatoshis = 1000000, PushMSat = 100000});
+
+            // wait until nbx detects unconfirmed funding tx.
+            await Support.Utils.Retry(20, TimeSpan.FromSeconds(1), async () =>
+            {
+                var e = (await clients.NBXClient.GetTransactionsAsync(walletInfo.DerivationStrategy));
+                return e.UnconfirmedTransactions.Transactions.Count > 0;
+            });
+            
             var addr = await clients.NRustLightningHttpClient.GetNewDepositAddressAsync();
             await clients.BitcoinRPCClient.GenerateToAddressAsync(10, addr.Address);
-            await Task.Delay(7000);
-
-            var lndChannelInfo = await clients.LndLNClient.ListChannels();
-            Assert.Single(lndChannelInfo);
+            await Support.Utils.Retry(6, TimeSpan.FromSeconds(1.2), async () =>
+            {
+                var lndChannelInfo = await clients.LndLNClient.ListChannels();
+                return lndChannelInfo.Length > 0;
+            });
         }
         
         [Fact]
