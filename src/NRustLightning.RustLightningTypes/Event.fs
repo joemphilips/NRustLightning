@@ -215,7 +215,7 @@ type Event =
             FundingBroadcastSafe({
                 FundingBroadcastSafeData.OutPoint =
                      // confusingly, the outpoint used here is not consensus-encoded, instead it is rl-specific way.
-                    (ls.ReadUInt256(false), ls.ReadUInt16(false) |> uint32)
+                    (ls.ReadUInt256(true), ls.ReadUInt16(true) |> uint32)
                     |> OutPoint
                     |> LNOutPoint
                 UserChannelId = ls.ReadUInt64 false

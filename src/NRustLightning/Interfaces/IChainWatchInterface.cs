@@ -84,7 +84,6 @@ namespace NRustLightning.Interfaces
                     var block = Block.Load(blockS.ToArray(), chainWatchInterface.Network);
                     
                     var indexes = chainWatchInterface.FilterBlockImpl(block).Select(uintIndex => (UIntPtr)uintIndex).ToArray();
-                    Console.WriteLine($"Found {indexes.Length} matching tx");
                     if (indexes.Length == 0)
                     {
                         indexLen = UIntPtr.Zero;

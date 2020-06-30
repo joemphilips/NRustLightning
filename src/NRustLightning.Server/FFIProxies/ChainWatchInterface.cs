@@ -82,7 +82,6 @@ namespace NRustLightning.Server.FFIProxies
 
         public List<uint> FilterBlockImpl(Block b)
         {
-            _logger.LogDebug($"Filtering Block {b.Header}");
             return util.FilterBlockImpl(b);
         }
 

@@ -191,7 +191,7 @@ namespace NRustLightning
 
             fixed (byte* temporaryChannelIdPtr = temporaryChannelIdBytes)
             {
-                var ffiOutPoint = new FFIOutPoint(fundingTxo.Hash, (ushort)fundingTxo.N);
+                var ffiOutPoint = new FFIOutPoint(fundingTxo);
                 Interop.funding_transaction_generated((IntPtr)temporaryChannelIdPtr, ffiOutPoint, Handle);
             }
         }

@@ -137,12 +137,16 @@ namespace NRustLightning.Adaptors
                 bytes[i] = this.txid[i];
             }
 
-            return new uint256(bytes, false);
+            return new uint256(bytes, true);
         }
 
-        public FFIOutPoint(uint256 txId, ushort index)
+        public FFIOutPoint(OutPoint outpoint) : this(outpoint.Hash, (ushort)outpoint.N, true)
         {
-            var bytes = txId.ToBytes(false);
+        }
+
+        public FFIOutPoint(uint256 txId, ushort index, bool lendian = false)
+        {
+            var bytes = txId.ToBytes(lendian);
             for (int i = 0; i < 32; i++)
             {
                 this.txid[i] = bytes[i];
