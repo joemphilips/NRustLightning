@@ -31,16 +31,16 @@ namespace NRustLightning.Server.Tests.Stubs
                 PeerManager.Create(seed.AsSpan(), n, in conf, chainWatchInterface, broadcaster, logger, feeEstimator, 100, keysRepository.GetNodeSecret().ToBytes());
         }
         
-        public PeerManager? GetPeerManager(string cryptoCode)
+        public PeerManager? TryGetPeerManager(string cryptoCode)
         {
             Debug.Assert(cryptoCode.ToLowerInvariant() == "btc");
             return _peerManager;
         }
 
-        public PeerManager? GetPeerManager(NRustLightningNetwork network)
+        public PeerManager? TryGetPeerManager(NRustLightningNetwork network)
         {
             Debug.Assert(network.NBitcoinNetwork.NetworkType == NetworkType.Regtest);
-            return GetPeerManager(network.CryptoCode);
+            return TryGetPeerManager(network.CryptoCode);
         }
     }
 }

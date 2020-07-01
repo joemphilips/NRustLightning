@@ -32,6 +32,8 @@ namespace NRustLightning.Server.Repository
             options.Converters.Add(new HexPubKeyConverter());
             options.Converters.Add(new PaymentRequestJsonConverter());
             options.Converters.Add(new NullableStructConverterFactory());
+            options.Converters.Add(new uint256JsonConverter());
+            options.Converters.Add(new FeatureBitJsonConverter());
             // this is a last resort for serializing F# value, we usually want to try custom converters first.
             // So it must be specified at last.
             options.Converters.Add(new JsonFSharpConverter());

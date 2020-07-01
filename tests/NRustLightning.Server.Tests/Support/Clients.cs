@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using BTCPayServer.Lightning;
@@ -13,11 +14,11 @@ namespace NRustLightning.Server.Tests.Support
     {
         public Clients(RPCClient bitcoinRPCClient, LndClient lndClient, CLightningClient cLightningClient, NRustLightningClient nRustLightningHttpClient, NBXplorer.ExplorerClient nbxClient)
         {
-            BitcoinRPCClient = bitcoinRPCClient;
-            LndClient = lndClient;
-            CLightningClient = cLightningClient;
-            NRustLightningHttpClient = nRustLightningHttpClient;
-            NBXClient = nbxClient;
+            BitcoinRPCClient = bitcoinRPCClient ?? throw new ArgumentNullException(nameof(bitcoinRPCClient));
+            LndClient = lndClient ?? throw new ArgumentNullException(nameof(lndClient));
+            CLightningClient = cLightningClient ?? throw new ArgumentNullException(nameof(cLightningClient));
+            NRustLightningHttpClient = nRustLightningHttpClient ?? throw new ArgumentNullException(nameof(nRustLightningHttpClient));
+            NBXClient = nbxClient ?? throw new ArgumentNullException(nameof(nbxClient));
         }
         public readonly RPCClient BitcoinRPCClient;
         public readonly LndClient LndClient;

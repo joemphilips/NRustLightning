@@ -94,12 +94,22 @@ namespace NRustLightning.Client
         /// Returns Id for the opened channel
         /// </summary>
         /// <param name="request"></param>
-        /// <param name="cryptoCode"></param>
         /// <returns></returns>
-        public Task<ulong> OpenChannel(OpenChannelRequest request)
+        public Task<ulong> OpenChannelAsync(OpenChannelRequest request)
         {
             return RequestAsync<ulong>($"/v1/channel/{cryptoCode}", HttpMethod.Post, request);
         }
+
+        public Task CloseChannelAsync(PubKey theirNodeId)
+        {
+            return RequestAsync($"/v1/channel/{cryptoCode}", HttpMethod.Delete, new CloseChannelRequest(){TheirNetworkKey = theirNodeId});
+        }
+
+        private Task RequestAsync(string relativePath, HttpMethod method, object parameters = null)
+        {
+            return RequestAsync<object>(relativePath, method, parameters);
+        }
+        
 
         private async Task<T> RequestAsync<T>(string relativePath, HttpMethod method, object parameters = null)
         {

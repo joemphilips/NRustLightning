@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -39,7 +40,7 @@ namespace NRustLightning.Server.Controllers
         public ChannelInfoResponse Get(string cryptoCode)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
-            var peer = _peerManagerProvider.GetPeerManager(n);
+            var peer = _peerManagerProvider.TryGetPeerManager(n);
             var details =  peer.ChannelManager.ListChannels(_pool);
             return new ChannelInfoResponse {Details = details};
         }
@@ -51,7 +52,7 @@ namespace NRustLightning.Server.Controllers
         public ActionResult<ulong> OpenChannel(string cryptoCode, [FromBody] OpenChannelRequest o)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
-            var peerMan = _peerManagerProvider.GetPeerManager(n);
+            var peerMan = _peerManagerProvider.TryGetPeerManager(n);
             var chanMan = peerMan.ChannelManager;
             var maybeConfig = o.OverrideConfig;
             var userId = RandomUtils.GetUInt64();
@@ -74,6 +75,22 @@ namespace NRustLightning.Server.Controllers
             }
 
             return Ok(userId);
+        }
+
+        [HttpDelete]
+        [Route("{cryptoCode}")]
+        public ActionResult CloseChannel(string cryptoCode, [FromBody] CloseChannelRequest req)
+        {
+            var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
+            var peerMan = _peerManagerProvider.GetPeerManager(n);
+            var channels = peerMan.ChannelManager.ListChannels(_pool);
+            var s = channels.FirstOrDefault(x => x.RemoteNetworkId == req.TheirNetworkKey);
+            if (s is null)
+            {
+                return NotFound($"There is no opened channel against {req.TheirNetworkKey}");
+            }
+            peerMan.ChannelManager.CloseChannel(s.ChannelId);
+            return Ok();
         }
     }
 }

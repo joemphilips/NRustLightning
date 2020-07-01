@@ -3,12 +3,14 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using DotNetLightning.Payment;
+using DotNetLightning.Serialize;
 using DotNetLightning.Utils;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Hosting;
 using Microsoft.FSharp.Core;
 using NBitcoin;
 using NRustLightning.Adaptors;
+using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Extensions;
 using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Models.Request;
@@ -75,6 +77,31 @@ namespace NRustLightning.Server.Tests
             var networkProvider = new NRustLightningNetworkProvider(NetworkType.Regtest);
             var btcNetwork = networkProvider.GetByCryptoCode("BTC");
             var walletInfo = JsonSerializer.Deserialize<WalletInfo>(j, new JsonSerializerOptions {Converters = { new DerivationStrategyJsonConverter(btcNetwork.NbXplorerNetwork.DerivationStrategyFactory) }});
+            
+            // FeatureBit
+            var featureBit = FeatureBit.TryParse("0b000000100100000100000000").ResultValue;
+            var opts = new JsonSerializerOptions() {Converters = {new FeatureBitJsonConverter()}};
+            j = JsonSerializer.Serialize(featureBit, opts);
+            Assert.Contains("prettyPrint", j);
+            var featureBit2 = JsonSerializer.Deserialize<FeatureBit>(j, opts);
+            Assert.Equal(featureBit, featureBit2);
+        }
+
+        [Fact]
+        public void ClientJsonSerializeTests()
+        {
+            var featureBit = FeatureBit.TryParse("0b000000100100000100000000").ResultValue;
+            var channelDetails = new ChannelDetails(
+                uint256.Parse("4141414141414141414141414141414141414141414141414141414141414142"),
+                FSharpOption<ulong>.Some(10), 
+                new PubKey("02aca35d6de21baefaf65db590611fabd42ed4d52683c36caff58761d309314f65"), 
+                featureBit,
+                1000,
+                100,
+                100,
+                100,
+                true
+                );
         }
         
         [Fact]
@@ -145,31 +172,31 @@ namespace NRustLightning.Server.Tests
             
             // push_msat is larger than channel_value. so RL must complain about it.
             var request = new OpenChannelRequest{ TheirNetworkKey = i, ChannelValueSatoshis = 100000, PushMSat = 10000000000000 };
-            var ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await c.OpenChannel(request));
+            var ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await c.OpenChannelAsync(request));
             Assert.Contains("FFI against rust-lightning failed", ex.Message);
 
             // but works fine if amount specified is decent.
             request.PushMSat = 10000;
-            var resp = await c.OpenChannel(request);
+            var resp = await c.OpenChannelAsync(request);
             Assert.NotEqual(0UL, resp);
             
             // overriding config with bogus value will cause an error. (too short too-self-delay)
             var overrideConfig = UserConfig.GetDefault();
-            var bogusOwnChannelConfig = NRustLightning.Adaptors.ChannelHandshakeConfig.GetDefault();
+            var bogusOwnChannelConfig = Adaptors.ChannelHandshakeConfig.GetDefault();
             bogusOwnChannelConfig.OurToSelfDelay = 1;
             overrideConfig.OwnChannelConfig = bogusOwnChannelConfig;
             request.OverrideConfig = overrideConfig;
-            ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await c.OpenChannel(request));
+            ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await c.OpenChannelAsync(request));
             Assert.Contains("FFI against rust-lightning failed", ex.Message);
             
             // But works fine if the value is sane.
             request.OverrideConfig = UserConfig.GetDefault();
-            resp = await c.OpenChannel(request);
+            resp = await c.OpenChannelAsync(request);
             Assert.NotEqual(0UL, resp);
             
             var pk = new PubKey("03f8d2c299d24e4dac07dd920516a082b637b4f7918c2712ad7e1e0e841f90d7c2");
             var newReq = new OpenChannelRequest { TheirNetworkKey = pk, ChannelValueSatoshis = 100000, PushMSat = 1000};
-            resp = await c.OpenChannel(newReq);
+            resp = await c.OpenChannelAsync(newReq);
 
         }
 

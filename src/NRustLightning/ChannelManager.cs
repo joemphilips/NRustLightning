@@ -134,7 +134,7 @@ namespace NRustLightning
         public unsafe void CloseChannel(uint256 channelId)
         {
             if (channelId == null) throw new ArgumentNullException(nameof(channelId));
-            var bytes = channelId.ToBytes();
+            var bytes = channelId.ToBytes(false);
             fixed (byte* b = bytes)
             {
                 Interop.close_channel((IntPtr)b, Handle);

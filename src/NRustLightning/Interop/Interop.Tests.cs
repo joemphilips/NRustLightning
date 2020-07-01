@@ -25,6 +25,18 @@ namespace NRustLightning
             out UIntPtr actualLen,
             bool check = true
         ) => MaybeCheck(_test_event_serialization(bufOut, bufLen, out actualLen), check);
+        
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "test_channel_details_serialization",
+            ExactSpelling = true)]
+        static extern FFIResult _test_channel_details_serialization(
+            IntPtr bufOut,
+            UIntPtr bufLen,
+            out UIntPtr actualLen
+            );
+        internal static FFIResult test_channel_details_serialization(IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualLen, bool check = true)
+            => MaybeCheck(_test_channel_details_serialization(bufOut, bufLen, out actualLen), check);
 
 #endif
     }

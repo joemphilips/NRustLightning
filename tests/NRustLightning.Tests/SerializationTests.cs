@@ -2,7 +2,9 @@ using System;
 using System.Buffers;
 using System.Linq;
 using System.Reflection.Metadata;
+using DotNetLightning.Serialize;
 using DotNetLightning.Utils;
+using Microsoft.FSharp.Core;
 using NBitcoin;
 using Newtonsoft.Json.Serialization;
 using NRustLightning.Adaptors;
@@ -49,7 +51,7 @@ namespace NRustLightning.Tests
             
             Assert.True(events[0].IsFundingBroadcastSafe);
             var e0 = (Event.FundingBroadcastSafe) events[0];
-            var txid = new uint256(Hex.Decode("4141414141414141414141414141414141414141414141414141414141414142"), false);
+            var txid = new uint256(Hex.Decode("4141414141414141414141414141414141414141414141414141414141414142"), true);
             Assert.Equal(1u, e0.Item.OutPoint.Item.N);
             Assert.Equal(txid, e0.Item.OutPoint.Item.Hash);
             Assert.Equal(1111U, e0.Item.UserChannelId);
@@ -100,7 +102,42 @@ namespace NRustLightning.Tests
             Assert.Equal(144, s1.Item.ToSelfDelay);
             Assert.Equal(s1.Item.Output.Value.Satoshi, 255);
             Assert.Equal(s1.Item.Output.ScriptPubKey, Script.Empty);
-            
+        }
+
+        private ChannelDetails[] ChannelDetailsInterop()
+        {
+            Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
+                (bufOut, bufLength, _handle) =>
+                {
+                    var ffiResult = Interop.test_channel_details_serialization(bufOut, bufLength, out var actualLen);
+                    return (ffiResult, actualLen);
+                };
+            var arr = NRustLightning.Utils.Utils.WithVariableLengthReturnBuffer(_pool, func, null);
+            return ChannelDetails.ParseManyUnsafe(arr);
+        }
+
+        [Fact]
+        public void ChannelDetailsSerializationTest()
+        {
+            var c = ChannelDetailsInterop();
+            Assert.Single(c);
+            var channelId = new uint256(Hex.Decode("4141414141414141414141414141414141414141414141414141414141414142"), false);
+            Assert.Equal( channelId, c[0].ChannelId);
+            Assert.Equal(FSharpOption<ulong>.Some(3), c[0].ShortChannelId);
+            Assert.Equal(new PubKey("02aca35d6de21baefaf65db590611fabd42ed4d52683c36caff58761d309314f65"), c[0].RemoteNetworkId);
+            Assert.True(c[0].CounterPartyFeatures.HasFeature(Feature.OptionDataLossProtect, FSharpOption<FeaturesSupport>.None));
+            Assert.True(c[0].CounterPartyFeatures.HasFeature(Feature.InitialRoutingSync, FSharpOption<FeaturesSupport>.Some(FeaturesSupport.Optional)));
+            Assert.True(c[0].CounterPartyFeatures.HasFeature(Feature.OptionUpfrontShutdownScript, FSharpOption<FeaturesSupport>.None));
+            Assert.True(c[0].CounterPartyFeatures.HasFeature(Feature.VariableLengthOnion, FSharpOption<FeaturesSupport>.None));
+            Assert.True(c[0].CounterPartyFeatures.HasFeature(Feature.OptionStaticRemoteKey, FSharpOption<FeaturesSupport>.None));
+            Assert.True(c[0].CounterPartyFeatures.HasFeature(Feature.PaymentSecret, FSharpOption<FeaturesSupport>.None));
+            Assert.True(c[0].CounterPartyFeatures.HasFeature(Feature.BasicMultiPartPayment, FSharpOption<FeaturesSupport>.None));
+
+            Assert.Equal(5454U, c[0].ChannelValueSatoshis);
+            Assert.Equal(2223U, c[0].UserId);
+            Assert.Equal(2828U, c[0].OutboundCapacityMSat);
+            Assert.Equal(9292U, c[0].InboundCapacityMSat);
+            Assert.False(c[0].IsLive);
         }
     }
 }

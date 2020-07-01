@@ -40,7 +40,7 @@ namespace NRustLightning.Server.P2P
             _connectionFactory = connectionFactory;
             _logger = _loggerFactory.CreateLogger<P2PConnectionHandler>();
             var pmProvider = peerManager ?? throw new ArgumentNullException(nameof(peerManager));
-            PeerManager = pmProvider.GetPeerManager("BTC");
+            PeerManager = pmProvider.TryGetPeerManager("BTC");
             _logger.LogWarning("WARNING: it only supports BTC");
             _pool = MemoryPool<byte>.Shared;
             EventNotify = Channel.CreateBounded<byte>(new BoundedChannelOptions(100));

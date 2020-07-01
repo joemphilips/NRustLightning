@@ -41,7 +41,7 @@ namespace NRustLightning.Server.Services
             }
         }
 
-        public PeerManager? GetPeerManager(string cryptoCode)
+        public PeerManager? TryGetPeerManager(string cryptoCode)
         {
             _peerManagers.TryGetValue(cryptoCode.ToLowerInvariant(), out var p);
             return p;

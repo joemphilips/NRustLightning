@@ -86,7 +86,7 @@ namespace NRustLightning.Server.Services
             _network = network;
             _logger = logger;
             _invoiceRepository = invoiceRepository;
-            _peerManager = peerManagerProvider.GetPeerManager(network.CryptoCode);
+            _peerManager = peerManagerProvider.TryGetPeerManager(network.CryptoCode);
         }
         
         private async Task HandleEvent(Event e, CancellationToken cancellationToken)

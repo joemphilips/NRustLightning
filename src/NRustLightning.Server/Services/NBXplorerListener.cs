@@ -26,7 +26,7 @@ namespace NRustLightning.Server.Services
             foreach (var n in networkProvider.GetAll())
             {
                 var cli = clientProvider.TryGetClient(n);
-                var peerMan = peerManagerProvider.GetPeerManager(n);
+                var peerMan = peerManagerProvider.TryGetPeerManager(n);
                 if (cli != null && peerMan != null)
                 {
                     var listener = new NBXplorerListener(cli, peerMan, loggerFactory.CreateLogger<NBXplorerListener>());
