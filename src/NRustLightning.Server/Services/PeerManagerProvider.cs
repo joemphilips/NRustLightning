@@ -13,49 +13,38 @@ using NRustLightning.Server.Repository;
 
 namespace NRustLightning.Server.Services
 {
-    public class PeerManagerProvider
+    public class PeerManagerProvider : IPeerManagerProvider
     {
-        private readonly IRPCClientProvider rpcClientProvider;
-        private readonly NBXplorerClientProvider nbXplorerClientProvider;
         private Dictionary<string, PeerManager> _peerManagers = new Dictionary<string, PeerManager>();
 
         public PeerManagerProvider(
-            IRPCClientProvider rpcClientProvider,
-            NBXplorerClientProvider nbXplorerClientProvider,
+            INBXplorerClientProvider nbXplorerClientProvider,
             NRustLightningNetworkProvider networkProvider,
             IKeysRepository keysRepository,
             ILoggerFactory loggerFactory,
             IOptions<Config> config
             )
         {
-            this.rpcClientProvider = rpcClientProvider;
-            this.nbXplorerClientProvider = nbXplorerClientProvider;
             foreach (var n in networkProvider.GetAll())
             {
-                var rpc = rpcClientProvider.GetRpcClient(n);
                 var nbx = nbXplorerClientProvider.GetClient(n);
-                if (!(rpc is null) && !(nbx is null))
-                {
-                    var b = new BitcoinCoreBroadcaster(rpc);
-                    var feeEst = new BitcoinCoreFeeEstimator(rpc);
-                    var chainWatchInterface = new NBXChainWatchInterface(nbx, loggerFactory.CreateLogger<NBXChainWatchInterface>(), n);
-                    var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
-                    var seed = new byte[32];
-                    RandomUtils.GetBytes(seed);
-                    var ffiN = n.FFINetwork;
-                    var conf = config.Value.RustLightningConfig;
-                    var peerMan = PeerManager.Create(seed.AsSpan(), in ffiN, in conf, chainWatchInterface, b, logger, feeEst, 400000, keysRepository.GetNodeSecret().ToBytes());
-                    _peerManagers.Add(n.CryptoCode, peerMan);
-                }
+                var b = new NbXplorerBroadcaster(nbx, loggerFactory.CreateLogger<NbXplorerBroadcaster>());
+                var feeEst = new NbXplorerFeeEstimator(nbx, loggerFactory.CreateLogger<NbXplorerFeeEstimator>());
+                var chainWatchInterface = new NbxChainWatchInterface(nbx, loggerFactory.CreateLogger<NbxChainWatchInterface>(), n);
+                var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
+                var seed = new byte[32];
+                RandomUtils.GetBytes(seed);
+                var nbitcoinNetwork = n.NBitcoinNetwork;
+                var conf = config.Value.RustLightningConfig;
+                var peerMan = PeerManager.Create(seed.AsSpan(), nbitcoinNetwork, conf, chainWatchInterface, b, logger, feeEst, 400000, keysRepository.GetNodeSecret().ToBytes());
+                _peerManagers.Add(n.CryptoCode, peerMan);
             }
         }
 
-        public PeerManager? GetPeerManager(string cryptoCode)
+        public PeerManager? TryGetPeerManager(string cryptoCode)
         {
-            _peerManagers.TryGetValue(cryptoCode, out var p);
+            _peerManagers.TryGetValue(cryptoCode.ToLowerInvariant(), out var p);
             return p;
         }
-
-        public PeerManager? GetPeerManager(NRustLightningNetwork n) => GetPeerManager(n.CryptoCode);
     }
 }

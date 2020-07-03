@@ -1,14 +1,11 @@
 using System;
 using System.IO.Pipelines;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using NRustLightning.Interfaces;
+
 using Microsoft.Extensions.Logging;
 using NRustLightning.Adaptors;
-using NRustLightning.Utils;
 
 namespace NRustLightning.Server.P2P
 {
@@ -86,7 +83,6 @@ namespace NRustLightning.Server.P2P
             {
                 _logger.LogWarning($"error while processing connection {_id}. Closing");
                 _logger.LogError($"{ex.Message}: {ex.StackTrace}");
-                _eventNotify.TryWrite(1);
                 PeerManager.SocketDisconnected(_socketDescriptor);
             }
             finally
@@ -123,7 +119,6 @@ namespace NRustLightning.Server.P2P
                     if (PeerManager.TryReadEvent(_socketDescriptor, r.Span, out var shouldPause, out var ffiResult))
                     {
                         _socketDescriptor.ReadPaused = shouldPause;
-                        _eventNotify.TryWrite(1);
                     }
                     else
                     {
@@ -133,6 +128,7 @@ namespace NRustLightning.Server.P2P
                     _socketDescriptor.BlockDisconnectSocket = false;
                 }
                 PeerManager.ProcessEvents();
+                _eventNotify.TryWrite(1);
 
                 _transport.Input.AdvanceTo(buf.End);
             }

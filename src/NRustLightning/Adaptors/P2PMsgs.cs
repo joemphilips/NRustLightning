@@ -27,12 +27,12 @@ namespace NRustLightning.Adaptors
             span.CopyTo(arr);
             return arr;
         }
-        public Msgs.NodeAnnouncement ParseArray()
+        public Msgs.NodeAnnouncementMsg ParseArray()
         {
             using var ms = new MemoryStream(this.AsArray());
             using var ls = new LightningReaderStream(ms);
-            var r = new Msgs.NodeAnnouncement();
-            ((Msgs.ILightningSerializable<Msgs.NodeAnnouncement>)r).Deserialize(ls);
+            var r = new Msgs.NodeAnnouncementMsg();
+            ((Msgs.ILightningSerializable<Msgs.NodeAnnouncementMsg>)r).Deserialize(ls);
             return r;
         }
     }

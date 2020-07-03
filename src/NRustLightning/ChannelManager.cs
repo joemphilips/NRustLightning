@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DotNetLightning.Utils;
@@ -12,6 +13,7 @@ using NRustLightning.RustLightningTypes;
 using NRustLightning.Utils;
 using Network = NRustLightning.Adaptors.Network;
 using static NRustLightning.Utils.Utils;
+using Array = DotNetLightning.Utils.Array;
 
 namespace NRustLightning
 {
@@ -26,39 +28,83 @@ namespace NRustLightning
             _deps = deps ?? new object[] {};
             Handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
-        
+
         public static ChannelManager Create(
             Span<byte> seed,
-            in Network network,
+            NBitcoin.Network nbitcoinNetwork,
+            IUserConfigProvider config,
+            IChainWatchInterface chainWatchInterface,
+            ILogger logger,
+            IBroadcaster broadcaster,
+            IFeeEstimator feeEstimator,
+            ulong currentBlockHeight
+        )
+        {
+            var c = config.GetUserConfig();
+            return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
+        }
+
+        public static ChannelManager Create(
+            Span<byte> seed,
+            NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
             ILogger logger,
             IBroadcaster broadcaster,
             IFeeEstimator feeEstimator,
             ulong currentBlockHeight
+        )
+        {
+            
+            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
+            var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
+            var feeEstimatorDelegatesHolder = new FeeEstimatorDelegatesHolder(feeEstimator);
+            return Create(
+                seed,
+                nbitcoinNetwork,
+                in config,
+                chainWatchInterfaceDelegatesHolder,
+                loggerDelegatesHolder,
+                broadcasterDelegatesHolder,
+                feeEstimatorDelegatesHolder,
+                currentBlockHeight
+                );
+        }
+        internal static ChannelManager Create(
+            Span<byte> seed,
+            NBitcoin.Network nbitcoinNetwork,
+            in UserConfig config,
+            IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
+            ILoggerDelegatesHolder loggerDelegatesHolder,
+            IBroadcasterDelegatesHolder broadcasterDelegatesHolder,
+            IFeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder,
+            ulong currentBlockHeight
             )
         {
             Errors.AssertDataLength(nameof(seed), seed.Length, 32);
+            var n = nbitcoinNetwork.ToFFINetwork();
             unsafe
             {
                 fixed (byte* b = seed)
-                fixed (Network* n = &network)
                 fixed (UserConfig* configPtr = &config)
                 {
                     Interop.create_ffi_channel_manager(
                         (IntPtr)b,
-                        n,
+                        in n,
                         configPtr,
-                        ref chainWatchInterface.InstallWatchTx,
-                        ref chainWatchInterface.InstallWatchOutPoint,
-                        ref chainWatchInterface.WatchAllTxn,
-                        ref chainWatchInterface.GetChainUtxo,
-                        ref broadcaster.BroadcastTransaction,
-                        ref logger.Log,
-                        ref feeEstimator.getEstSatPer1000Weight,
+                        chainWatchInterfaceDelegatesHolder.InstallWatchTx,
+                        chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
+                        chainWatchInterfaceDelegatesHolder.WatchAllTxn,
+                        chainWatchInterfaceDelegatesHolder.GetChainUtxo,
+                        chainWatchInterfaceDelegatesHolder.FilterBlock,
+                        chainWatchInterfaceDelegatesHolder.ReEntered,
+                        broadcasterDelegatesHolder.BroadcastTransaction,
+                        loggerDelegatesHolder.Log,
+                        feeEstimatorDelegatesHolder.getEstSatPer1000Weight,
                         currentBlockHeight,
                         out var handle);
-                    return new ChannelManager(handle, new object[] {chainWatchInterface, logger, broadcaster, feeEstimator});
+                    return new ChannelManager(handle, new object[] {chainWatchInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder});
                 }
             }
         }
@@ -74,6 +120,13 @@ namespace NRustLightning
 
             var arr = WithVariableLengthReturnBuffer(pool, func, Handle);
             return ChannelDetails.ParseManyUnsafe(arr);
+        }
+
+        public void CreateChannel(PubKey theirNetworkKey, ulong channelValueSatoshis, ulong pushMSat, ulong userId,
+            IUserConfigProvider overrideConfig)
+        {
+            var c = overrideConfig.GetUserConfig();
+            CreateChannel(theirNetworkKey, channelValueSatoshis, pushMSat, userId, in c);
         }
 
         public unsafe void CreateChannel(PubKey theirNetworkKey, ulong channelValueSatoshis, ulong pushMSat, ulong userId, in UserConfig overrideConfig)
@@ -103,7 +156,7 @@ namespace NRustLightning
         public unsafe void CloseChannel(uint256 channelId)
         {
             if (channelId == null) throw new ArgumentNullException(nameof(channelId));
-            var bytes = channelId.ToBytes();
+            var bytes = channelId.ToBytes(false);
             fixed (byte* b = bytes)
             {
                 Interop.close_channel((IntPtr)b, Handle);
@@ -130,6 +183,7 @@ namespace NRustLightning
         
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash, Span<byte> paymentSecret)
         {
+            if (routesWithFeature == null) throw new ArgumentNullException(nameof(routesWithFeature));
             Errors.AssertDataLength(nameof(paymentHash), paymentHash.Length, 32);
             if (paymentSecret.Length != 0 && paymentSecret.Length != 32) throw new ArgumentException($"paymentSecret must be length of 32 or empty");
             unsafe
@@ -151,14 +205,15 @@ namespace NRustLightning
             }
         }
 
-        public unsafe void FundingTransactionGenerated(Span<byte> temporaryChannelId, OutPoint fundingTxo)
+        public unsafe void FundingTransactionGenerated(uint256 temporaryChannelId, OutPoint fundingTxo)
         {
+            var temporaryChannelIdBytes = temporaryChannelId.ToBytes(false);
             if (fundingTxo == null) throw new ArgumentNullException(nameof(fundingTxo));
-            Errors.AssertDataLength(nameof(temporaryChannelId), temporaryChannelId.Length, 32);
+            Errors.AssertDataLength(nameof(temporaryChannelId), temporaryChannelIdBytes.Length, 32);
 
-            fixed (byte* temporaryChannelIdPtr = temporaryChannelId)
+            fixed (byte* temporaryChannelIdPtr = temporaryChannelIdBytes)
             {
-                var ffiOutPoint = new FFIOutPoint(fundingTxo.Hash, (ushort)fundingTxo.N);
+                var ffiOutPoint = new FFIOutPoint(fundingTxo);
                 Interop.funding_transaction_generated((IntPtr)temporaryChannelIdPtr, ffiOutPoint, Handle);
             }
         }
@@ -208,8 +263,9 @@ namespace NRustLightning
             }
         }
 
-        public unsafe void UpdateFee(uint256 channelId, ulong feeRatePerKw)
+        public unsafe void UpdateFee(uint256 channelId, uint feeRatePerKw)
         {
+            if (channelId == null) throw new ArgumentNullException(nameof(channelId));
             var b = channelId.ToBytes();
             fixed (byte* c = b)
             {
@@ -225,12 +281,10 @@ namespace NRustLightning
                     var ffiResult = Interop.get_and_clear_pending_events(handle, bufOut, bufLength, out var actualLength);
                     return (ffiResult, actualLength);
                 };
-
             var arr = WithVariableLengthReturnBuffer(pool, func, Handle);
             return Event.ParseManyUnsafe(arr);
         }
 
-        
         public void Dispose()
         {
             if (!_disposed)

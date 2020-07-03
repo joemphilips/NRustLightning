@@ -1,10 +1,14 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using DotNetLightning.Utils;
+using Microsoft.Extensions.DependencyInjection;
 using NRustLightning.RustLightningTypes;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,85 +24,98 @@ using NRustLightning.Server.Entities;
 
 namespace NRustLightning.Server.Services
 {
-    public class RustLightningEventReactor : IHostedService
+    public class RustLightningEventReactors : IHostedService
+    {
+        public Dictionary<string, RustLightningEventReactor> Reactors = new Dictionary<string, RustLightningEventReactor>();
+        public RustLightningEventReactors(NRustLightningNetworkProvider networkProvider , INBXplorerClientProvider clientProvider, IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
+        {
+            foreach (var n in networkProvider.GetAll())
+            {
+                var cli = clientProvider.TryGetClient(n);
+                if (cli != null) // it means we want  to support that chain.
+                {
+                    var reactor = new RustLightningEventReactor(
+                        serviceProvider.GetRequiredService<P2PConnectionHandler>(),
+                        serviceProvider.GetRequiredService<IPeerManagerProvider>(),
+                        serviceProvider.GetRequiredService<IWalletService>(),
+                        n,
+                        loggerFactory.CreateLogger(nameof(RustLightningEventReactor)+ $":{n.CryptoCode}"),
+                        serviceProvider.GetRequiredService<IInvoiceRepository>()
+                    );
+                    Reactors.Add(n.CryptoCode, reactor);
+                }
+            }
+        }
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            await Task.WhenAll(Reactors.Values.Select(r => r.StartAsync(cancellationToken)));
+        }
+
+        public async Task StopAsync(CancellationToken cancellationToken)
+        {
+            await Task.WhenAll(Reactors.Values.Select(r => r.StopAsync(cancellationToken)));
+        }
+    }
+    
+    public class RustLightningEventReactor : BackgroundService
     {
         private readonly P2PConnectionHandler _connectionHandler;
-        private readonly PeerManagerProvider _peerManagerProvider;
-        private readonly NBXplorerClientProvider _nbXplorerClientProvider;
-        private readonly WalletService _walletService;
+        private readonly IPeerManagerProvider _peerManagerProvider;
+        private readonly IWalletService _walletService;
         private readonly PeerManager _peerManager;
         private readonly MemoryPool<byte> _pool;
         private readonly NRustLightningNetwork _network;
-        private readonly ILogger<RustLightningEventReactor> _logger;
+        private readonly ILogger _logger;
         private readonly IInvoiceRepository _invoiceRepository;
 
         private readonly Dictionary<uint256, Transaction> _pendingFundingTx = new Dictionary<uint256, Transaction>();
-        private ExplorerClient _nbXplorerClient;
         private Random _random  = new Random();
 
         public RustLightningEventReactor(
             P2PConnectionHandler connectionHandler,
-            PeerManagerProvider peerManagerProvider,
-            NBXplorerClientProvider nbXplorerClientProvider,
-            WalletService walletService,
+            IPeerManagerProvider peerManagerProvider,
+            IWalletService walletService,
             NRustLightningNetwork network,
-            ILogger<RustLightningEventReactor> logger,
+            ILogger logger,
             IInvoiceRepository invoiceRepository)
         {
             _pool = MemoryPool<byte>.Shared;
             _connectionHandler = connectionHandler;
             _peerManagerProvider = peerManagerProvider;
-            _nbXplorerClientProvider = nbXplorerClientProvider;
-            _nbXplorerClient = nbXplorerClientProvider.GetClient(_network);
             _walletService = walletService;
             _network = network;
             _logger = logger;
             _invoiceRepository = invoiceRepository;
-            _peerManager = peerManagerProvider.GetPeerManager("BTC");
+            _peerManager = peerManagerProvider.TryGetPeerManager(network.CryptoCode);
         }
         
         private async Task HandleEvent(Event e, CancellationToken cancellationToken)
         {
+            _logger.LogDebug($"Handling event {e}");
             var chanMan = _peerManager.ChannelManager;
-            if (e is Event.FundingGenerationReady f) { _logger.LogTrace($"Funding generation ready {f.Item}"); var deriv = _walletService.GetOurDerivationStrategy(_network); var req = new CreatePSBTRequest() {
-                    Destinations = new List<CreatePSBTDestination>(new []
-                    {
-                        new CreatePSBTDestination
-                        {
-                            Amount = f.Item.ChannelValueSatoshis,
-                            Destination = f.Item.OutputScript.GetWitScriptAddress(_network.NBitcoinNetwork),
-                        },
-                    })
-                };
-                var psbtResponse = await _nbXplorerClient.CreatePSBTAsync(deriv, req, cancellationToken).ConfigureAwait(false);
-                var psbt = _walletService.SignPSBT(psbtResponse.PSBT, _network);
-                if (!psbt.IsAllFinalized())
-                {
-                    psbt.Finalize();
-                }
-
-                var tx = psbt.ExtractTransaction();
+            if (e is Event.FundingGenerationReady f)
+            {
+                var witScriptId = PayToWitScriptHashTemplate.Instance.ExtractScriptPubKeyParameters(f.Item.OutputScript) ?? Utils.Utils.Fail<WitScriptId>($"Failed to extract wit script from {f.Item.OutputScript.ToHex()}! this should never happen.");
+                var outputAddress = witScriptId.GetAddress(_network.NBitcoinNetwork);
+                var tx = await _walletService.GetSendingTxAsync(outputAddress, f.Item.ChannelValueSatoshis, _network, cancellationToken);
                 var nOut =
-                    tx.Outputs.Count == 1 ?
-                        0 :
-                    tx.Outputs[0].ScriptPubKey.GetWitScriptAddress(_network.NBitcoinNetwork) !=
-                           psbtResponse.ChangeAddress
-                    ? 0
-                    : 1;
+                        tx.Outputs.Select((txo, i) => (txo, i))
+                        .First(item => item.txo.ScriptPubKey == outputAddress.ScriptPubKey).i;
                 var fundingTxo = new OutPoint(tx.GetHash(), nOut);
-                if (_pendingFundingTx.TryAdd(tx.GetHash(), tx))
-                {
-                    chanMan.FundingTransactionGenerated(f.Item.TemporaryChannelId.Value.ToBytes(), fundingTxo);
-                }
+                Debug.Assert(_pendingFundingTx.TryAdd(tx.GetHash(), tx));
+                _logger.LogDebug($"Finished creating funding tx {tx.ToHex()}; id: {tx.GetHash()}");
+                
+                chanMan.FundingTransactionGenerated(f.Item.TemporaryChannelId.Value, fundingTxo);
             }
             else if (e is Event.FundingBroadcastSafe fundingBroadcastSafe)
             {
-                if (!_pendingFundingTx.TryGetValue(fundingBroadcastSafe.Item.OutPoint.Item.Hash, out var fundingTx))
+                var h = fundingBroadcastSafe.Item.OutPoint.Item.Hash;
+                if (!_pendingFundingTx.TryGetValue(h, out var fundingTx))
                 {
-                    _logger.LogCritical($"RL asked us to broadcast unknown funding tx! this should never happen.");
+                    _logger.LogCritical($"RL asked us to broadcast unknown funding tx for id: ({h})! this should never happen.");
                     return;
                 }
-                await _nbXplorerClient.BroadcastAsync(fundingTx).ConfigureAwait(false);
+                await _walletService.BroadcastAsync(fundingTx, _network).ConfigureAwait(false);
             }
             else if (e is Event.PaymentReceived paymentReceived)
             {
@@ -140,24 +157,30 @@ namespace NRustLightning.Server.Services
                     // Do nothing. nbxplorer should handle it for us.
                 }
             }
-            throw new Exception("Unreachable!");
-        }
-
-        public async Task StartAsync(CancellationToken cancellationToken)
-        {
-            while (await _connectionHandler.EventNotify.Reader.WaitToReadAsync(cancellationToken))
+            else
             {
-                var events = _peerManager.ChannelManager.GetAndClearPendingEvents(_pool);
-                // TODO: Consider using IAsyncEnumerable or Channel to speed up.
-                foreach (var e in events)
-                {
-                    await HandleEvent(e, cancellationToken).ConfigureAwait(false);
-                }
+                throw new Exception("Unreachable!");
             }
         }
 
-        public async Task StopAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            _logger.LogDebug($"Starting event reactor for {this._network.CryptoCode}");
+            try
+            {
+                while (await _connectionHandler.EventNotify.Reader.WaitToReadAsync(cancellationToken))
+                {
+                    var _ = await _connectionHandler.EventNotify.Reader.ReadAsync(cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var events = _peerManager.ChannelManager.GetAndClearPendingEvents(_pool);
+                    await Task.WhenAll(events.Select(async e =>
+                        await HandleEvent(e, cancellationToken).ConfigureAwait(false)));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical($"{ex.Message}: {ex.StackTrace}");
+            }
         }
     }
 }

@@ -12,6 +12,7 @@ using NRustLightning;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
 using NRustLightning.Tests.Utils;
+using NRustLightning.Utils;
 using Network = NRustLightning.Adaptors.Network;
 
 namespace NRustLightning.Tests
@@ -45,10 +46,10 @@ namespace NRustLightning.Tests
             var logger = new TestLogger();
             var broadcaster = new TestBroadcaster();
             var feeEstiamtor = new TestFeeEstimator();
-            var chainWatchInterface = new TestChainWatchInterface();
+            var n = NBitcoin.Network.TestNet;
+            var chainWatchInterface = new ChainWatchInterfaceUtil(n);
             var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
-            var n = Network.TestNet;
-            var channelManager = ChannelManager.Create(seed, in n, in TestUserConfig.Default, chainWatchInterface, logger, broadcaster, feeEstiamtor, 400000);
+            var channelManager = ChannelManager.Create(seed, n, in TestUserConfig.Default, chainWatchInterface, logger, broadcaster, feeEstiamtor, 400000);
             return channelManager;
         }
         
@@ -84,9 +85,9 @@ namespace NRustLightning.Tests
             Assert.Equal(0U, c[0].OutboundCapacityMSat);
             
             Assert.False(c[0].IsLive);
-            var e = Assert.Throws<FFIException>(() => channelManager.CloseChannel(c[0].ChannelId));
-            Assert.Contains("No such channel", e.ToString());
+            channelManager.CloseChannel(c[0].ChannelId);
             var events = channelManager.GetAndClearPendingEvents(_pool);
+            Assert.Empty(events);
             channelManager.Dispose();
         }
     }

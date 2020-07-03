@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using DotNetLightning.Utils;
 using NBXplorer;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
@@ -11,85 +14,80 @@ using NRustLightning.Server.Services;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NRustLightning.Server.Networks;
+using NRustLightning.Utils;
+using Network = NBitcoin.Network;
 
 namespace NRustLightning.Server.FFIProxies
 {
-    public class NBXChainWatchInterface : IChainWatchInterface
+    public class NbxChainWatchInterface : IChainWatchInterface
     {
-        private readonly ILogger<NBXChainWatchInterface> logger;
-        private readonly NRustLightningNetwork network;
-        private InstallWatchTx installWatchTx;
-        private InstallWatchOutPoint installWatchOutPoint;
-        private WatchAllTxn watchAllTxn;
-        private GetChainUtxo getChainUtxo;
+        private readonly ILogger<NbxChainWatchInterface> _logger;
+        private readonly NRustLightningNetwork _network;
         
-        /// <summary>
-        /// This will be incremented every time new tx or outpoint
-        /// </summary>
-        private long reEnteredCount = 1;
-        
-        // --- ChainWatchedUtil members ---
-        private bool isWatchAll = false;
-        /// <summary>
-        /// There is no `ConcurrentHashSet` in std lib. So we use dict with meaningless value.
-        /// </summary>
-        private ConcurrentDictionary<Script, byte> watchedTxs = new ConcurrentDictionary<Script, byte>();
-        /// <summary>
-        /// There is no `ConcurrentHashSet` in std lib. So we use dict with meaningless value.
-        /// </summary>
-        private ConcurrentDictionary<(uint256, uint), byte> watchedOutpoints = new ConcurrentDictionary<(uint256, uint), byte>();
-        // ---
+        private IChainWatchInterface util;
 
-        public NBXChainWatchInterface(ExplorerClient nbxplorerClient, ILogger<NBXChainWatchInterface> logger, NRustLightningNetwork network)
+        public NbxChainWatchInterface(ExplorerClient nbxplorerClient, ILogger<NbxChainWatchInterface> logger, NRustLightningNetwork network)
         {
-            this.logger = logger;
-            this.network = network;
+            _logger = logger;
+            _network = network;
             NbxplorerClient = nbxplorerClient;
-            installWatchTx = (ref FFISha256dHash hash, ref FFIScript script) =>
-            {
-                if (isWatchAll) return;
-                if (watchedTxs.TryAdd(script.ToScript(), 0))
-                {
-                    Interlocked.Increment(ref reEnteredCount);
-                }
-            };
-            installWatchOutPoint = (ref FFIOutPoint outPoint, ref FFIScript script) =>
-            {
-                if (isWatchAll) return;
-                if (watchedOutpoints.TryAdd(outPoint.ToTuple(), 0))
-                {
-                    Interlocked.Increment(ref reEnteredCount);
-                }
-            };
-            watchAllTxn = () =>
-            {
-                if (!isWatchAll)
-                {
-                    isWatchAll = true;
-                    Interlocked.Increment(ref reEnteredCount);
-                }
-            };
-            getChainUtxo = (ref FFISha256dHash hash, ulong id, ref ChainError error, ref FFITxOut txout) =>
-            {
-                if (hash.ToUInt256() != network.NBitcoinNetwork.GenesisHash)
-                {
-                    error = ChainError.NotWatched;
-                }
-                else
-                {
-                    error = ChainError.NotSupported;
-                }
-            };
+            util = new ChainWatchInterfaceUtil(network.NBitcoinNetwork);
         }
+        
         public ExplorerClient NbxplorerClient { get; }
         
-        public ref InstallWatchTx InstallWatchTx => ref installWatchTx;
+        public Network Network => _network.NBitcoinNetwork;
+        public void InstallWatchTxImpl(uint256 txid, Script spk)
+        {
+            _logger.LogDebug($"watching new tx of id: {txid}. output scriptPubKey is {spk.ToHex()}");
+            util.InstallWatchTxImpl(txid, spk);
+        }
 
-        public ref InstallWatchOutPoint InstallWatchOutPoint => ref installWatchOutPoint;
+        public void InstallWatchOutPointImpl(OutPoint outpoint, Script spk)
+        {
+            _logger.LogDebug($"watching new outpoint (prevHash: {outpoint.Hash}, prevOutIndex: {outpoint.N})");
+            util.InstallWatchOutPointImpl(outpoint, spk);
+        }
 
-        public ref WatchAllTxn WatchAllTxn => ref watchAllTxn;
+        public bool TryGetChainUtxoImpl(uint256 genesisBlockHash, ulong utxoId, ref ChainError error, out Script script,
+            out Money amountSatoshi)
+        {
+            script = null;
+            amountSatoshi = null;
+            var shortChannelId = Primitives.ShortChannelId.FromUInt64(utxoId);
+            var b = NbxplorerClient.RPCClient.GetBlock(shortChannelId.BlockHeight.Item);
+            if (b.Transactions.Count > shortChannelId.BlockIndex.Item)
+            {
+                error = ChainError.UnknownTx;
+                return false;
+            }
+            var tx = b.Transactions[(int)shortChannelId.BlockIndex.Item];
+            if (tx.Outputs.Count > shortChannelId.TxOutIndex.Item)
+            {
+                error = ChainError.UnknownTx;
+                return false;
+            }
 
-        public ref GetChainUtxo GetChainUtxo => ref getChainUtxo;
+            var txOut = tx.Outputs[shortChannelId.TxOutIndex.Item];
 
+            script = txOut.ScriptPubKey;
+            amountSatoshi = (ulong)txOut.Value.Satoshi;
+            return true;
+        }
+
+        public void WatchAllTxnImpl()
+        {
+            util.WatchAllTxnImpl();
+        }
+
+        public List<uint> FilterBlockImpl(Block b)
+        {
+            return util.FilterBlockImpl(b);
+        }
+
+        public int ReEntered()
+        {
+            return util.ReEntered();
+        }
     }
 }

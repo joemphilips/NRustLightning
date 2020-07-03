@@ -1,6 +1,5 @@
 namespace NRustLightning.RustLightningTypes
 
-open System.Diagnostics
 open System.IO
 
 open DotNetLightning.Core.Utils.Extensions

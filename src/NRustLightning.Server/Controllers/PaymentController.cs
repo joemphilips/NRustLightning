@@ -10,6 +10,7 @@ using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Models.Response;
 using NRustLightning.Server.Networks;
+using NRustLightning.Server.Repository;
 using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Controllers
@@ -20,25 +21,28 @@ namespace NRustLightning.Server.Controllers
     public class PaymentController : ControllerBase
     {
         private readonly IInvoiceRepository _invoiceRepository;
-        private readonly PeerManagerProvider _peerManagerProvider;
+        private readonly IPeerManagerProvider _peerManagerProvider;
         private readonly NRustLightningNetworkProvider _networkProvider;
+        private readonly RepositoryProvider _repositoryProvider;
 
-        public PaymentController(IInvoiceRepository invoiceRepository, PeerManagerProvider peerManagerProvider,
-            NRustLightningNetworkProvider networkProvider)
+        public PaymentController(IInvoiceRepository invoiceRepository, IPeerManagerProvider peerManagerProvider,
+            NRustLightningNetworkProvider networkProvider, RepositoryProvider repositoryProvider)
         {
             _invoiceRepository = invoiceRepository;
             _peerManagerProvider = peerManagerProvider;
             _networkProvider = networkProvider;
+            _repositoryProvider = repositoryProvider;
         }
         
-        [HttpGet]
+        [HttpPost]
         [Route("{cryptoCode}/invoice")]
-        public InvoiceResponse Invoice(string cryptoCode,[FromBody] InvoiceCreationOption option)
+        public JsonResult Invoice(string cryptoCode,[FromBody] InvoiceCreationOption option)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode);
             var preimage = Primitives.PaymentPreimage.Create(RandomUtils.GetBytes(32));
             var invoice = _invoiceRepository.GetNewInvoice(n, preimage, option);
-            return new InvoiceResponse {Invoice = invoice};
+            var resp = new InvoiceResponse {Invoice = invoice};
+            return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);
         }
 
         [HttpPost]

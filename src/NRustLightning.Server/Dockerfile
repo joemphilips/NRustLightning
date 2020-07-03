@@ -45,6 +45,7 @@ WORKDIR /src
 
 COPY ["src/NRustLightning.RustLightningTypes/NRustLightning.RustLightningTypes.fsproj", "src/NRustLightning.RustLightningTypes/"]
 COPY ["src/NRustLightning/NRustLightning.csproj", "src/NRustLightning/"]
+COPY ["src/FSharp.SystemTextJson", "src/FSharp.SystemTextJson/"]
 COPY ["src/NRustLightning.Server/NRustLightning.Server.csproj", "src/NRustLightning.Server/"]
 RUN dotnet restore "src/NRustLightning.Server/NRustLightning.Server.csproj"
 COPY . .

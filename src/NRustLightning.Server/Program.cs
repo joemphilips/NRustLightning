@@ -68,6 +68,7 @@ namespace NRustLightning.Server
                     webBuilder.UseKestrel(options => {
                         options.ListenAnyIP(httpPort, listenOptions =>
                         {
+                            logger.LogInformation($"Listening on port {httpPort}");
                             listenOptions.UseConnectionLogging();
                         });
                         

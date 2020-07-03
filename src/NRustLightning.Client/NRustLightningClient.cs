@@ -25,16 +25,14 @@ namespace NRustLightning.Client
     {
         public HttpClient HttpClient;
         private Uri _baseUri;
+        private string cryptoCode;
 
         private JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
         {
             PropertyNameCaseInsensitive = true,
-            Converters = { new PaymentRequestJsonConverter(), new JsonFSharpConverter() }
         };
 
-        private NRustLightningNetworkProvider _networkProvider;
-        
-        public NRustLightningClient(string baseUrl, X509Certificate2? certificate = null, NetworkType networkType = NetworkType.Mainnet)
+        public NRustLightningClient(string baseUrl, NRustLightningNetwork network, X509Certificate2? certificate = null)
         {
             var handler = new HttpClientHandler()
             {
@@ -44,17 +42,14 @@ namespace NRustLightning.Client
             {
                 handler.ClientCertificates.Add(certificate);
             }
-            _networkProvider = new NRustLightningNetworkProvider(networkType);
 
-            foreach (var n in _networkProvider.GetAll())
-            {
-                var ser = new RepositorySerializer(n);
-                ser.ConfigureSerializer(jsonSerializerOptions);
-            }
+            cryptoCode = network.CryptoCode;
+            var ser = new RepositorySerializer(network);
+            ser.ConfigureSerializer(jsonSerializerOptions);
             HttpClient = new HttpClient(handler);
             _baseUri = new Uri(baseUrl);
         }
-        
+
         public void Dispose()
         {
             HttpClient.Dispose();
@@ -75,36 +70,46 @@ namespace NRustLightning.Client
             return RequestAsync<object>("/v1/peer/disconnect", HttpMethod.Delete, connectionString.ToString());
         }
 
-        public Task<InvoiceResponse> GetInvoiceAsync(InvoiceCreationOption option, string cryptoCode = "BTC")
+        public Task<InvoiceResponse> GetInvoiceAsync(InvoiceCreationOption option)
         {
-            return RequestAsync<InvoiceResponse>($"/v1/payment/{cryptoCode}/invoice", HttpMethod.Get, option);
+            return RequestAsync<InvoiceResponse>($"/v1/payment/{cryptoCode}/invoice", HttpMethod.Post, option);
         }
 
-        public Task<ChannelInfoResponse> GetChannelDetails(string cryptoCode = "BTC")
+        public Task<ChannelInfoResponse> GetChannelDetailsAsync()
         {
             return RequestAsync<ChannelInfoResponse>($"/v1/channel/{cryptoCode}/", HttpMethod.Get);
         }
 
-        public Task<WalletInfo> GetWalletInfoAsync(string cryptoCode = "BTC")
+        public Task<WalletInfo> GetWalletInfoAsync()
         {
-            return RequestAsync<WalletInfo>($"/v1/info/{cryptoCode}/wallet", HttpMethod.Get);
+            return RequestAsync<WalletInfo>($"/v1/wallet/{cryptoCode}", HttpMethod.Get);
         }
 
-        public Task<GetNewAddressResponse> GetNewDepositAddressAsync(string cryptoCode = "BTC")
+        public Task<GetNewAddressResponse> GetNewDepositAddressAsync()
         {
             return RequestAsync<GetNewAddressResponse>($"/v1/wallet/{cryptoCode}/address", HttpMethod.Get);
         }
         
         /// <summary>
-        /// Returns Id for the created channel
+        /// Returns Id for the opened channel
         /// </summary>
         /// <param name="request"></param>
-        /// <param name="cryptoCode"></param>
         /// <returns></returns>
-        public Task<ulong> CreateChannel(OpenChannelRequest request, string cryptoCode = "BTC")
+        public Task<ulong> OpenChannelAsync(OpenChannelRequest request)
         {
             return RequestAsync<ulong>($"/v1/channel/{cryptoCode}", HttpMethod.Post, request);
         }
+
+        public Task CloseChannelAsync(PubKey theirNodeId)
+        {
+            return RequestAsync($"/v1/channel/{cryptoCode}", HttpMethod.Delete, new CloseChannelRequest(){TheirNetworkKey = theirNodeId});
+        }
+
+        private Task RequestAsync(string relativePath, HttpMethod method, object parameters = null)
+        {
+            return RequestAsync<object>(relativePath, method, parameters);
+        }
+        
 
         private async Task<T> RequestAsync<T>(string relativePath, HttpMethod method, object parameters = null)
         {
@@ -113,11 +118,17 @@ namespace NRustLightning.Client
             msg.Method = method;
             if (parameters != null)
             {
-                var stringContent = JsonSerializer.Serialize(parameters);
+                var stringContent = JsonSerializer.Serialize(parameters, jsonSerializerOptions);
+                Console.WriteLine("content is");
+                Console.WriteLine(stringContent);
                 msg.Content = new StringContent(stringContent, Encoding.UTF8, "application/json");
             }
             using var resp = await HttpClient.SendAsync(msg).ConfigureAwait(false);
-            resp.EnsureSuccessStatusCode();
+            if (!resp.IsSuccessStatusCode)
+            {
+                var errMsg= await resp.Content.ReadAsStringAsync();
+                throw new HttpRequestException(errMsg);
+            }
             var content = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (string.IsNullOrEmpty(content))
                 return default;

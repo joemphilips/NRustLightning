@@ -37,8 +37,8 @@ namespace NRustLightning.Tests.Utils
             };
         }
 
-        public ref SendData SendData => ref _sendData;
+        public SendData SendData => _sendData;
 
-        public ref DisconnectSocket DisconnectSocket => ref _disconnectSocket;
+        public DisconnectSocket DisconnectSocket => _disconnectSocket;
     }
 }

@@ -12,12 +12,11 @@ open NBitcoin
 type Extensions() =
     [<Extension>]
     static member ReadOption(this: LightningReaderStream) =
-        let b = this.ReadByte()
-        match b with
-        | 0uy -> None
-        | _ ->
-            let length = this.ReadBigSize()
-            let d = this.ReadBytes((int)length)
+        let length = this.ReadBigSize()
+        match length with
+        | 0UL -> None
+        | x ->
+            let d = this.ReadBytes((int)x - 1)
             Some(d)
 
     [<Extension>]
@@ -32,13 +31,14 @@ type Extensions() =
         
     [<Extension>]
     static member ReadOutpoint(this: LightningReaderStream) =
-        (this.ReadUInt256(false), this.ReadUInt32(false))
+        (this.ReadUInt256(false), this.ReadUInt32(false) |> uint32)
         |> OutPoint
         |> LNOutPoint
         
     [<Extension>]
     static member ReadTxOut(this: LightningReaderStream) =
-        ((this.ReadUInt64 false |> Money.Satoshis), (this.ReadWithLenVarInt() |> Script.FromBytesUnsafe))
+        let m = this.ReadUInt64 true
+        ((m |> Money.Satoshis), (this.ReadWithLenVarInt() |> Script.FromBytesUnsafe))
         |> TxOut
         
     [<Extension>]

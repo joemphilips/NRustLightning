@@ -21,16 +21,14 @@ namespace NRustLightning.Server.Controllers
     {
         private readonly IKeysRepository keysRepository;
         private readonly P2PConnectionHandler _connectionHandler;
-        private readonly WalletService _walletService;
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly RepositoryProvider _repositoryProvider;
         private readonly Config config;
 
-        public InfoController(IKeysRepository keysRepository, IOptions<Config> config, P2PConnectionHandler connectionHandler, WalletService walletService, NRustLightningNetworkProvider networkProvider, RepositoryProvider repositoryProvider)
+        public InfoController(IKeysRepository keysRepository, IOptions<Config> config, P2PConnectionHandler connectionHandler, NRustLightningNetworkProvider networkProvider, RepositoryProvider repositoryProvider)
         {
             this.keysRepository = keysRepository;
             _connectionHandler = connectionHandler;
-            _walletService = walletService;
             _networkProvider = networkProvider;
             _repositoryProvider = repositoryProvider;
             this.config = config.Value;
@@ -48,14 +46,5 @@ namespace NRustLightning.Server.Controllers
             };
         }
 
-        [HttpGet]
-        [Route("{cryptoCode}/wallet")]
-        public JsonResult GetWalletInfo(string cryptoCode)
-        {
-            var n = _networkProvider.GetByCryptoCode(cryptoCode);
-            var derivationStrategy = _walletService.GetOurDerivationStrategy(n);
-            var resp = new WalletInfo {DerivationStrategy = derivationStrategy};
-            return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);
-        }
     }
 }

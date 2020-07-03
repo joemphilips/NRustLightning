@@ -81,7 +81,7 @@ namespace NRustLightning.Adaptors
            return new Span<byte>(Unsafe.AsPointer(ref this.Data[0]), 32);
         }
 
-        public uint256 ToUInt256() => new uint256(this.AsArray());
+        public uint256 ToUInt256() => new uint256(this.AsArray(), false);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -118,6 +118,11 @@ namespace NRustLightning.Adaptors
         }
     }
     
+    /// <summary>
+    /// This is not consensus-compatible representation of OutPoint.
+    /// Instead, the hash is encoded in big endian.
+    /// This is because rl (or LN in general) serializes txid in big-endian
+    /// </summary>
     [StructLayout(LayoutKind.Sequential, Size=34)]
     public unsafe ref struct FFIOutPoint
     {
@@ -132,12 +137,16 @@ namespace NRustLightning.Adaptors
                 bytes[i] = this.txid[i];
             }
 
-            return new uint256(bytes);
+            return new uint256(bytes, true);
         }
 
-        public FFIOutPoint(uint256 txId, ushort index)
+        public FFIOutPoint(OutPoint outpoint) : this(outpoint.Hash, (ushort)outpoint.N, true)
         {
-            var bytes = txId.ToBytes();
+        }
+
+        public FFIOutPoint(uint256 txId, ushort index, bool lendian = false)
+        {
+            var bytes = txId.ToBytes(lendian);
             for (int i = 0; i < 32; i++)
             {
                 this.txid[i] = bytes[i];

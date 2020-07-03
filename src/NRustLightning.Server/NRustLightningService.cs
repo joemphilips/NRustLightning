@@ -1,15 +1,9 @@
-using System;
 using DotNetLightning.Utils;
+using LSATAuthenticationHandler;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NBitcoin;
-using NBXplorer.DerivationStrategy;
-using NRustLightning.Interfaces;
-using NRustLightning.Server.Authentication;
-using NRustLightning.Server.Authentication.MacaroonMinter;
 using NRustLightning.Server.Configuration;
-using NRustLightning.Server.Configuration.SubConfiguration;
-using NRustLightning.Server.FFIProxies;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Middlewares;
 using NRustLightning.Server.Networks;
@@ -29,17 +23,19 @@ namespace NRustLightning.Server
             services.AddSingleton<IRPCClientProvider, RPCClientProvider>();
             services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
             services.AddSingleton<RepositoryProvider>();
-            services.AddSingleton<WalletService>();
+            services.AddSingleton<IWalletService, WalletService>();
             services.AddSingleton<P2PConnectionFactory>();
             services.AddSingleton<P2PConnectionHandler>();
-            services.AddSingleton<NBXplorerClientProvider>();
-            services.AddSingleton<PeerManagerProvider>();
+            services.AddSingleton<INBXplorerClientProvider, NBXplorerClientProvider>();
+            services.AddSingleton<IPeerManagerProvider, PeerManagerProvider>();
             services.AddTransient<RequestResponseLoggingMiddleware>();
+            services.AddHostedService<NBXplorerListeners>();
+            services.AddHostedService<RustLightningEventReactors>();
         }
 
         public static void ConfigureNRustLightning(this IServiceCollection services, IConfiguration configuration, ILogger logger)
         {
-            var network = configuration.GetValue<NetworkType>("network");
+            var network = configuration.GetNetworkType();
             var networkProvider = new NRustLightningNetworkProvider(network);
             services.AddSingleton(networkProvider);
             services.AddLogging();
@@ -67,7 +63,7 @@ namespace NRustLightning.Server
                 ourServiceName = options.ServiceName;
                 ourServiceTier = options.ServiceTier;
                 // we want to give users only read capability when they have payed for it. not write.
-                options.MacaroonCaveats.Add($"{ourServiceName}{LSATDefaults.CapabilitiesConditionPrefix}=read");
+                options.MacaroonCaveats.Add($"{ourServiceName}{DotNetLightning.Payment.LSAT.Constants.CAPABILITIES_CONDITION_PREFIX}=read");
                 int amount = lsatConfig.GetOrDefault("amount", 1);
                 options.InvoiceAmount = LNMoney.MilliSatoshis(amount);
             });
@@ -76,13 +72,13 @@ namespace NRustLightning.Server
                 options.AddPolicy("Readonly", policy =>
                 {
                     policy.RequireClaim("service", $"{ourServiceName}:{ourServiceTier}");
-                    policy.RequireClaim($"{ourServiceName}{LSATDefaults.CapabilitiesConditionPrefix}", "read", "admin");
+                    policy.RequireClaim($"{ourServiceName}{DotNetLightning.Payment.LSAT.Constants.CAPABILITIES_CONDITION_PREFIX}", "read", "admin");
                 });
                 
                 options.AddPolicy("Admin", policy =>
                 {
                     policy.RequireClaim("service", $"{ourServiceName}:{ourServiceTier}");
-                    policy.RequireClaim($"{ourServiceName}{LSATDefaults.CapabilitiesConditionPrefix}", "admin");
+                    policy.RequireClaim($"{ourServiceName}{DotNetLightning.Payment.LSAT.Constants.CAPABILITIES_CONDITION_PREFIX}", "admin");
                 });
             });
         }

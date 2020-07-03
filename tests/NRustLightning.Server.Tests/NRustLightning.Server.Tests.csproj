@@ -20,6 +20,10 @@
     <ProjectReference Include="..\DockerComposeFixture\DockerComposeFixture\DockerComposeFixture.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="appsettings.test.json" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+
   <Import Project="../../src/LDK.targets" />
 
 </Project>

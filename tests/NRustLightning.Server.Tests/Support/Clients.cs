@@ -1,8 +1,10 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using BTCPayServer.Lightning;
 using BTCPayServer.Lightning.CLightning;
 using BTCPayServer.Lightning.LND;
+using NBitcoin;
 using NBitcoin.RPC;
 using NRustLightning.Client;
 
@@ -12,11 +14,11 @@ namespace NRustLightning.Server.Tests.Support
     {
         public Clients(RPCClient bitcoinRPCClient, LndClient lndClient, CLightningClient cLightningClient, NRustLightningClient nRustLightningHttpClient, NBXplorer.ExplorerClient nbxClient)
         {
-            BitcoinRPCClient = bitcoinRPCClient;
-            LndClient = lndClient;
-            CLightningClient = cLightningClient;
-            NRustLightningHttpClient = nRustLightningHttpClient;
-            NBXClient = nbxClient;
+            BitcoinRPCClient = bitcoinRPCClient ?? throw new ArgumentNullException(nameof(bitcoinRPCClient));
+            LndClient = lndClient ?? throw new ArgumentNullException(nameof(lndClient));
+            CLightningClient = cLightningClient ?? throw new ArgumentNullException(nameof(cLightningClient));
+            NRustLightningHttpClient = nRustLightningHttpClient ?? throw new ArgumentNullException(nameof(nRustLightningHttpClient));
+            NBXClient = nbxClient ?? throw new ArgumentNullException(nameof(nbxClient));
         }
         public readonly RPCClient BitcoinRPCClient;
         public readonly LndClient LndClient;
@@ -38,9 +40,37 @@ namespace NRustLightning.Server.Tests.Support
 
         public async Task PrepareFunds()
         {
-            var clAddressTask = CLightningClient.NewAddressAsync();
-            var lndAddressTask = LndClient.SwaggerClient.NewWitnessAddressAsync();
-            var nrlAddressTask = NRustLightningHttpClient.GetWalletInfoAsync();
+            var nrlBalance = (await NRustLightningHttpClient.GetWalletInfoAsync()).OnChainBalanceSatoshis;
+            if (nrlBalance > 0)
+            {
+                return;
+            }
+            
+            var clAddress = (await CLightningClient.NewAddressAsync());
+            var lndAddress = BitcoinAddress.Create((await LndClient.SwaggerClient.NewWitnessAddressAsync()).Address, Network.RegTest);
+            var nrlAddress = (await NRustLightningHttpClient.GetNewDepositAddressAsync()).Address;
+            foreach (var addr in new[] {clAddress, lndAddress, nrlAddress})
+            {
+                await this.BitcoinRPCClient.GenerateToAddressAsync(1, addr);
+            }
+
+            await this.BitcoinRPCClient.GenerateAsync(Network.RegTest.Consensus.CoinbaseMaturity + 1);
+        }
+
+        public async Task CreateEnoughTxToEstimateFee()
+        {
+            var txPerBlock = 20;
+            var nBlock = 20;
+            for (int i = 0; i < nBlock; i++)
+            {
+                for (int j = 0; j < txPerBlock; j++)
+                {
+                    var addr = new Key().PubKey.GetSegwitAddress(Network.RegTest);
+                    await this.BitcoinRPCClient.SendToAddressAsync(addr, Money.Coins(0.1m));
+                }
+
+                await BitcoinRPCClient.GenerateAsync(1);
+            }
         }
     }
 }

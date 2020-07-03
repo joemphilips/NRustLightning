@@ -1,22 +1,18 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using NRustLightning.RustLightningTypes;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+
 using NBitcoin;
-using NRustLightning.Interfaces;
+
+using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Logging;
+
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Services;
-using NRustLightning.Utils;
 
 namespace NRustLightning.Server.P2P
 {
@@ -35,7 +31,7 @@ namespace NRustLightning.Server.P2P
         /// </summary>
         public Channel<byte> EventNotify { get; }
  
-        public P2PConnectionHandler(ISocketDescriptorFactory descriptorFactory, PeerManagerProvider peerManager,
+        public P2PConnectionHandler(ISocketDescriptorFactory descriptorFactory, IPeerManagerProvider peerManager,
             ILoggerFactory loggerFactory, P2PConnectionFactory connectionFactory)
         {
             // TODO: Support other chains
@@ -44,7 +40,7 @@ namespace NRustLightning.Server.P2P
             _connectionFactory = connectionFactory;
             _logger = _loggerFactory.CreateLogger<P2PConnectionHandler>();
             var pmProvider = peerManager ?? throw new ArgumentNullException(nameof(peerManager));
-            PeerManager = pmProvider.GetPeerManager("BTC");
+            PeerManager = pmProvider.TryGetPeerManager("BTC");
             _logger.LogWarning("WARNING: it only supports BTC");
             _pool = MemoryPool<byte>.Shared;
             EventNotify = Channel.CreateBounded<byte>(new BoundedChannelOptions(100));

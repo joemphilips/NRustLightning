@@ -1,27 +1,15 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using DotNetLightning.Payment;
-using DotNetLightning.Utils;
-using NBitcoin.RPC;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
-using NBXplorer;
-using NRustLightning.Server.Authentication;
 using NRustLightning.Server.Configuration;
-using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Middlewares;
-using NRustLightning.Server.Repository;
 
 namespace NRustLightning.Server
 {
@@ -49,8 +37,16 @@ namespace NRustLightning.Server
         {
             services.AddControllers().AddJsonOptions(options =>
             {
+                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                options.JsonSerializerOptions.Converters
+                    .Add(new HexPubKeyConverter());
                 options.JsonSerializerOptions.Converters
                     .Add(new PaymentRequestJsonConverter());
+                options.JsonSerializerOptions.Converters.Add(new uint256JsonConverter());
+                options.JsonSerializerOptions.Converters.Add(new FeatureBitJsonConverter());
+                
+                options.JsonSerializerOptions
+                    .Converters.Add(new NullableStructConverterFactory());
                 options.JsonSerializerOptions.Converters
                     .Add(new JsonFSharpConverter());
             });

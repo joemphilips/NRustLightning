@@ -16,7 +16,7 @@ namespace NRustLightning.Server.Networks
             BaseKeyPath = baseKeyPath;
             BOLT11InvoicePrefix = bolt11InvoicePrefix;
             NBitcoinNetwork = networkSet.GetNetwork(networkType);
-            CryptoCode = networkSet.CryptoCode;
+            CryptoCode = networkSet.CryptoCode.ToLowerInvariant();
         }
         
         public NBXplorerNetwork NbXplorerNetwork { get; }
@@ -50,23 +50,13 @@ namespace NRustLightning.Server.Networks
         NBXplorerNetworkProvider nbXplorerNetworkProvider;
         public NRustLightningNetworkProvider(NetworkType networkType)
         {
-            nbXplorerNetworkProvider = new NBXplorerNetworkProvider(NetworkType);
             NetworkType = networkType;
+            nbXplorerNetworkProvider = new NBXplorerNetworkProvider(NetworkType);
             var invoicePrefix =
                 networkType == NetworkType.Mainnet ? "lnbc" :
                     networkType == NetworkType.Testnet ? "lntb" :
                     "lnbcrt";
             Add(Bitcoin.Instance, networkType, nbXplorerNetworkProvider.GetBTC(), new KeyPath("m/84'/0'"), invoicePrefix);
-            invoicePrefix =
-                networkType == NetworkType.Mainnet ? "lnltc" :
-                networkType == NetworkType.Testnet ? "lntltc" :
-                "lnrltc";
-            Add(Monacoin.Instance, networkType, nbXplorerNetworkProvider.GetMONA(), new KeyPath("m/84'/1'"), invoicePrefix);
-            invoicePrefix =
-                networkType == NetworkType.Mainnet ? "lnmona" :
-                networkType == NetworkType.Testnet ? "lntmona" :
-                "lnrmona";
-            Add(Litecoin.Instance, networkType, nbXplorerNetworkProvider.GetLTC(), new KeyPath("m/84'/22'"), invoicePrefix);
         }
 
         public IEnumerable<NRustLightningNetwork> GetAll() => _Networks.Values;

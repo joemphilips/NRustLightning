@@ -5,9 +5,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BTCPayServer.Lightning;
+using BTCPayServer.Lightning.CLightning;
+using BTCPayServer.Lightning.LND;
 using DockerComposeFixture;
 using DockerComposeFixture.Compose;
 using DockerComposeFixture.Exceptions;
+using NBitcoin;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Tests.Support;
 using Xunit;
@@ -75,17 +78,118 @@ namespace NRustLightning.Server.Tests
             // And then we can disconnect from inside.
         }
 
+        async Task OutBoundChannelOpenRoundtrip(Clients clients, ILightningClient remoteClient)
+        {
+            var walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
+            var info = await remoteClient.GetInfo();
+            Assert.Single(info.NodeInfoList);
+            var theirNodeKey = info.NodeInfoList.FirstOrDefault()?.NodeId;
+            Assert.NotNull(theirNodeKey);
+            await clients.NRustLightningHttpClient.OpenChannelAsync(new OpenChannelRequest
+                {TheirNetworkKey = theirNodeKey, ChannelValueSatoshis = 1000000, PushMSat = 100000});
+
+            // wait until nbx detects unconfirmed funding tx.
+            await Support.Utils.Retry(20, TimeSpan.FromSeconds(1.5), async () =>
+            {
+                var e = (await clients.NBXClient.GetTransactionsAsync(walletInfo.DerivationStrategy));
+                return e.UnconfirmedTransactions.Transactions.Count > 0;
+            });
+
+            var addr = await clients.NRustLightningHttpClient.GetNewDepositAddressAsync();
+            await clients.BitcoinRPCClient.GenerateToAddressAsync(10, addr.Address);
+            await Support.Utils.Retry(20, TimeSpan.FromSeconds(1.2), async () =>
+            {
+                // CLightning client throws null reference exception when it is used as ILightningClient.
+                // So we do dirty fallback here.
+                if (remoteClient is CLightningClient cli)
+                {
+                    var channelList = await cli.ListChannelsAsync();
+                    Assert.NotNull(channelList);
+                    return channelList.Length > 0;
+                }
+                else
+                {
+                    var channelList = await remoteClient.ListChannels(CancellationToken.None);
+                    Assert.NotNull(channelList);
+                    return channelList.Length > 0;
+                }
+            });
+        }
+        async Task OutboundChannelCloseRoundtrip(Clients clients, ILightningClient remoteClient)
+        {
+            var info = await remoteClient.GetInfo();
+            var id = info.NodeInfoList.FirstOrDefault()?.NodeId;
+            await clients.NRustLightningHttpClient.CloseChannelAsync(id);
+            await Support.Utils.Retry(9, TimeSpan.FromSeconds(2), async () =>
+            {
+                var add = await clients.BitcoinRPCClient.GetNewAddressAsync();
+                await clients.BitcoinRPCClient.GenerateToAddressAsync(1, add);
+                var aliveChannels = (await clients.NRustLightningHttpClient.GetChannelDetailsAsync()).Details.Where(x => x.RemoteNetworkId == id && x.IsLive);
+                return !(await remoteClient.ListChannels()).Any(x => x.IsActive)
+                       && !aliveChannels.Any();
+            });
+        }
+        async Task InboundChannelOpenRoundtrip(Clients clients, ILightningClient remoteClient)
+        {
+            var nrlInfo = await clients.NRustLightningHttpClient.GetInfoAsync();
+            var feeRate = (await clients.NBXClient.GetFeeRateAsync(3)).FeeRate;
+            await remoteClient.OpenChannel(new BTCPayServer.Lightning.OpenChannelRequest()
+                {NodeInfo = nrlInfo.ConnectionString.ToNodeInfo(), ChannelAmount = 100000, FeeRate = feeRate});
+            // wait until bitcoind detects unconfirmed funding tx on mempool.
+            await Support.Utils.Retry(10, TimeSpan.FromSeconds(0.8), async () =>
+            {
+                var m = await clients.BitcoinRPCClient.GetRawMempoolAsync();
+                return m.Length > 0;
+            });
+
+            var addr = await clients.NRustLightningHttpClient.GetNewDepositAddressAsync();
+            await clients.BitcoinRPCClient.GenerateToAddressAsync(10, addr.Address);
+            await Support.Utils.Retry(20, TimeSpan.FromSeconds(1.2), async () =>
+            {
+                // CLightning client throws null reference exception when it is used as ILightningClient.
+                // So we do dirty fallback here.
+                if (remoteClient is CLightningClient cli)
+                {
+                    var channelList = await cli.ListChannelsAsync();
+                    Assert.NotNull(channelList);
+                    return channelList.Length > 0;
+                }
+                else
+                {
+                    var channelList = await remoteClient.ListChannels(CancellationToken.None);
+                    Assert.NotNull(channelList);
+                    return channelList.Length > 0;
+                }
+            });
+        }
         [Fact]
         public async Task CanOpenCloseChannels()
         {
             var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanOpenCloseChannels));
-            var nrlInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
-            Assert.NotNull(nrlInfo.DerivationStrategy);
-            // Assert.DoesNotContain("legacy", nrlInfo.DerivationStrategy.ToString());
+            var walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
+            Assert.NotNull(walletInfo.DerivationStrategy);
+            Assert.Equal(0, walletInfo.OnChainBalanceSatoshis);
+            Assert.DoesNotContain("legacy", walletInfo.DerivationStrategy.ToString());
             await clients.ConnectAll();
-            var lnd = await clients.LndLNClient.GetInfo();
-            var i = lnd.NodeInfoList.FirstOrDefault()?.NodeId;
-            // await clients.NRustLightningHttpClient.CreateChannel(new OpenChannelRequest() { TheirNetworkKey = i });
+            await clients.PrepareFunds();
+            await clients.CreateEnoughTxToEstimateFee();
+            
+            // check wallet info and nbxplorer info is synchronized.
+            walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
+            Assert.NotEqual(0, walletInfo.OnChainBalanceSatoshis);
+            var explorerInfo = await clients.NBXClient.GetBalanceAsync(walletInfo.DerivationStrategy);
+            Assert.Equal(NBitcoin.Money.Satoshis(walletInfo.OnChainBalanceSatoshis), explorerInfo.Total);
+
+            await OutBoundChannelOpenRoundtrip(clients, clients.LndLNClient);
+            // await outBoundChannelOpenRoundtrip.Invoke(clients.CLightningClient);
+            await OutboundChannelCloseRoundtrip(clients, clients.LndLNClient);
+            // await outboundChannelCloseRoundtrip.Invoke(clients.ClightningLNClient);
+            await InboundChannelOpenRoundtrip(clients, clients.LndClient);
+            // await inboundChannelOpenRoundtrip.Invoke(clients.CLightningClient);
+            
         }
+        
+        [Fact]
+        public async Task CanPayToOtherNodes() {}
     }
 }

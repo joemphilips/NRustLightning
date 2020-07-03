@@ -6,13 +6,16 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using CommandLine;
+using DotNetLightning.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NRustLightning.Adaptors;
+using NRustLightning.Interfaces;
 using NRustLightning.Server.Configuration.SubConfiguration;
 using NRustLightning.Server.Networks;
 using StandardConfiguration;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 using Network = NBitcoin.Network;
 
 namespace NRustLightning.Server.Configuration
@@ -20,18 +23,22 @@ namespace NRustLightning.Server.Configuration
     public class Config
     {
         public EndPoint P2PExternalIp { get; set; } = Constants.DefaultP2PExternalIp;
-        public Uri NBXplorerUri { get; set; } = new Uri("http://127.0.0.1:4774");
+        public Uri NBXplorerUri { get; set; } = new Uri(Constants.DefaultNBXplorerUri);
+        public string? NBXCookieFile = null;
         public string ConfigurationFile { get; set; } = "nrustlightning.conf";
         public string DataDir { get; set; } = Constants.DataDirectoryPath;
         public List<ChainConfiguration> ChainConfiguration { get; } = new List<ChainConfiguration>();
+
+        public UserConfigObject RustLightningConfig { get; set; } = new UserConfigObject();
         
-        public UserConfig RustLightningConfig { get; }
         
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
 
         public Config LoadArgs(IConfiguration config, ILogger logger)
         {
-            NetworkProvider = new NRustLightningNetworkProvider(config.GetNetworkType());
+            var networkType = config.GetNetworkType();
+            logger.LogInformation($"Network type: {networkType}");
+            NetworkProvider = new NRustLightningNetworkProvider(networkType);
             var defaultSettings = NRustLightningDefaultSettings.GetDefaultSettings(NetworkProvider.NetworkType);
             DataDir = config.GetOrDefault<string>("datadir", null);
             if (DataDir is null)
@@ -42,6 +49,21 @@ namespace NRustLightning.Server.Configuration
                 if (!Directory.Exists(defaultSettings.DefaultDataDir))
                     Directory.CreateDirectory(defaultSettings.DefaultDataDir);
             }
+
+            var nbxConfig = config.GetSection("nbx");
+            var nbxCookieFile =
+                nbxConfig.GetOrDefault("cookiefile",
+                    Constants.DefaultNBXplorerCookieFile(NetworkProvider.NetworkType));
+            NBXplorerUri = new Uri(nbxConfig.GetOrDefault("rpcurl", Constants.DefaultNBXplorerUri));
+            
+            if (!File.Exists(nbxCookieFile))
+            {
+                logger.LogWarning($"cookie file for nbxplorer does not exist in {nbxCookieFile}" +
+                                  " Make sure you are running nbx with --noauth.");
+            }
+
+            logger.LogInformation($"nbxplorer url {NBXplorerUri}");
+            NBXCookieFile = nbxCookieFile;
 
             var p2pExternalIp = config.GetOrDefault("externalip", Constants.DefaultP2PExternalIpStr);
             if (IPEndPoint.TryParse(p2pExternalIp, out var ip))
@@ -72,7 +94,7 @@ namespace NRustLightning.Server.Configuration
             logger.LogDebug($"Network: {NetworkProvider.NetworkType.ToString()}");
             var supportedChains = config.GetOrDefault<string>("chains", "BTC")
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(t => t.ToUpperInvariant());
+                .Select(t => t.ToLowerInvariant());
             var validChains = new List<string>();
             foreach (var n in NetworkProvider.GetAll())
             {
@@ -85,7 +107,7 @@ namespace NRustLightning.Server.Configuration
                     chainConfiguration.Rpc = args.ConfigureRPCClient(n, logger);
                     if (chainConfiguration.Rpc.Address.Port == n.NBitcoinNetwork.DefaultPort)
                     {
-                        logger.LogWarning($"{n.CryptoCode}: It seems that the RPC port ({chainConfiguration.Rpc.Address.Port}) is equal to the default P2P port ({n.NBitcoinNetwork.DefaultPort}, this is probably a misconfiguration)");
+                        logger.LogWarning($"{n.CryptoCode}: It seems that the１ RPC port ({chainConfiguration.Rpc.Address.Port}) is equal to the default P2P port ({n.NBitcoinNetwork.DefaultPort}, this is probably a misconfiguration)");
                     }
                     if((chainConfiguration.Rpc.CredentialString.CookieFile != null || chainConfiguration.Rpc.CredentialString.UseDefault) && !n.SupportCookieAuthentication)
                     {
@@ -99,7 +121,8 @@ namespace NRustLightning.Server.Configuration
             var invalidChains = String.Join(',', supportedChains.Where(s => !validChains.Contains(s)));
             if(!string.IsNullOrEmpty(invalidChains))
                 throw new ConfigException($"Invalid chains {invalidChains}");
-            
+
+            config.GetSection("ln").Bind(RustLightningConfig);
             return this;
         }
     }

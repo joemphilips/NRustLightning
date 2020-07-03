@@ -1,15 +1,9 @@
-using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Mvc;
-using NBitcoin;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.ModelBinders;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.P2P;
-using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Controllers
 {
@@ -19,10 +13,10 @@ namespace NRustLightning.Server.Controllers
     public class PeerController : ControllerBase
     {
         private readonly P2PConnectionHandler _connectionHandler;
-        public PeerManagerProvider PeerManagerProvider { get; }
+        public IPeerManagerProvider PeerManagerProvider { get; }
         public ISocketDescriptorFactory SocketDescriptorFactory { get; }
 
-        public PeerController(PeerManagerProvider peerManagerProvider, ISocketDescriptorFactory socketDescriptorFactory, P2PConnectionHandler connectionHandler)
+        public PeerController(IPeerManagerProvider peerManagerProvider, ISocketDescriptorFactory socketDescriptorFactory, P2PConnectionHandler connectionHandler)
         {
             _connectionHandler = connectionHandler;
             PeerManagerProvider = peerManagerProvider;

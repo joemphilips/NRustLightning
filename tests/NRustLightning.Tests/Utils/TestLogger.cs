@@ -12,17 +12,11 @@ namespace NRustLightning.Tests.Utils
     {
         public ConcurrentBag<string> Msgs = new ConcurrentBag<string>();
 
-        private Log _log;
-        public TestLogger()
+        void ILogger.Log(FFILogLevel logLevel, string msg, string originalModulePath, string originalFileName, uint originalLineNumber)
         {
-            _log = (ref FFILogRecord record) =>
-            {
-                Msgs.Add(record.Args);
-                Console.WriteLine($"message received from ffi: \'{record.Args}\'");
-            };
+            Msgs.Add(msg);
+            Console.WriteLine($"message received from ffi: \'{msg}\'");
         }
-
-        public ref Log Log => ref _log;
     }
 
 }

@@ -35,7 +35,7 @@ services:
       - "${DATA_PATH:?datapath_not_set}/.bitcoin:/data"
  
   nbxplorer:
-    image: nicolasdorier/nbxplorer:2.1.24
+    image: nicolasdorier/nbxplorer:2.1.31
     restart: unless-stopped
     ports:
       - "${NBXPLORER_PORT}:${NBXPLORER_PORT:?no_nbxplorer_port}"
@@ -53,10 +53,13 @@ services:
       NBXPLORER_MAXGAPSIZE: 10
       NBXPLORER_VERBOSE: 1
       NBXPLORER_NOAUTH: 1
+      NBXPLORER_EXPOSERPC: 1
     networks:
       main:
         aliases:
           - nbxplorer
+    volumes:
+      - "${DATA_PATH}/.nbxplorer:/datadir"
 
   lnd:
     restart: unless-stopped
@@ -68,6 +71,7 @@ services:
       - --restlisten=0.0.0.0:${LND_REST_PORT:?no_lnd_rest_port}
       # for debugging with cli.
       - --rpclisten=0.0.0.0:32777
+      - --listen=0.0.0.0:9888
       - --bitcoin.regtest
       - --bitcoin.node=bitcoind
       - --bitcoind.rpchost=bitcoind:${BITCOIND_RPC_PORT}
@@ -148,22 +152,21 @@ services:
       - dotnet
       - NRustLightning.Server.dll
       - --nohttps
+      - --regtest
       - --debug.http=true
-      - --httpport=80
+      - --httpport=8080
       - --externalip="nrustlightning:9735"
+      - --nbx.rpcurl="http://nbxplorer:${NBXPLORER_PORT}"
+      - --ln.channel_options.announced_channel=true
     ports:
-      - "9735:9735"
-      - "${HTTP_PORT:?no_http_port_set}:80"
+      - "${HTTP_PORT:?no_http_port_set}:8080"
     expose:
       - "9735"
+      - "8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - RUST_BACKTRACE=1
       #- ASPNETCORE_URLS="https://+;http://+"
-    links:
-      - bitcoind
-      - lnd
-      - nbxplorer
     volumes:
       - "${HOME}/.aspnet/:/root/.aspnet/"
       - "${HOME}/.microsoft/usersecrets/:/root/.microsoft/usersecrets"

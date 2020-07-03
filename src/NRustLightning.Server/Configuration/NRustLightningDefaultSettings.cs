@@ -25,7 +25,7 @@ namespace NRustLightning.Server.Configuration
                 settings.DefaultCookieFile = Path.Combine(settings.DefaultDataDir, ".cookie");
                 settings.NBXplorerSettings = NBXplorerDefaultSettings.GetDefaultSettings(nType);
                 settings.DefaultPort = Constants.DefaultP2PPort;
-                settings.RustLightningConfig = new UserConfig();
+                settings.RustLightningConfig = UserConfig.GetDefault();
             }
         }
 

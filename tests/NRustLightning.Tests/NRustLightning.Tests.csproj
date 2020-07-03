@@ -22,4 +22,10 @@
       <ProjectReference Include="..\..\src\NRustLightning\NRustLightning.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="Data\block-testnet-828575.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>

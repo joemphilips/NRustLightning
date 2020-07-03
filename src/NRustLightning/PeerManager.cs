@@ -23,10 +23,12 @@ namespace NRustLightning
         private bool _disposed = false;
 
         public ChannelManager ChannelManager { get; }
+        public BlockNotifier BlockNotifier { get; }
         
         internal PeerManager(
             PeerManagerHandle handle,
             ChannelManager channelManager,
+            BlockNotifier blockNotifier,
             int tickInterval,
             object[] deps
             )
@@ -34,12 +36,30 @@ namespace NRustLightning
             _deps = deps;
             tick = new Timer(_ => Tick(), null, tickInterval, tickInterval);
             _handle = handle ?? throw new ArgumentNullException(nameof(handle));
-            ChannelManager = channelManager;
+            ChannelManager = channelManager ?? throw new ArgumentNullException(nameof(channelManager));
+            BlockNotifier = blockNotifier ?? throw new ArgumentNullException(nameof(blockNotifier));
         }
 
         public static PeerManager Create(
             Span<byte> seed,
-            in Network network,
+            NBitcoin.Network nbitcoinNetwork,
+            IUserConfigProvider config,
+            IChainWatchInterface chainWatchInterface,
+            IBroadcaster broadcaster,
+            ILogger logger,
+            IFeeEstimator feeEstimator,
+            uint currentBlockHeight,
+            Span<byte> ourNodeSecret,
+            int tickIntervalMSec = 30000
+        )
+        {
+            var c = config.GetUserConfig();
+            return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, broadcaster, logger, feeEstimator, currentBlockHeight, ourNodeSecret, tickIntervalMSec);
+        }
+
+        public static PeerManager Create(
+            Span<byte> seed,
+            NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
             IBroadcaster broadcaster,
@@ -53,30 +73,40 @@ namespace NRustLightning
             if (seed.Length != 32) throw new InvalidDataException($"seed must be 32 bytes! it was {seed.Length}");
             if (ourNodeSecret.Length != 32) throw new InvalidDataException($"ourNodeSecret must be 32 bytes! it was {seed.Length}");
             var ourNodeId = new NBitcoin.Key(ourNodeSecret.ToArray()).PubKey.ToBytes();
-            var chanMan = ChannelManager.Create(seed, in network, in config, chainWatchInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
+            var network = nbitcoinNetwork.ToFFINetwork();
+            
+            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
+            var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
+            var feeEstimatorDelegatesHolder = new FeeEstimatorDelegatesHolder(feeEstimator);
+            
+            var chanMan = ChannelManager.Create(seed, nbitcoinNetwork, in config, chainWatchInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder, currentBlockHeight);
+            var blockNotifier = BlockNotifier.Create(nbitcoinNetwork, loggerDelegatesHolder, chainWatchInterfaceDelegatesHolder);
+            blockNotifier.RegisterChannelManager(chanMan);
             unsafe
             {
                 fixed (byte* seedPtr = seed)
-                fixed (Network* n = &network)
                 fixed (UserConfig* configPtr = &config)
                 fixed (byte* secretPtr = ourNodeSecret)
                 fixed (byte* pubkeyPtr = ourNodeId)
                 {
                     Interop.create_peer_manager(
                         (IntPtr)seedPtr,
-                        n,
+                        in network,
                         configPtr,
                         chanMan.Handle,
-                        ref chainWatchInterface.InstallWatchTx,
-                        ref chainWatchInterface.InstallWatchOutPoint,
-                        ref chainWatchInterface.WatchAllTxn,
-                        ref chainWatchInterface.GetChainUtxo,
-                        ref logger.Log,
+                        chainWatchInterfaceDelegatesHolder.InstallWatchTx,
+                        chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
+                        chainWatchInterfaceDelegatesHolder.WatchAllTxn,
+                        chainWatchInterfaceDelegatesHolder.GetChainUtxo,
+                        chainWatchInterfaceDelegatesHolder.FilterBlock,
+                        chainWatchInterfaceDelegatesHolder.ReEntered,
+                        loggerDelegatesHolder.Log,
                         (IntPtr)secretPtr,
                         (IntPtr)pubkeyPtr,
                         out var handle
                         );
-                    return new PeerManager(handle, chanMan, tickIntervalMSec,new object[]{ chainWatchInterface, broadcaster, logger, feeEstimator, });
+                    return new PeerManager(handle, chanMan, blockNotifier, tickIntervalMSec,new object[]{ chainWatchInterfaceDelegatesHolder, broadcasterDelegatesHolder, loggerDelegatesHolder, feeEstimatorDelegatesHolder, });
                 }
             }
         }
@@ -89,7 +119,7 @@ namespace NRustLightning
 
         public void NewInboundConnection(ISocketDescriptor descriptor)
         {
-            Interop.new_inbound_connection(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, _handle);
+            Interop.new_inbound_connection(descriptor.Index, descriptor.SendData, descriptor.DisconnectSocket, _handle);
         }
 
         /// <summary>
@@ -101,19 +131,19 @@ namespace NRustLightning
         {
             fixed (byte* p = theirNodeId)
             {
-                Interop.new_outbound_connection(descriptor.Index, ref descriptor.SendData,
-                    ref descriptor.DisconnectSocket, (IntPtr)p, _handle, out var initialSend);
+                Interop.new_outbound_connection(descriptor.Index, descriptor.SendData,
+                    descriptor.DisconnectSocket, (IntPtr)p, _handle, out var initialSend);
                 return initialSend.AsArray();
             }
         }
         public void WriteBufferSpaceAvail(ISocketDescriptor descriptor)
         {
-            Interop.write_buffer_space_avail(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, _handle);
+            Interop.write_buffer_space_avail(descriptor.Index, descriptor.SendData, descriptor.DisconnectSocket, _handle);
         }
 
         public void SocketDisconnected(ISocketDescriptor descriptor)
         {
-            Interop.socket_disconnected(descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, _handle);
+            Interop.socket_disconnected(descriptor.Index, descriptor.SendData, descriptor.DisconnectSocket, _handle);
         }
 
         /// <summary>
@@ -128,7 +158,7 @@ namespace NRustLightning
             {
                 var bytes = new FFIBytes((IntPtr)d, (UIntPtr)data.Length);
                 Interop.read_event(
-                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, out var shouldPause, _handle);
+                    descriptor.Index, descriptor.SendData, descriptor.DisconnectSocket, ref bytes, out var shouldPause, _handle);
                 return shouldPause == 1;
             }
         }
@@ -141,7 +171,7 @@ namespace NRustLightning
                 var bytes = new FFIBytes((IntPtr)d, (UIntPtr)data.Length);
                 result =
                 Interop.read_event(
-                    descriptor.Index, ref descriptor.SendData, ref descriptor.DisconnectSocket, ref bytes, out var shouldPauseB, _handle, false); 
+                    descriptor.Index, descriptor.SendData, descriptor.DisconnectSocket, ref bytes, out var shouldPauseB, _handle, false); 
                 shouldPause = shouldPauseB == 1;
             }
             return result.IsSuccess;
@@ -209,6 +239,7 @@ namespace NRustLightning
             {
                 tick.Dispose();
                 ChannelManager.Dispose();
+                BlockNotifier.Dispose();
                 _handle.Dispose();
                 _disposed = true;
             }

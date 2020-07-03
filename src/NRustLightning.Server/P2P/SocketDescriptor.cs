@@ -100,8 +100,8 @@ namespace NRustLightning.Server.P2P
             };
         }
 
-        public ref SendData SendData => ref sendData;
+        public SendData SendData => sendData;
 
-        public ref DisconnectSocket DisconnectSocket => ref disconnectSocket;
+        public DisconnectSocket DisconnectSocket => disconnectSocket;
     }
 }

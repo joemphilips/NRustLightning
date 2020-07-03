@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Net;
+using NBitcoin;
 
 namespace NRustLightning.Server.Configuration
 {
@@ -21,5 +22,8 @@ namespace NRustLightning.Server.Configuration
         public static int DefaultHttpsPort = 443;
         public static string DefaultP2PExternalIpStr = $"{DefaultP2PHost}:{DefaultP2PPort}";
         public static IPEndPoint DefaultP2PExternalIp = IPEndPoint.Parse($"{DefaultP2PHost}:{DefaultP2PPort}");
+        public static string DefaultNBXplorerCookieFile (NetworkType network) => $"{HomePath}/.nbxplorer/{network}/.cookie";
+
+        public static string DefaultNBXplorerUri = "http://127.0.0.1:4774";
     }
 }

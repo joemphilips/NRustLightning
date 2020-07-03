@@ -45,9 +45,10 @@ namespace NRustLightning.Server.Configuration
             var dict = new Dictionary<string, string>();
             foreach (var op in CommandLine.GetOptions())
             {
-                var s = op.Name.Replace(".", ":");
+                var s = op.Name.Replace(".", ":").Replace("_", "");
                 var v = commandline.CommandResult.ValueForOption<object>(op.Name);
-                if (v != null){
+                if (v != null)
+                {
                     dict.Add(s, v.ToString());
                 }
             }

@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.IO;
 using System.Linq;
 using DotNetLightning.Serialize;
 using DotNetLightning.Utils;
@@ -8,6 +9,7 @@ using NBitcoin.DataEncoders;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
 using NRustLightning.Tests.Utils;
+using NRustLightning.Utils;
 using Xunit;
 using Xunit.Abstractions;
 using Network = NRustLightning.Adaptors.Network;
@@ -41,13 +43,14 @@ namespace NRustLightning.Tests
             var logger = new TestLogger();
             var broadcaster = new TestBroadcaster();
             var feeEstiamtor = new TestFeeEstimator();
-            var chainWatchInterface = new TestChainWatchInterface();
+            var n = NBitcoin.Network.TestNet;
+            
+            var chainWatchInterface = new ChainWatchInterfaceUtil(n);
             var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
-            var n = Network.TestNet;
             var ourNodeSecret = _keys[0].ToBytes();
             var peerManager =
                 PeerManager.Create(
-                    seed, in n, in TestUserConfig.Default, chainWatchInterface, broadcaster, logger, feeEstiamtor, 400000, ourNodeSecret
+                    seed, n, in TestUserConfig.Default, chainWatchInterface, broadcaster, logger, feeEstiamtor, 400000, ourNodeSecret
                     );
             return peerManager;
         }
@@ -100,6 +103,17 @@ namespace NRustLightning.Tests
             var e = Assert.Throws<FFIException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
             Assert.Equal("FFI against rust-lightning failed (InternalError), Error: AllFailedRetrySafe([No channel available with first hop!])", e.Message);
 
+            peerMan.Dispose();
+        }
+
+        [Fact]
+        public void CanCallBLockNotifierThroughPeerManager()
+        {
+            var peerMan = getTestPeerManager();
+            var block = NBitcoin.Block.Parse(File.ReadAllText(Path.Join("Data", "block-testnet-828575.txt")), NBitcoin.Network.TestNet);
+            peerMan.BlockNotifier.BlockConnected(block, 400001);
+            peerMan.BlockNotifier.BlockConnected(block, 400003);
+            peerMan.BlockNotifier.BlockDisconnected(block.Header, 400001);
             peerMan.Dispose();
         }
     }
