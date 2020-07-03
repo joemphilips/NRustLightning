@@ -32,6 +32,21 @@ namespace NRustLightning
         public static ChannelManager Create(
             Span<byte> seed,
             NBitcoin.Network nbitcoinNetwork,
+            IUserConfigProvider config,
+            IChainWatchInterface chainWatchInterface,
+            ILogger logger,
+            IBroadcaster broadcaster,
+            IFeeEstimator feeEstimator,
+            ulong currentBlockHeight
+        )
+        {
+            var c = config.GetUserConfig();
+            return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
+        }
+
+        public static ChannelManager Create(
+            Span<byte> seed,
+            NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
             ILogger logger,
@@ -105,6 +120,13 @@ namespace NRustLightning
 
             var arr = WithVariableLengthReturnBuffer(pool, func, Handle);
             return ChannelDetails.ParseManyUnsafe(arr);
+        }
+
+        public void CreateChannel(PubKey theirNetworkKey, ulong channelValueSatoshis, ulong pushMSat, ulong userId,
+            IUserConfigProvider overrideConfig)
+        {
+            var c = overrideConfig.GetUserConfig();
+            CreateChannel(theirNetworkKey, channelValueSatoshis, pushMSat, userId, in c);
         }
 
         public unsafe void CreateChannel(PubKey theirNetworkKey, ulong channelValueSatoshis, ulong pushMSat, ulong userId, in UserConfig overrideConfig)

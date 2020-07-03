@@ -43,6 +43,23 @@ namespace NRustLightning
         public static PeerManager Create(
             Span<byte> seed,
             NBitcoin.Network nbitcoinNetwork,
+            IUserConfigProvider config,
+            IChainWatchInterface chainWatchInterface,
+            IBroadcaster broadcaster,
+            ILogger logger,
+            IFeeEstimator feeEstimator,
+            uint currentBlockHeight,
+            Span<byte> ourNodeSecret,
+            int tickIntervalMSec = 30000
+        )
+        {
+            var c = config.GetUserConfig();
+            return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, broadcaster, logger, feeEstimator, currentBlockHeight, ourNodeSecret, tickIntervalMSec);
+        }
+
+        public static PeerManager Create(
+            Span<byte> seed,
+            NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
             IBroadcaster broadcaster,
