@@ -86,23 +86,6 @@ namespace NRustLightning.Server.Tests
             var featureBit2 = JsonSerializer.Deserialize<FeatureBit>(j, opts);
             Assert.Equal(featureBit, featureBit2);
         }
-
-        [Fact]
-        public void ClientJsonSerializeTests()
-        {
-            var featureBit = FeatureBit.TryParse("0b000000100100000100000000").ResultValue;
-            var channelDetails = new ChannelDetails(
-                uint256.Parse("4141414141414141414141414141414141414141414141414141414141414142"),
-                FSharpOption<ulong>.Some(10), 
-                new PubKey("02aca35d6de21baefaf65db590611fabd42ed4d52683c36caff58761d309314f65"), 
-                featureBit,
-                1000,
-                100,
-                100,
-                100,
-                true
-                );
-        }
         
         [Fact]
         public async Task CanGetNewInvoice()
