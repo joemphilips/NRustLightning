@@ -110,7 +110,7 @@ namespace NRustLightning.Tests
         public void CanCallBLockNotifierThroughPeerManager()
         {
             var peerMan = getTestPeerManager();
-            var block = NBitcoin.Block.Parse(File.ReadAllText("Data/block-testnet-828575.txt"), NBitcoin.Network.TestNet);
+            var block = NBitcoin.Block.Parse(File.ReadAllText(Path.Join("Data", "block-testnet-828575.txt")), NBitcoin.Network.TestNet);
             peerMan.BlockNotifier.BlockConnected(block, 400001);
             peerMan.BlockNotifier.BlockConnected(block, 400003);
             peerMan.BlockNotifier.BlockDisconnected(block.Header, 400001);
