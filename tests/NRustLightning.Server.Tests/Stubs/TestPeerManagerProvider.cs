@@ -28,7 +28,7 @@ namespace NRustLightning.Server.Tests.Stubs
             var conf = config.Value.RustLightningConfig;
             var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
             _peerManager = 
-                PeerManager.Create(seed.AsSpan(), n, in conf, chainWatchInterface, broadcaster, logger, feeEstimator, 100, keysRepository.GetNodeSecret().ToBytes());
+                PeerManager.Create(seed.AsSpan(), n, conf, chainWatchInterface, broadcaster, logger, feeEstimator, 100, keysRepository.GetNodeSecret().ToBytes());
         }
         
         public PeerManager? TryGetPeerManager(string cryptoCode)

@@ -53,6 +53,11 @@ namespace NRustLightning.Server.Controllers
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
             var peerMan = _peerManagerProvider.TryGetPeerManager(n);
+            var ps = peerMan.GetPeerNodeIds(_pool);
+            if (ps.All(p => p != o.TheirNetworkKey))
+            {
+                return BadRequest($"Unknown peer {o.TheirNetworkKey}. Make sure you are already connected to the peer.");
+            }
             var chanMan = peerMan.ChannelManager;
             var maybeConfig = o.OverrideConfig;
             var userId = RandomUtils.GetUInt64();

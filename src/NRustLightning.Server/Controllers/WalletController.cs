@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,15 +19,20 @@ namespace NRustLightning.Server.Controllers
     {
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly IWalletService _walletService;
+        private readonly IPeerManagerProvider _peerManagerProvider;
         private readonly RepositoryProvider _repositoryProvider;
+        private readonly MemoryPool<byte> _pool;
 
         public WalletController(NRustLightningNetworkProvider networkProvider,
-            INBXplorerClientProvider nbXplorerClientProvider, IWalletService walletService,
+            IWalletService walletService,
+            IPeerManagerProvider peerManagerProvider,
             RepositoryProvider repositoryProvider)
         {
             _networkProvider = networkProvider;
             _walletService = walletService;
+            _peerManagerProvider = peerManagerProvider;
             _repositoryProvider = repositoryProvider;
+            _pool = MemoryPool<byte>.Shared;
         }
         
         [HttpGet]
@@ -35,7 +42,10 @@ namespace NRustLightning.Server.Controllers
             var n = _networkProvider.GetByCryptoCode(cryptoCode);
             var derivationStrategy = await _walletService.GetOurDerivationStrategyAsync(n);
             var balance = await _walletService.GetBalanceAsync(n);
-            var resp = new WalletInfo {DerivationStrategy = derivationStrategy, BalanceSatoshis = balance};
+            var outboundCaps = _peerManagerProvider.GetPeerManager(n).ChannelManager.ListChannels(_pool)
+                .Select(c => c.OutboundCapacityMSat).ToArray();
+            var offChainBalance = outboundCaps.Length == 0 ? 0 : outboundCaps.Aggregate((x, acc) => x + acc);
+            var resp = new WalletInfo {DerivationStrategy = derivationStrategy, OnChainBalanceSatoshis = balance, OffChainBalanceMSat = offChainBalance};
             return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);
         }
         

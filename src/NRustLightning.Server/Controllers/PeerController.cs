@@ -1,15 +1,9 @@
-using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Mvc;
-using NBitcoin;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.ModelBinders;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.P2P;
-using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Controllers
 {

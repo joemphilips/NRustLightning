@@ -6,13 +6,16 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using CommandLine;
+using DotNetLightning.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NRustLightning.Adaptors;
+using NRustLightning.Interfaces;
 using NRustLightning.Server.Configuration.SubConfiguration;
 using NRustLightning.Server.Networks;
 using StandardConfiguration;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 using Network = NBitcoin.Network;
 
 namespace NRustLightning.Server.Configuration
@@ -26,7 +29,7 @@ namespace NRustLightning.Server.Configuration
         public string DataDir { get; set; } = Constants.DataDirectoryPath;
         public List<ChainConfiguration> ChainConfiguration { get; } = new List<ChainConfiguration>();
 
-        public UserConfig RustLightningConfig { get; } = UserConfig.GetDefault();
+        public UserConfigObject RustLightningConfig { get; set; } = new UserConfigObject();
         
         
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
@@ -104,7 +107,7 @@ namespace NRustLightning.Server.Configuration
                     chainConfiguration.Rpc = args.ConfigureRPCClient(n, logger);
                     if (chainConfiguration.Rpc.Address.Port == n.NBitcoinNetwork.DefaultPort)
                     {
-                        logger.LogWarning($"{n.CryptoCode}: It seems that the RPC port ({chainConfiguration.Rpc.Address.Port}) is equal to the default P2P port ({n.NBitcoinNetwork.DefaultPort}, this is probably a misconfiguration)");
+                        logger.LogWarning($"{n.CryptoCode}: It seems that the１ RPC port ({chainConfiguration.Rpc.Address.Port}) is equal to the default P2P port ({n.NBitcoinNetwork.DefaultPort}, this is probably a misconfiguration)");
                     }
                     if((chainConfiguration.Rpc.CredentialString.CookieFile != null || chainConfiguration.Rpc.CredentialString.UseDefault) && !n.SupportCookieAuthentication)
                     {
@@ -118,7 +121,8 @@ namespace NRustLightning.Server.Configuration
             var invalidChains = String.Join(',', supportedChains.Where(s => !validChains.Contains(s)));
             if(!string.IsNullOrEmpty(invalidChains))
                 throw new ConfigException($"Invalid chains {invalidChains}");
-            
+
+            config.GetSection("ln").Bind(RustLightningConfig);
             return this;
         }
     }

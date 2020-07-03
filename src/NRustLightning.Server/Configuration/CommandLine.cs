@@ -153,34 +153,92 @@ namespace NRustLightning.Server.Configuration
             
             #region rust-lightning specific options
             var uc = UserConfig.GetDefault();
-            options.Add(new Option("--ln.own_channel_config.minimum_depth", 
+            options.Add(new Option<uint>("--ln.own_channel_config.minimum_depth", 
                 $"Confirmation we will wait for before considering the channel locked in. (default: {uc.OwnChannelConfig.MinimumDepth})")
             {
                 Argument = new Argument<uint> { Arity = ArgumentArity.ZeroOrOne }
             });
-            options.Add(new Option("--ln.own_channel_config.our_to_self_delay", 
+            options.Add(new Option<ushort>("--ln.own_channel_config.our_to_self_delay", 
                 $"Set to the amount of time we require our counterparty to wait to claim their money.  (default: {uc.OwnChannelConfig.OurToSelfDelay})")
             {
                 Argument = new Argument<ushort> { Arity = ArgumentArity.ZeroOrOne }
             });
-            options.Add(new Option("--ln.own_channel_config.our_htlc_minimum_msat", 
+            options.Add(new Option<ulong>("--ln.own_channel_config.our_htlc_minimum_msat", 
                 $"Set to the smallest value HTLC we will accept to process. (default: {uc.OwnChannelConfig.OurHtlcMinimumMsat})")
             {
                 Argument = new Argument<ulong> { Arity = ArgumentArity.ZeroOrOne }
             });
+            
+            
+            options.Add(new Option<ulong>("--ln.peer_channel_config_limits.min_funding_satoshis", $"Minimum allowed satoshis when a channel is funded, this is supplied by the sender and only applies to inbound channels. (default: {uc.PeerChannelConfigLimits.MinFundingSatoshis})")
+            {
+                Argument = new Argument<ulong>() { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option<ulong>("--ln.peer_channel_config_limits.max_htlc_minimum_msat", $"The remote node sets a limit on the minimum size of HTLCs we can send to them. This allows you to limit the maximum minimum-size they can require. (default: {uc.PeerChannelConfigLimits.MaxHtlcMinimumMsat})")
+            {
+                Argument = new Argument<ulong>() { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option<ulong>("--ln.peer_channel_config_limits.min_max_htlc_value_inflight_msat", $"The remote sets a limit on the maximum value of pending HTLCs to the mat any given time to limit their funds exposure to HTLCs. This allows you to set a minimum such value. (default: {uc.PeerChannelConfigLimits.MinMaxHtlcValueInFlightMsat})")
+            {
+                Argument = new Argument<ulong>() { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option<ulong>("--ln.peer_channel_config_limits.max_channel_reserve_satoshis", $"The remote node will require we keep a certain amount in direct payment to ourselves at all time,  ensuring that we are able to be punished if we broadcast an old state. This allows to you limit the amount which will have to keep to ourselves. This allows to you limit the amount which we will have to keep to ourselves (and cannot use for HTLCs.) (default: {uc.PeerChannelConfigLimits.MinMaxAcceptedHtlcs})" )
+            {
+                Argument = new Argument<ulong>() { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option<ushort>("--ln.peer_channel_config_limits.min_max_accepted_htlcs", $"The remote node sets a limit on the maximum number of pending HTLCs to them at any given time. This allows you to set a minimum such value. (default: {uc.PeerChannelConfigLimits.MinMaxAcceptedHtlcs})" )
+            {
+                Argument = new Argument<ushort>() { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option<ulong>("--ln.peer_channel_config_limits.min_dust_limit_satoshis", $@"Outputs below a certain value will not be added to on-chain txs. The dust value is required to always be higher than this value so this only applies to HTLC outputs (and potentially to-self outputs before any payments have been made
+thus, htlcs below this amount plus htlc transaction fees are not enforceable on-chain.
+this setting allows you to set a minimum dust limit for their commitment transactions,
+reflecting the reality that tiny outputs are not considered standard transactions and will
+not propagate through the Bitcoin network.
+(default: {uc.PeerChannelConfigLimits.MinDustLimitSatoshis})")
+            {
+                Argument = new Argument<ulong>() { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option<ulong>("--ln.peer_channel_config_limits.max_dust_limit_satoshis", $@"Maximum allowed threshold above which outputs will not be generated in their commitment
+transactions.
+HTLCs below this amount plus HTLC transaction fees are not enforceable on-chain.
+(default: {uc.PeerChannelConfigLimits.MaxDustLimitSatoshis})")
+            {
+                Argument = new Argument<ulong>() { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option<uint>("--ln.peer_channel_config_limits.max_minimum_depth", $@"Before a channel is usable the funding transaction will need to be confirmed by at least a
+certain number of blocks, specified by the node which is not the funder (as the funder can
+assume they aren't going to double-spend themselves).
+This config allows you to set a limit on the maximum amount of time to wait.
+(default: {uc.PeerChannelConfigLimits.MaxMinimumDepth})")
+            {
+                Argument = new Argument<uint>() { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option<bool>("--ln.peer_channel_config_limits.force_announced_channel_preference", $"Set to force the incoming channel to match our announced channel preference in ChannelConfig (default: {uc.PeerChannelConfigLimits.ForceAnnouncedChannelPreference})")
+            {
+                Argument = new Argument<bool> { Arity = ArgumentArity.ZeroOrOne }
+            });
+            options.Add(new Option<ushort>("--ln.peer_channel_config_limits.their_to_self_delay", $@"Set to the amount of time we're willing to wait to claim money back to us.
+Not checking this value would be a security issue, as our peer would be able to set it to
+max relative lock-time (a year) and we would 'lose' money as it would be locked for a long time.
+(default: {uc.PeerChannelConfigLimits.TheirToSelfDelay})")
+            {
+                Argument = new Argument<ushort> { Arity = ArgumentArity.ZeroOrOne }
+            });
+            
 
-            options.Add(new Option("--ln.channel_options.fee_proportional_millionths", 
+            options.Add(new Option<uint>("--ln.channel_options.fee_proportional_millionths", 
                 $"Amount (in millionths of satoshi) our channels will charge per transferred satoshi (default: {uc.ChannelOptions.FeeProportionalMillionths})")
             {
                 Argument = new Argument<uint> { Arity = ArgumentArity.ZeroOrOne }
             });
-            options.Add(new Option("--ln.channel_options.announced_channel", 
-                $"Set this to announce the channel publicly and notify all nodes that they can route via our channels. (default: {uc.ChannelOptions.AnnouncedChannel == 1})")
+            options.Add(new Option<bool>("--ln.channel_options.announced_channel", 
+                $"Set this to announce the channel publicly and notify all nodes that they can route via our channels. (default: {uc.ChannelOptions.AnnouncedChannel})")
             {
-                Argument = new Argument<bool> { Arity = ArgumentArity.Zero }
+                Argument = new Argument<bool>{ Arity = ArgumentArity.ZeroOrOne }
             });
             options.Add(new Option("--ln.channel_options.commit_upfront_shutdown_pubkey", 
-                $"When set, we commit to an upfront shutdown_pubkey at channel open. (default: {uc.ChannelOptions.CommitUpfrontShutdownPubkey == 1})")
+                $"When set, we commit to an upfront shutdown_pubkey at channel open. (default: {uc.ChannelOptions.CommitUpfrontShutdownPubkey})")
             {
                 Argument = new Argument<bool> { Arity = ArgumentArity.ZeroOrOne }
             });

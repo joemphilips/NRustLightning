@@ -81,7 +81,7 @@ namespace NRustLightning.Server.Services
 
         public async Task<Transaction> GetSendingTxAsync(BitcoinAddress destination, Money amount, NRustLightningNetwork network, CancellationToken cancellationToken = default)
         {
-            var deriv = await GetOurDerivationStrategyAsync(network, cancellationToken);
+            var deriv = await GetOurDerivationStrategyAsync(network, cancellationToken).ConfigureAwait(false);
             var nbXplorerClient = _nbXplorerClientProvider.GetClient(network);
             var req = new CreatePSBTRequest()
             {

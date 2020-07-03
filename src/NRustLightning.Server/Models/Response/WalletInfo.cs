@@ -8,6 +8,7 @@ namespace NRustLightning.Server.Models.Response
     {
         public DerivationStrategyBase DerivationStrategy { get; set; }
         
-        public long BalanceSatoshis { get; set; }
+        public long OnChainBalanceSatoshis { get; set; }
+        public ulong OffChainBalanceMSat { get; set; }
     }
 }

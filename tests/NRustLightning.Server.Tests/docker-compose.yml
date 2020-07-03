@@ -157,6 +157,7 @@ services:
       - --httpport=8080
       - --externalip="nrustlightning:9735"
       - --nbx.rpcurl="http://nbxplorer:${NBXPLORER_PORT}"
+      - --ln.channel_options.announced_channel=true
     ports:
       - "${HTTP_PORT:?no_http_port_set}:8080"
     expose:

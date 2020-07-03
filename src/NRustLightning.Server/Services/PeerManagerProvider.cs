@@ -36,7 +36,7 @@ namespace NRustLightning.Server.Services
                 RandomUtils.GetBytes(seed);
                 var nbitcoinNetwork = n.NBitcoinNetwork;
                 var conf = config.Value.RustLightningConfig;
-                var peerMan = PeerManager.Create(seed.AsSpan(), nbitcoinNetwork, in conf, chainWatchInterface, b, logger, feeEst, 400000, keysRepository.GetNodeSecret().ToBytes());
+                var peerMan = PeerManager.Create(seed.AsSpan(), nbitcoinNetwork, conf, chainWatchInterface, b, logger, feeEst, 400000, keysRepository.GetNodeSecret().ToBytes());
                 _peerManagers.Add(n.CryptoCode, peerMan);
             }
         }

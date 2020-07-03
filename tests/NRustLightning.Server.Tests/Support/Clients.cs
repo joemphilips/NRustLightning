@@ -40,7 +40,7 @@ namespace NRustLightning.Server.Tests.Support
 
         public async Task PrepareFunds()
         {
-            var nrlBalance = (await NRustLightningHttpClient.GetWalletInfoAsync()).BalanceSatoshis;
+            var nrlBalance = (await NRustLightningHttpClient.GetWalletInfoAsync()).OnChainBalanceSatoshis;
             if (nrlBalance > 0)
             {
                 return;
