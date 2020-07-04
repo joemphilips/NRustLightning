@@ -10,6 +10,7 @@ using BTCPayServer.Lightning.LND;
 using DockerComposeFixture;
 using DockerComposeFixture.Compose;
 using DockerComposeFixture.Exceptions;
+using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Tests.Support;
@@ -186,7 +187,11 @@ namespace NRustLightning.Server.Tests
             // await outboundChannelCloseRoundtrip.Invoke(clients.ClightningLNClient);
             await InboundChannelOpenRoundtrip(clients, clients.LndClient);
             // await inboundChannelOpenRoundtrip.Invoke(clients.CLightningClient);
-            
+
+            // ---- payment tests ----
+            var resp = await clients.NRustLightningHttpClient.GetInvoiceAsync(new InvoiceCreationOption() { Amount = LNMoney.MilliSatoshis(100L), Description = "foo bar" });
+            var payResp = await clients.LndLNClient.Pay(resp.Invoice.ToString());
+            Assert.Equal(PayResult.Ok,payResp.Result);
         }
         
         [Fact]
