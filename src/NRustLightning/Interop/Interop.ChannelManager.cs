@@ -250,6 +250,16 @@ namespace NRustLightning
             bool check = true)
             => MaybeCheck(_get_and_clear_pending_events(handle, bufOut, bufLen, out actualBufLen), check);
         
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "serialize_channel_manager",
+            ExactSpelling = true)]
+        static extern FFIResult _serialize_channel_manager(IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualBufLen, ChannelManagerHandle handle);
+
+        internal static FFIResult serialize_channel_manager(IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualBufLen, ChannelManagerHandle handle,
+            bool check = true)
+            => MaybeCheck(_serialize_channel_manager(bufOut, bufLen, out actualBufLen, handle), check);
+        
 
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,
