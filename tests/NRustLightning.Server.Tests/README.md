@@ -27,6 +27,8 @@ there is a script for using rpc in docker-compose easily those are...
 * `./docker-lnd-cli.sh`
 
 Which is just a proxy for cli runner for each daemon.
+ 
+More high level facades are included in `cliutils/` subfolder.
 
 
 ## CI
