@@ -116,6 +116,7 @@ services:
     environment:
       EXPOSE_TCP: "true"
       LIGHTNINGD_NETWORK: regtest
+      LIGHTNINGD_VERSION: master
     command:
       - --network=regtest
       - --addr=lightningd:9735
