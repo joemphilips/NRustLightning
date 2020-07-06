@@ -182,11 +182,11 @@ namespace NRustLightning.Server.Tests
             Assert.Equal(NBitcoin.Money.Satoshis(walletInfo.OnChainBalanceSatoshis), explorerInfo.Total);
 
             await OutBoundChannelOpenRoundtrip(clients, clients.LndLNClient);
-            // await outBoundChannelOpenRoundtrip.Invoke(clients.CLightningClient);
+            // await OutBoundChannelOpenRoundtrip(clients, clients.CLightningClient);
             await OutboundChannelCloseRoundtrip(clients, clients.LndLNClient);
-            // await outboundChannelCloseRoundtrip.Invoke(clients.ClightningLNClient);
+            // await OutboundChannelCloseRoundtrip(clients, clients.ClightningLNClient);
             await InboundChannelOpenRoundtrip(clients, clients.LndClient);
-            // await inboundChannelOpenRoundtrip.Invoke(clients.CLightningClient);
+            await InboundChannelOpenRoundtrip(clients, clients.CLightningClient);
 
             // ---- payment tests ----
             var resp = await clients.NRustLightningHttpClient.GetInvoiceAsync(new InvoiceCreationOption() { Amount = LNMoney.MilliSatoshis(100L), Description = "foo bar" });
