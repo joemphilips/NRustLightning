@@ -20,6 +20,15 @@ docker-compose up
 docker-compose down -v --remove-orphans
 ```
 
+there is a script for using rpc in docker-compose easily those are...
+
+* `./docker-bitcoin-cli.sh`
+* `./docker-lightning-cli.sh`
+* `./docker-lnd-cli.sh`
+
+Which is just a proxy for cli runner for each daemon.
+
+
 ## CI
 
 We wanted to run this test in CI. But lnd behaves wanky and it returns code 500 sometimes, so we are not doing CI for now.
