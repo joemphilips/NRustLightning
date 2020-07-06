@@ -57,7 +57,7 @@ RUN wget -q https://gmplib.org/download/gmp/gmp-6.1.2.tar.xz \
 && make \
 && make install && cd .. && rm gmp-6.1.2.tar.xz && rm -rf gmp-6.1.2
 
-ARG LIGHTNINGD_VERSION=master
+ARG LIGHTNINGD_VERSION=master-dev
 WORKDIR /opt
 RUN git clone --quiet --depth 1 --recursive --single-branch --branch ${LIGHTNINGD_VERSION} https://github.com/joemphilips/lightning
 WORKDIR /opt/lightning
