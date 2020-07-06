@@ -1,9 +1,11 @@
+using System.Threading.Channels;
 using DotNetLightning.Utils;
 using LSATAuthenticationHandler;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NBitcoin;
 using NRustLightning.Server.Configuration;
+using NRustLightning.Server.Entities;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Middlewares;
 using NRustLightning.Server.Networks;
@@ -30,6 +32,7 @@ namespace NRustLightning.Server
             services.AddSingleton<IPeerManagerProvider, PeerManagerProvider>();
             services.AddTransient<RequestResponseLoggingMiddleware>();
             services.AddHostedService<NBXplorerListeners>();
+            services.AddSingleton<ChannelProvider>();
             services.AddHostedService<RustLightningEventReactors>();
         }
 

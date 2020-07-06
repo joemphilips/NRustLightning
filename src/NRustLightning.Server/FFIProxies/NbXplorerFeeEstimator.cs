@@ -1,59 +1,73 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NBitcoin;
 using NBXplorer;
 using NBXplorer.Models;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
+using NRustLightning.Server.Entities;
 
 namespace NRustLightning.Server.FFIProxies
 {
     public class NbXplorerFeeEstimator : IFeeEstimator
     {
-        private readonly ExplorerClient _client;
         private readonly ILogger<NbXplorerFeeEstimator> _logger;
-        private int _cachedFee = 1000;
-        private uint CachedFee{ get => (uint)_cachedFee; set => Interlocked.Exchange(ref _cachedFee, (int)value); }
-        public NbXplorerFeeEstimator(ExplorerClient client, ILogger<NbXplorerFeeEstimator> logger)
+        private readonly ChannelReader<FeeRateSet> _feeRateReader;
+
+        private object _feerateSetLock = new object();
+        private FeeRateSet _cachedFeeRateSet = new FeeRateSet() { HighPriority = new FeeRate(20m), Normal = new FeeRate(10m), Background = new FeeRate(5m)};
+
+        private FeeRateSet CachedFeeRateSet
         {
-            _client = client ?? throw new ArgumentNullException(nameof(client));
-            _logger = logger;
+            get => _cachedFeeRateSet;
+            set
+            {
+                lock (_feerateSetLock)
+                {
+                    _cachedFeeRateSet = value;
+                }
+            }
         }
+
+        private Task _task;
+        public NbXplorerFeeEstimator(ILogger<NbXplorerFeeEstimator> logger, ChannelReader<FeeRateSet> feeRateReader)
+        {
+            _logger = logger;
+            _feeRateReader = feeRateReader;
+            _task = Task.Run(async () => await GetAndSetFee());
+        }
+
+        private async Task GetAndSetFee()
+        {
+            while (await _feeRateReader.WaitToReadAsync())
+            {
+                CachedFeeRateSet = await _feeRateReader.ReadAsync();
+            }
+        }
+        
         public uint GetEstSatPer1000Weight(FFIConfirmationTarget target)
         {
-            var blockCountTarget =
-                target switch
-                {
-                    FFIConfirmationTarget.Background => 30,
-                    FFIConfirmationTarget.Normal => 6,
-                    FFIConfirmationTarget.HighPriority => 1,
-                    _ => throw new Exception("Unreachable!")
-                };
-            GetFeeRateResult resp;
-            try
-            {
-                resp = _client.GetFeeRate(blockCountTarget);
-            }
-            catch (NBXplorerException ex)
-            {
-                _logger.LogError($"Failed to estimate fee by nbxplorer: \"{ex.Message}\"");
-                _logger.LogWarning($"So we are using fallback fee {_cachedFee}");
-                return CachedFee;
-            }
-
             // RL assumes fees for 1000 *weight-units* which is 4 times smaller than that of 1000 *virtual bytes*
             var virtualSize = 250;
-            var newFee = (uint)resp.FeeRate.GetFee(virtualSize).Satoshi;
-            CachedFee = newFee;
+            var feeRate = (uint)(target switch
+            {
+                FFIConfirmationTarget.Background => CachedFeeRateSet.Background.GetFee(virtualSize).Satoshi,
+                FFIConfirmationTarget.Normal => CachedFeeRateSet.Normal.GetFee(virtualSize).Satoshi,
+                FFIConfirmationTarget.HighPriority => CachedFeeRateSet.HighPriority.GetFee(virtualSize).Satoshi,
+                _ => throw new Exception($"Unknown target type {target}")
+            });
 #if DEBUG
             // dirty hack to avoid nasty feerate mismatch in regtest.
             return
-                target == FFIConfirmationTarget.HighPriority ? CachedFee * 20u :
-                target == FFIConfirmationTarget.Background ? CachedFee / 2u :
-                CachedFee;
+                target == FFIConfirmationTarget.HighPriority ? feeRate * 20u :
+                target == FFIConfirmationTarget.Background ? feeRate / 2u :
+                feeRate;
 #else
-            return CachedFee;
+            return feeRate;
 #endif
         }
     }

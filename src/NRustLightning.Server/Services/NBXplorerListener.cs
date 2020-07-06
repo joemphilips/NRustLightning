@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBXplorer;
 using NBXplorer.Models;
+using NRustLightning.Server.Entities;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Networks;
 
@@ -21,7 +22,8 @@ namespace NRustLightning.Server.Services
     {
         private Dictionary<string, NBXplorerListener> _listeners = new Dictionary<string, NBXplorerListener>();
         
-        public NBXplorerListeners(NRustLightningNetworkProvider networkProvider, INBXplorerClientProvider clientProvider, IPeerManagerProvider peerManagerProvider, ILoggerFactory loggerFactory)
+        public NBXplorerListeners(NRustLightningNetworkProvider networkProvider, INBXplorerClientProvider clientProvider, IPeerManagerProvider peerManagerProvider, ILoggerFactory loggerFactory,
+            ChannelProvider channelProvider)
         {
             foreach (var n in networkProvider.GetAll())
             {
@@ -29,7 +31,7 @@ namespace NRustLightning.Server.Services
                 var peerMan = peerManagerProvider.TryGetPeerManager(n);
                 if (cli != null && peerMan != null)
                 {
-                    var listener = new NBXplorerListener(cli, peerMan, loggerFactory.CreateLogger<NBXplorerListener>());
+                    var listener = new NBXplorerListener(cli, peerMan, loggerFactory.CreateLogger<NBXplorerListener>(), channelProvider.GetFeeRateChannel(n).Writer);
                     _listeners.TryAdd(n.CryptoCode, listener);
                 }
             }
@@ -49,13 +51,16 @@ namespace NRustLightning.Server.Services
         private readonly ExplorerClient _explorerClient;
         private readonly PeerManager _peerManager;
         private readonly ILogger<NBXplorerListener> _logger;
+        private readonly ChannelWriter<FeeRateSet> _feeRateWriter;
         private long lastEventId = 0;
 
-        public NBXplorerListener(ExplorerClient explorerClient, PeerManager peerManager, ILogger<NBXplorerListener> logger)
+        public NBXplorerListener(ExplorerClient explorerClient, PeerManager peerManager, ILogger<NBXplorerListener> logger,
+            ChannelWriter<FeeRateSet> feeRateWriter)
         {
             _explorerClient = explorerClient;
             _peerManager = peerManager;
             _logger = logger;
+            _feeRateWriter = feeRateWriter;
         }
         
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -82,6 +87,18 @@ namespace NRustLightning.Server.Services
                         var newBlock = await client.RPCClient.GetBlockAsync(e.Hash).ConfigureAwait(false);
                         _peerManager.BlockNotifier.BlockConnected(newBlock, (uint) e.Height);
                         lastEventId = e.EventId > lastEventId ? e.EventId : lastEventId;
+                    }
+
+                    try
+                    {
+                        var h = await _explorerClient.GetFeeRateAsync(FeeRateSet.HighPriorityBlockCount, stoppingToken);
+                        var n = await _explorerClient.GetFeeRateAsync(FeeRateSet.NormalBlockCount, stoppingToken);
+                        var b = await _explorerClient.GetFeeRateAsync(FeeRateSet.BackgroundBlockCount, stoppingToken);
+                        _feeRateWriter.TryWrite(new FeeRateSet() { HighPriority = h.FeeRate, Normal =  n.FeeRate, Background = b.FeeRate});
+                    }
+                    catch (NBXplorerException ex)
+                    {
+                        _logger.LogError($"Failed to estimate fee by nbxplorer: \"{ex.Message}\"");
                     }
 
                     // nbx does not return blocks aligned with eventId(i.e. sometimes block height will decrease when
