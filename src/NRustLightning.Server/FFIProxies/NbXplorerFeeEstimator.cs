@@ -43,6 +43,7 @@ namespace NRustLightning.Server.FFIProxies
 
         private async Task GetAndSetFee()
         {
+            await Task.Yield();
             while (await _feeRateReader.WaitToReadAsync())
             {
                 CachedFeeRateSet = await _feeRateReader.ReadAsync();

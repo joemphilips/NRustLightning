@@ -33,7 +33,6 @@ RUN mkdir /opt/bitcoin && cd /opt/bitcoin \
 
 FROM debian:stretch-slim as builder
 
-ENV LIGHTNINGD_VERSION=master
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates autoconf automake build-essential git libtool python3 python3-mako wget gnupg dirmngr git gettext
 
 RUN wget -q https://zlib.net/zlib-1.2.11.tar.gz \
@@ -58,7 +57,7 @@ RUN wget -q https://gmplib.org/download/gmp/gmp-6.1.2.tar.xz \
 && make \
 && make install && cd .. && rm gmp-6.1.2.tar.xz && rm -rf gmp-6.1.2
 
-ARG LIGHTNINGD_VERSION=v0.8.2.1
+ARG LIGHTNINGD_VERSION=master
 WORKDIR /opt
 RUN git clone --quiet --depth 1 --recursive --single-branch --branch ${LIGHTNINGD_VERSION} https://github.com/joemphilips/lightning
 WORKDIR /opt/lightning
