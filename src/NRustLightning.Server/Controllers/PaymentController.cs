@@ -48,6 +48,7 @@ namespace NRustLightning.Server.Controllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status400BadRequest)] // When Invoice is malformed, or there was no path
         [ProducesResponseType(StatusCodes.Status500InternalServerError)] // When payment failed
+        [Route("{cryptoCode}/pay/{bolt11Invoice}")]
         public async Task<IActionResult> Pay(string cryptoCode, string bolt11Invoice)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode);
