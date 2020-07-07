@@ -22,7 +22,7 @@ type ChannelDetails = {
 }
     with
     static member Deserialize(ls: LightningReaderStream) =
-        let channelId = ls.ReadUInt256(false)
+        let channelId = ls.ReadUInt256(true)
         let shortChannelId = ls.ReadOption() |> Option.map(fun x -> UInt64.FromSpan (x.AsSpan(), false))
         {
             ChannelId = channelId
