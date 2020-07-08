@@ -103,7 +103,7 @@ namespace NRustLightning
                         (IntPtr)secretPtr,
                         out var handle
                         );
-                    return new PeerManager(handle, chanMan, blockNotifier, tickIntervalMSec,new object[]{ chainWatchInterfaceDelegatesHolder, broadcasterDelegatesHolder, loggerDelegatesHolder, feeEstimatorDelegatesHolder, });
+                    return new PeerManager(handle, chanMan, blockNotifier, tickIntervalMSec,new object[]{ chainWatchInterfaceDelegatesHolder, keysInterfaceDelegatesHolder, broadcasterDelegatesHolder, loggerDelegatesHolder, feeEstimatorDelegatesHolder, });
                 }
             }
         }

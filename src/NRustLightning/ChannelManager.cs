@@ -110,7 +110,7 @@ namespace NRustLightning
                         feeEstimatorDelegatesHolder.getEstSatPer1000Weight,
                         currentBlockHeight,
                         out var handle);
-                    return new ChannelManager(handle, new object[] {chainWatchInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder});
+                    return new ChannelManager(handle, new object[] {chainWatchInterfaceDelegatesHolder, keysInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder});
                 }
             }
         }
