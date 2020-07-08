@@ -30,10 +30,10 @@ namespace NRustLightning
         }
 
         public static ChannelManager Create(
-            Span<byte> seed,
             NBitcoin.Network nbitcoinNetwork,
             IUserConfigProvider config,
             IChainWatchInterface chainWatchInterface,
+            IKeysInterface keysInterface,
             ILogger logger,
             IBroadcaster broadcaster,
             IFeeEstimator feeEstimator,
@@ -41,14 +41,14 @@ namespace NRustLightning
         )
         {
             var c = config.GetUserConfig();
-            return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
+            return Create(nbitcoinNetwork, in c, chainWatchInterface, keysInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
         }
 
         public static ChannelManager Create(
-            Span<byte> seed,
             NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
+            IKeysInterface keysInterface,
             ILogger logger,
             IBroadcaster broadcaster,
             IFeeEstimator feeEstimator,
@@ -57,14 +57,15 @@ namespace NRustLightning
         {
             
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            var keysInterfaceDelegatesHolder = new KeysInterfaceDelegatesHolder(keysInterface);
             var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
             var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
             var feeEstimatorDelegatesHolder = new FeeEstimatorDelegatesHolder(feeEstimator);
             return Create(
-                seed,
                 nbitcoinNetwork,
                 in config,
                 chainWatchInterfaceDelegatesHolder,
+                keysInterfaceDelegatesHolder,
                 loggerDelegatesHolder,
                 broadcasterDelegatesHolder,
                 feeEstimatorDelegatesHolder,
@@ -72,25 +73,22 @@ namespace NRustLightning
                 );
         }
         internal static ChannelManager Create(
-            Span<byte> seed,
             NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
+            KeysInterfaceDelegatesHolder keysInterfaceDelegatesHolder,
             ILoggerDelegatesHolder loggerDelegatesHolder,
             IBroadcasterDelegatesHolder broadcasterDelegatesHolder,
             IFeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder,
             ulong currentBlockHeight
             )
         {
-            Errors.AssertDataLength(nameof(seed), seed.Length, 32);
             var n = nbitcoinNetwork.ToFFINetwork();
             unsafe
             {
-                fixed (byte* b = seed)
                 fixed (UserConfig* configPtr = &config)
                 {
                     Interop.create_ffi_channel_manager(
-                        (IntPtr)b,
                         in n,
                         configPtr,
                         chainWatchInterfaceDelegatesHolder.InstallWatchTx,
@@ -99,6 +97,14 @@ namespace NRustLightning
                         chainWatchInterfaceDelegatesHolder.GetChainUtxo,
                         chainWatchInterfaceDelegatesHolder.FilterBlock,
                         chainWatchInterfaceDelegatesHolder.ReEntered,
+                        
+                        keysInterfaceDelegatesHolder.GetNodeSecret,
+                        keysInterfaceDelegatesHolder.GetDestinationScript,
+                        keysInterfaceDelegatesHolder.GetShutdownKey,
+                        keysInterfaceDelegatesHolder.GetChannelKeys,
+                        keysInterfaceDelegatesHolder.GetOnionRand,
+                        keysInterfaceDelegatesHolder.GetChannelId,
+                        
                         broadcasterDelegatesHolder.BroadcastTransaction,
                         loggerDelegatesHolder.Log,
                         feeEstimatorDelegatesHolder.getEstSatPer1000Weight,
@@ -156,7 +162,7 @@ namespace NRustLightning
         public unsafe void CloseChannel(uint256 channelId)
         {
             if (channelId == null) throw new ArgumentNullException(nameof(channelId));
-            var bytes = channelId.ToBytes(false);
+            var bytes = channelId.ToBytes();
             fixed (byte* b = bytes)
             {
                 Interop.close_channel((IntPtr)b, Handle);

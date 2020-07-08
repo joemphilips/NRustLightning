@@ -1,5 +1,6 @@
 using DotNetLightning.Payment;
 using NBitcoin;
+using NRustLightning.Interfaces;
 using NRustLightning.Server.Repository;
 
 namespace NRustLightning.Server.Interfaces
@@ -10,6 +11,7 @@ namespace NRustLightning.Server.Interfaces
         PubKey GetNodeId();
 
         RepositorySerializer Serializer { get; set; }
+        IKeysInterface GetKeysInterface(byte[] seed);
     }
     
     public class KeysRepoMessageSigner : IMessageSigner

@@ -19,7 +19,6 @@ namespace NRustLightning
             EntryPoint = "create_channel_manager",
             ExactSpelling = true)]
         private static unsafe extern FFIResult _create_ffi_channel_manager(
-            IntPtr seed,
             in Network n,
             UserConfig* config,
             
@@ -30,6 +29,13 @@ namespace NRustLightning
             ref FilterBlock filterBlock,
             ref ReEntered reEntered,
             
+            ref GetNodeSecret getNodeSecret,
+            ref GetDestinationScript getDestinationScript,
+            ref GetShutdownKey getShutdownKey,
+            ref GetChannelKeys getChannelKeys,
+            ref GetOnionRand getOnionRand,
+            ref GetChannelId getChannelId,
+            
             ref BroadcastTransaction broadcastTransaction,
             ref Log log,
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
@@ -38,7 +44,6 @@ namespace NRustLightning
             );
 
         internal static unsafe FFIResult create_ffi_channel_manager(
-            IntPtr seed,
             in Network n,
             UserConfig* config,
             
@@ -49,6 +54,13 @@ namespace NRustLightning
             FilterBlock filterBlock,
             ReEntered reEntered,
             
+            GetNodeSecret getNodeSecret,
+            GetDestinationScript getDestinationScript,
+            GetShutdownKey getShutdownKey,
+            GetChannelKeys getChannelKeys,
+            GetOnionRand getOnionRand,
+            GetChannelId getChannelId,
+            
             BroadcastTransaction broadcastTransaction,
             Log log,
             GetEstSatPer1000Weight getEstSatPer1000Weight,
@@ -57,7 +69,9 @@ namespace NRustLightning
             bool check = true
         )
         {
-            return MaybeCheck(_create_ffi_channel_manager(seed, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref  reEntered, ref broadcastTransaction,ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
+            return MaybeCheck(_create_ffi_channel_manager(n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref  reEntered,
+                ref getNodeSecret, ref getDestinationScript, ref getShutdownKey, ref getChannelKeys, ref getOnionRand, ref getChannelId,
+                ref broadcastTransaction,ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
         }
         
         [DllImport(RustLightning,

@@ -8,6 +8,7 @@ using NRustLightning.Server.Configuration;
 using NRustLightning.Server.FFIProxies;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Networks;
+using NRustLightning.Utils;
 
 namespace NRustLightning.Server.Tests.Stubs
 {
@@ -27,8 +28,9 @@ namespace NRustLightning.Server.Tests.Stubs
             var n= NBitcoin.Network.RegTest;
             var conf = config.Value.RustLightningConfig;
             var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
+            var keysInterface = new KeysManager(seed, DateTime.UnixEpoch);
             _peerManager = 
-                PeerManager.Create(seed.AsSpan(), n, conf, chainWatchInterface, broadcaster, logger, feeEstimator, 100, keysRepository.GetNodeSecret().ToBytes());
+                PeerManager.Create(seed.AsSpan(), n, conf, chainWatchInterface, keysInterface,  broadcaster, logger, feeEstimator, 100);
         }
         
         public PeerManager? TryGetPeerManager(string cryptoCode)

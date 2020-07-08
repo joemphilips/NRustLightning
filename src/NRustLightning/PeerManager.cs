@@ -45,16 +45,16 @@ namespace NRustLightning
             NBitcoin.Network nbitcoinNetwork,
             IUserConfigProvider config,
             IChainWatchInterface chainWatchInterface,
+            IKeysInterface keysInterface,
             IBroadcaster broadcaster,
             ILogger logger,
             IFeeEstimator feeEstimator,
             uint currentBlockHeight,
-            Span<byte> ourNodeSecret,
             int tickIntervalMSec = 30000
         )
         {
             var c = config.GetUserConfig();
-            return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, broadcaster, logger, feeEstimator, currentBlockHeight, ourNodeSecret, tickIntervalMSec);
+            return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, keysInterface, broadcaster, logger, feeEstimator, currentBlockHeight, tickIntervalMSec);
         }
 
         public static PeerManager Create(
@@ -62,25 +62,24 @@ namespace NRustLightning
             NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
+            IKeysInterface keysInterface,
             IBroadcaster broadcaster,
             ILogger logger,
             IFeeEstimator feeEstimator,
             uint currentBlockHeight,
-            Span<byte> ourNodeSecret,
             int tickIntervalMSec = 30000
             )
         {
-            if (seed.Length != 32) throw new InvalidDataException($"seed must be 32 bytes! it was {seed.Length}");
-            if (ourNodeSecret.Length != 32) throw new InvalidDataException($"ourNodeSecret must be 32 bytes! it was {seed.Length}");
-            var ourNodeId = new NBitcoin.Key(ourNodeSecret.ToArray()).PubKey.ToBytes();
             var network = nbitcoinNetwork.ToFFINetwork();
             
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            var keysInterfaceDelegatesHolder = new KeysInterfaceDelegatesHolder(keysInterface);
             var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
             var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
             var feeEstimatorDelegatesHolder = new FeeEstimatorDelegatesHolder(feeEstimator);
-            
-            var chanMan = ChannelManager.Create(seed, nbitcoinNetwork, in config, chainWatchInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder, currentBlockHeight);
+
+            var ourNodeSecret = keysInterface.GetNodeSecret().ToBytes();
+            var chanMan = ChannelManager.Create(nbitcoinNetwork, in config, chainWatchInterfaceDelegatesHolder, keysInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder, currentBlockHeight);
             var blockNotifier = BlockNotifier.Create(nbitcoinNetwork, loggerDelegatesHolder, chainWatchInterfaceDelegatesHolder);
             blockNotifier.RegisterChannelManager(chanMan);
             unsafe
@@ -88,7 +87,6 @@ namespace NRustLightning
                 fixed (byte* seedPtr = seed)
                 fixed (UserConfig* configPtr = &config)
                 fixed (byte* secretPtr = ourNodeSecret)
-                fixed (byte* pubkeyPtr = ourNodeId)
                 {
                     Interop.create_peer_manager(
                         (IntPtr)seedPtr,
@@ -103,7 +101,6 @@ namespace NRustLightning
                         chainWatchInterfaceDelegatesHolder.ReEntered,
                         loggerDelegatesHolder.Log,
                         (IntPtr)secretPtr,
-                        (IntPtr)pubkeyPtr,
                         out var handle
                         );
                     return new PeerManager(handle, chanMan, blockNotifier, tickIntervalMSec,new object[]{ chainWatchInterfaceDelegatesHolder, broadcasterDelegatesHolder, loggerDelegatesHolder, feeEstimatorDelegatesHolder, });

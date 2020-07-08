@@ -10,6 +10,7 @@
         <Compile Include="StreamExtensions.fs" />
         <Compile Include="Event.fs" />
         <Compile Include="ChannelDetails.fs" />
+        <Compile Include="ChannelKeys.fs" />
     </ItemGroup>
 
     <ItemGroup>

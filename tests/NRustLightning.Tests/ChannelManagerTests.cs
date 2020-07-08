@@ -48,8 +48,9 @@ namespace NRustLightning.Tests
             var feeEstiamtor = new TestFeeEstimator();
             var n = NBitcoin.Network.TestNet;
             var chainWatchInterface = new ChainWatchInterfaceUtil(n);
-            var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
-            var channelManager = ChannelManager.Create(seed, n, in TestUserConfig.Default, chainWatchInterface, logger, broadcaster, feeEstiamtor, 400000);
+            var keySeed = new byte[]{ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 };
+            var keysInterface = new KeysManager(keySeed, DateTime.UnixEpoch);
+            var channelManager = ChannelManager.Create(n, in TestUserConfig.Default, chainWatchInterface, keysInterface, logger, broadcaster, feeEstiamtor, 400000);
             return channelManager;
         }
         

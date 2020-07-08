@@ -186,7 +186,7 @@ namespace NRustLightning.Server.Tests
             await OutboundChannelCloseRoundtrip(clients, clients.LndLNClient);
             // await OutboundChannelCloseRoundtrip(clients, clients.ClightningLNClient);
             await InboundChannelOpenRoundtrip(clients, clients.LndClient);
-            // await InboundChannelOpenRoundtrip(clients, clients.CLightningClient);
+            await InboundChannelOpenRoundtrip(clients, clients.CLightningClient);
 
             // ---- payment tests ----
             var resp = await clients.NRustLightningHttpClient.GetInvoiceAsync(new InvoiceCreationOption() { Amount = LNMoney.MilliSatoshis(100L), Description = "foo bar" });

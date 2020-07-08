@@ -6,8 +6,10 @@ using Microsoft.Extensions.Options;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Protocol;
+using NRustLightning.Interfaces;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Interfaces;
+using NRustLightning.Utils;
 
 namespace NRustLightning.Server.Repository
 {
@@ -28,6 +30,11 @@ namespace NRustLightning.Server.Repository
         }
 
         public RepositorySerializer Serializer { get; set; }
+        public IKeysInterface GetKeysInterface(byte[] seed)
+        {
+            return new KeysManager(seed, DateTime.UtcNow);
+        }
+
         public Key GetNodeSecret() => Secret;
         public PubKey GetNodeId()
         {

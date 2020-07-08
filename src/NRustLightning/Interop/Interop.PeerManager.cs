@@ -26,7 +26,6 @@ namespace NRustLightning
             ref Log log,
             
             IntPtr ourNodeSecret,
-            IntPtr ourNodeId,
             out PeerManagerHandle handle
             );
 
@@ -46,8 +45,6 @@ namespace NRustLightning
             Log log,
             
             IntPtr ourNodeSecret,
-            IntPtr ourNodeId,
-            
             out PeerManagerHandle handle,
             bool check = true
             ) =>
@@ -65,7 +62,6 @@ namespace NRustLightning
                 
                 ref log,
                 ourNodeSecret,
-                ourNodeId,
                 out handle),
                 check);
         

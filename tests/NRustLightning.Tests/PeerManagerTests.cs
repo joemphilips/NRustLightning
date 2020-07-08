@@ -46,11 +46,11 @@ namespace NRustLightning.Tests
             var n = NBitcoin.Network.TestNet;
             
             var chainWatchInterface = new ChainWatchInterfaceUtil(n);
-            var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
-            var ourNodeSecret = _keys[0].ToBytes();
+            var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 };
+            var keysInterface = new KeysManager(seed, DateTime.UnixEpoch);
             var peerManager =
                 PeerManager.Create(
-                    seed, n, in TestUserConfig.Default, chainWatchInterface, broadcaster, logger, feeEstiamtor, 400000, ourNodeSecret
+                    seed, n, in TestUserConfig.Default, chainWatchInterface, keysInterface, broadcaster, logger, feeEstiamtor, 400000
                     );
             return peerManager;
         }

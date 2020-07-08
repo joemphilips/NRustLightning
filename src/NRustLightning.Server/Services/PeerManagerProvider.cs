@@ -1,17 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NBitcoin;
-using NRustLightning.Handles;
-using NRustLightning.Interfaces;
 using NRustLightning.Server.Configuration;
-using NRustLightning.Server.Entities;
 using NRustLightning.Server.FFIProxies;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Networks;
-using NRustLightning.Server.Repository;
 
 namespace NRustLightning.Server.Services
 {
@@ -38,13 +33,14 @@ namespace NRustLightning.Server.Services
                         channelProvider.GetFeeRateChannel(n).Reader);
                     var chainWatchInterface =
                         new NbxChainWatchInterface(nbx, loggerFactory.CreateLogger<NbxChainWatchInterface>(), n);
-                    var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
                     var seed = new byte[32];
                     RandomUtils.GetBytes(seed);
+                    var keysInterface = keysRepository.GetKeysInterface(seed);
+                    var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
                     var nbitcoinNetwork = n.NBitcoinNetwork;
                     var conf = config.Value.RustLightningConfig;
-                    var peerMan = PeerManager.Create(seed.AsSpan(), nbitcoinNetwork, conf, chainWatchInterface, b,
-                        logger, feeEst, 400000, keysRepository.GetNodeSecret().ToBytes());
+                    var peerMan = PeerManager.Create(seed.AsSpan(), nbitcoinNetwork, conf, chainWatchInterface, keysInterface ,b,
+                        logger, feeEst, 400000);
                     _peerManagers.Add(n.CryptoCode, peerMan);
                 }
             }
