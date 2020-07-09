@@ -33,13 +33,12 @@ namespace NRustLightning.Server.Services
                         channelProvider.GetFeeRateChannel(n).Reader);
                     var chainWatchInterface =
                         new NbxChainWatchInterface(nbx, loggerFactory.CreateLogger<NbxChainWatchInterface>(), n);
-                    var seed = new byte[32];
-                    RandomUtils.GetBytes(seed);
-                    var keysInterface = keysRepository.GetKeysInterface(seed);
+                    var peerManSeed = new byte[32];
+                    RandomUtils.GetBytes(peerManSeed);
                     var logger = new NativeLogger(loggerFactory.CreateLogger<NativeLogger>());
                     var nbitcoinNetwork = n.NBitcoinNetwork;
                     var conf = config.Value.RustLightningConfig;
-                    var peerMan = PeerManager.Create(seed.AsSpan(), nbitcoinNetwork, conf, chainWatchInterface, keysInterface ,b,
+                    var peerMan = PeerManager.Create(peerManSeed.AsSpan(), nbitcoinNetwork, conf, chainWatchInterface, keysRepository, b,
                         logger, feeEst, 400000);
                     _peerManagers.Add(n.CryptoCode, peerMan);
                 }

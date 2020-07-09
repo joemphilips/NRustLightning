@@ -162,7 +162,7 @@ namespace NRustLightning
         public unsafe void CloseChannel(uint256 channelId)
         {
             if (channelId == null) throw new ArgumentNullException(nameof(channelId));
-            var bytes = channelId.ToBytes();
+            var bytes = channelId.ToBytes(false);
             fixed (byte* b = bytes)
             {
                 Interop.close_channel((IntPtr)b, Handle);
@@ -172,7 +172,7 @@ namespace NRustLightning
         public unsafe void ForceCloseChannel(uint256 channelId)
         {
             if (channelId == null) throw new ArgumentNullException(nameof(channelId));
-            var bytes = channelId.ToBytes();
+            var bytes = channelId.ToBytes(false);
             fixed (byte* b = bytes)
             {
                 Interop.force_close_channel((IntPtr) b, Handle);
@@ -237,7 +237,7 @@ namespace NRustLightning
         public unsafe bool FailHTLCBackwards(Primitives.PaymentHash paymentHash, Primitives.PaymentPreimage paymentSecret = null)
         {
             if (paymentHash == null) throw new ArgumentNullException(nameof(paymentHash));
-            var paymentHashBytes = paymentHash.Value.ToBytes();
+            var paymentHashBytes = paymentHash.Value.ToBytes(false);
             if (paymentSecret is null)
             {
                 fixed (byte* p1 = paymentHashBytes)
@@ -272,7 +272,7 @@ namespace NRustLightning
         public unsafe void UpdateFee(uint256 channelId, uint feeRatePerKw)
         {
             if (channelId == null) throw new ArgumentNullException(nameof(channelId));
-            var b = channelId.ToBytes();
+            var b = channelId.ToBytes(false);
             fixed (byte* c = b)
             {
                 Interop.update_fee((IntPtr)c, feeRatePerKw, Handle, true);

@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Hosting;
 using NBitcoin;
+using NBitcoin.DataEncoders;
 using NRustLightning.Adaptors;
 using NRustLightning.Server.Configuration.SubConfiguration;
 using NRustLightning.Server.Networks;
@@ -32,6 +33,13 @@ namespace NRustLightning.Server.Configuration
                     new Option<DirectoryInfo>(new[] {"--datadir", "-d"}, "Directory to store data")
                     {
                         Argument = new Argument<DirectoryInfo> {Arity = ArgumentArity.ZeroOrOne}
+                    },
+                    
+                    new Option<string>(new [] {"-s", "--seed"}, @"The node seed (in 32 bytes hex). If not provided, it tries to read from path specified in config.
+If the server couldn't find any, it will create a new seed.
+")
+                    {
+                        Argument = new Argument<string>() { Arity = ArgumentArity.ZeroOrOne }
                     },
 
                     // connection options
@@ -326,6 +334,16 @@ max relative lock-time (a year) and we would 'lose' money as it would be locked 
                 if (result.Children.Contains("regtest") && hasNetwork)
                     return "You cannot specify both '--network' and '--regtest'";
 
+                if (result.Children.Contains("seed"))
+                {
+                    var s = result.Children["seed"];
+                    var h =  new HexEncoder();
+                    var v = s.Tokens.First().Value;
+                    if (!(h.IsValid(v) && v.Length == 64))
+                    {
+                        return "You must specify 32 bytes hex encoded seed by --seed";
+                    }
+                }
                 return null;
             });
             return rootCommand;

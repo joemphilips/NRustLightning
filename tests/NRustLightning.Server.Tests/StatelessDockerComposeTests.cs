@@ -90,7 +90,7 @@ namespace NRustLightning.Server.Tests
                 {TheirNetworkKey = theirNodeKey, ChannelValueSatoshis = 1000000, PushMSat = 100000});
 
             // wait until nbx detects unconfirmed funding tx.
-            await Support.Utils.Retry(20, TimeSpan.FromSeconds(1.5), async () =>
+            await Support.Utils.Retry(30, TimeSpan.FromSeconds(1.5), async () =>
             {
                 var e = (await clients.NBXClient.GetTransactionsAsync(walletInfo.DerivationStrategy));
                 return e.UnconfirmedTransactions.Transactions.Count > 0;
@@ -137,7 +137,7 @@ namespace NRustLightning.Server.Tests
             await remoteClient.OpenChannel(new BTCPayServer.Lightning.OpenChannelRequest()
                 {NodeInfo = nrlInfo.ConnectionString.ToNodeInfo(), ChannelAmount = 100000, FeeRate = feeRate});
             // wait until bitcoind detects unconfirmed funding tx on mempool.
-            await Support.Utils.Retry(10, TimeSpan.FromSeconds(0.8), async () =>
+            await Support.Utils.Retry(35, TimeSpan.FromSeconds(0.8), async () =>
             {
                 var m = await clients.BitcoinRPCClient.GetRawMempoolAsync();
                 return m.Length > 0;

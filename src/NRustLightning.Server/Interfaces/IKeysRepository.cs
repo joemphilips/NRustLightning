@@ -5,13 +5,11 @@ using NRustLightning.Server.Repository;
 
 namespace NRustLightning.Server.Interfaces
 {
-    public interface IKeysRepository
+    public interface IKeysRepository : IKeysInterface
     {
-        Key GetNodeSecret();
-        PubKey GetNodeId();
+        PubKey GetNodeId() => this.GetNodeSecret().PubKey;
 
         RepositorySerializer Serializer { get; set; }
-        IKeysInterface GetKeysInterface(byte[] seed);
     }
     
     public class KeysRepoMessageSigner : IMessageSigner
