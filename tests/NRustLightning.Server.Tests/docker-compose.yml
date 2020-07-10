@@ -141,6 +141,7 @@ services:
         aliases:
           - lightningd
     volumes:
+      - "${DATA_PATH}/.lightning:/root/.lightning"
       - "${DATA_PATH}/.bitcoin:/etc/bitcoin"
 
   nrustlightning:
