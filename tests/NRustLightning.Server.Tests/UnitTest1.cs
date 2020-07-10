@@ -170,7 +170,7 @@ namespace NRustLightning.Server.Tests
             overrideConfig.OwnChannelConfig = bogusOwnChannelConfig;
             request.OverrideConfig = overrideConfig;
             ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await c.OpenChannelAsync(request));
-            Assert.Contains("FFI against rust-lightning failed", ex.Message);
+            Assert.Contains("Unknown peer", ex.Message);
             
             // But works fine if the value is sane.
             request.OverrideConfig = UserConfig.GetDefault();
