@@ -1,1 +1,1 @@
- docker-compose exec -T lightningd lightning-cli --rpc-file=/root/.lightning/regtest/lightning-rpc $@
+ docker-compose exec -T lightningd lightning-cli --network=regtest --rpc-file=/root/.lightning/regtest/lightning-rpc $@
