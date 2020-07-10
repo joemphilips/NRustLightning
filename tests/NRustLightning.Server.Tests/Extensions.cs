@@ -90,6 +90,9 @@ namespace NRustLightning.Server.Tests
                     DockerComposeFiles = new[] {"docker-compose.yml"},
                     EnvironmentVariables = env,
                     DockerComposeDownArgs = "--remove-orphans --volumes",
+                    // we need this because c-lightning is not working well with bind mount.
+                    // If we use volume mount instead, this is the only way to recreate the volume at runtime.
+                    DockerComposeUpArgs = "--renew-anon-volumes",
                     StartupTimeoutSecs = 400,
                     LogFilePath = Path.Join(dataPath, "docker-compose.log"),
                     CustomUpTest = o =>

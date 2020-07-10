@@ -141,7 +141,12 @@ services:
         aliases:
           - lightningd
     volumes:
-      - "${DATA_PATH}/.lightning:/root/.lightning"
+      # We use anonymous volumes for persisting data for c-lightning.
+      # This is because c-lightning's unix-socket-based RPC does not work well with
+      # bind mounts. And we will assure that tests will be run with blank volume by
+      # `--renew-anon-volumes` option (thus we couldn't use named volumes), but be
+      # careful to clean the volume if you run docker-compose up manually.
+      - "/root/.lightning"
       - "${DATA_PATH}/.bitcoin:/etc/bitcoin"
 
   nrustlightning:
@@ -180,6 +185,5 @@ services:
       main:
         aliases:
           - nrustlightning
-
 networks:
   main:
