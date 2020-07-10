@@ -55,6 +55,7 @@ namespace NRustLightning.Server.FFIProxies
             script = null;
             amountSatoshi = null;
             var shortChannelId = Primitives.ShortChannelId.FromUInt64(utxoId);
+            _logger.LogDebug($"query block by shortchannel id {shortChannelId}");
             var b = NbxplorerClient.RPCClient.GetBlock(shortChannelId.BlockHeight.Item);
             if (b.Transactions.Count > shortChannelId.BlockIndex.Item)
             {

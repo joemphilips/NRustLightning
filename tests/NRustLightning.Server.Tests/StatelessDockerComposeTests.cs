@@ -137,7 +137,7 @@ namespace NRustLightning.Server.Tests
             await remoteClient.OpenChannel(new BTCPayServer.Lightning.OpenChannelRequest()
                 {NodeInfo = nrlInfo.ConnectionString.ToNodeInfo(), ChannelAmount = 100000, FeeRate = feeRate});
             // wait until bitcoind detects unconfirmed funding tx on mempool.
-            await Support.Utils.Retry(35, TimeSpan.FromSeconds(0.8), async () =>
+            await Support.Utils.Retry(12, TimeSpan.FromSeconds(1.5), async () =>
             {
                 var m = await clients.BitcoinRPCClient.GetRawMempoolAsync();
                 return m.Length > 0;
@@ -182,10 +182,10 @@ namespace NRustLightning.Server.Tests
             Assert.Equal(NBitcoin.Money.Satoshis(walletInfo.OnChainBalanceSatoshis), explorerInfo.Total);
 
             await OutBoundChannelOpenRoundtrip(clients, clients.LndLNClient);
-            // await OutBoundChannelOpenRoundtrip(clients, clients.CLightningClient);
+            await OutBoundChannelOpenRoundtrip(clients, clients.CLightningClient);
             await OutboundChannelCloseRoundtrip(clients, clients.LndLNClient);
-            // await OutboundChannelCloseRoundtrip(clients, clients.ClightningLNClient);
-            await InboundChannelOpenRoundtrip(clients, clients.LndClient);
+            await OutboundChannelCloseRoundtrip(clients, clients.ClightningLNClient);
+            // await InboundChannelOpenRoundtrip(clients, clients.LndClient);
             await InboundChannelOpenRoundtrip(clients, clients.CLightningClient);
 
             // ---- payment tests ----

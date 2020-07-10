@@ -51,16 +51,18 @@ namespace NRustLightning.Server.Tests.Support
             var nrlAddress = (await NRustLightningHttpClient.GetNewDepositAddressAsync()).Address;
             foreach (var addr in new[] {clAddress, lndAddress, nrlAddress})
             {
-                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(5m));
+                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(2m));
+                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(2m));
+                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(2m));
             }
 
-            await this.BitcoinRPCClient.GenerateAsync(6);
+            await this.BitcoinRPCClient.GenerateAsync(20);
         }
 
         public async Task CreateEnoughTxToEstimateFee()
         {
-            var txPerBlock = 20;
-            var nBlock = 20;
+            var txPerBlock = 6;
+            var nBlock = 6;
             for (int i = 0; i < nBlock; i++)
             {
                 for (int j = 0; j < txPerBlock; j++)

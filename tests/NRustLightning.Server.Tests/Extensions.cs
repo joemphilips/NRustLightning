@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading.Tasks;
 using BTCPayServer.Lightning;
 using BTCPayServer.Lightning.CLightning;
@@ -74,6 +75,14 @@ namespace NRustLightning.Server.Tests
                 {"NBXPLORER_PORT", ports[4]},
                 {"DATA_PATH", dataPath }
             };
+            var envFile = Path.Join(dataPath, "env.sh");
+            using (TextWriter w = File.AppendText(envFile))
+            {
+                foreach (var kv in env)
+                {
+                    w.WriteLine($"export {kv.Key}='{kv.Value}'");
+                }
+            }
             try
             {
                 await dockerFixture.InitAsync(() => new DockerFixtureOptions
@@ -82,6 +91,7 @@ namespace NRustLightning.Server.Tests
                     EnvironmentVariables = env,
                     DockerComposeDownArgs = "--remove-orphans --volumes",
                     StartupTimeoutSecs = 400,
+                    LogFilePath = Path.Join(dataPath, "docker-compose.log"),
                     CustomUpTest = o =>
                     {
                         return
