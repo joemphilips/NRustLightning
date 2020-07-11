@@ -95,6 +95,7 @@ namespace NRustLightning.Server.Controllers
                 return NotFound($"There is no opened channel against {req.TheirNetworkKey}");
             }
             peerMan.ChannelManager.CloseChannel(s.ChannelId);
+            peerMan.ProcessEvents();
             return Ok();
         }
     }

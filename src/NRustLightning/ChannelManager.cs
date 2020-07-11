@@ -234,10 +234,10 @@ namespace NRustLightning
             Interop.timer_chan_freshness_every_min(Handle);
         }
 
-        public unsafe bool FailHTLCBackwards(Primitives.PaymentHash paymentHash, Primitives.PaymentPreimage paymentSecret = null)
+        public unsafe bool FailHTLCBackwards(Primitives.PaymentHash paymentHash, uint256? paymentSecret = null)
         {
             if (paymentHash == null) throw new ArgumentNullException(nameof(paymentHash));
-            var paymentHashBytes = paymentHash.Value.ToBytes(false);
+            var paymentHashBytes = paymentHash.ToBytes(false);
             if (paymentSecret is null)
             {
                 fixed (byte* p1 = paymentHashBytes)
@@ -246,7 +246,7 @@ namespace NRustLightning
                     return result == 1;
                 }
             }
-            var paymentSecretBytes = paymentSecret.ToBytes().ToArray();
+            var paymentSecretBytes = paymentSecret.ToBytes(false).ToArray();
             fixed (byte* p1 = paymentHashBytes)
             fixed (byte* p2 = paymentSecretBytes)
             {
@@ -261,7 +261,7 @@ namespace NRustLightning
             var b1 = paymentPreimage.ToBytes().ToArray();
             if (paymentSecret != null)
             {
-                var b2 = paymentSecret.ToBytes().ToArray();
+                var b2 = paymentSecret.ToBytes(false).ToArray();
                 fixed (byte* p1 = b1)
                 fixed (byte* p2 = b2)
                 {

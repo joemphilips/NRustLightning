@@ -106,6 +106,7 @@ namespace NRustLightning.Server.Services
                 _logger.LogDebug($"Finished creating funding tx {tx.ToHex()}; id: {tx.GetHash()}");
                 
                 chanMan.FundingTransactionGenerated(f.Item.TemporaryChannelId.Value, fundingTxo);
+                _peerManager.ProcessEvents();
             }
             else if (e is Event.FundingBroadcastSafe fundingBroadcastSafe)
             {
@@ -123,17 +124,32 @@ namespace NRustLightning.Server.Services
                 var hash = paymentReceived.Item.PaymentHash;
                 var secret = paymentReceived.Item.PaymentSecret.GetOrDefault();
                 var (result, intendedAmount) = _invoiceRepository.PaymentReceived(hash,a,secret);
+                _logger.LogDebug($"Received payment of type {result}. Payment hash {hash}. PaymentSecret: {secret}");
                 if (result == PaymentReceivedType.UnknownPaymentHash)
                 {
                     _logger.LogError($"Received payment for unknown payment_hash({hash}). ignoring.");
                     return;
                 }
                 var preImage = _invoiceRepository.GetPreimage(hash);
+                _logger.LogDebug($"preimage {preImage.ToHex()}");
                 if (result == PaymentReceivedType.Ok)
                 {
-                    chanMan.ClaimFunds(preImage, secret, (ulong)intendedAmount.MilliSatoshi);
+                    if (chanMan.ClaimFunds(preImage, secret, (ulong) intendedAmount.MilliSatoshi))
+                    {
+                        _peerManager.ProcessEvents();
+                    }
                 }
-                chanMan.FailHTLCBackwards(hash, preImage);
+                else
+                {
+                    if (chanMan.FailHTLCBackwards(hash, secret))
+                    {
+                        _peerManager.ProcessEvents();
+                    }
+                    else
+                    {
+                        _logger.LogCritical($"RL told us that preimage ({preImage}) and/or its hash ({hash}) is unknown to us. This should never happen");
+                    }
+                }
             }
             else if (e is Event.PaymentSent paymentSent)
             {
@@ -145,9 +161,14 @@ namespace NRustLightning.Server.Services
             }
             else if (e is Event.PendingHTLCsForwardable pendingHtlCsForwardable)
             {
+#if DEBUG
+                var wait = TimeSpan.Zero;
+#else
                 var wait = pendingHtlCsForwardable.Item.TimeToWait(_random);
+#endif
                 await Task.Delay(wait, cancellationToken);
                 _peerManager.ChannelManager.ProcessPendingHTLCForwards();
+                _peerManager.ProcessEvents();
             }
             else if (e is Event.SpendableOutputs spendableOutputs)
             {

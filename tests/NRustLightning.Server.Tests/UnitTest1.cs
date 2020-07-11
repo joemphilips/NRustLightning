@@ -97,7 +97,7 @@ namespace NRustLightning.Server.Tests
             Assert.Equal(resp.Invoice.AmountValue, FSharpOption<LNMoney>.None);
             Assert.True(resp.Invoice.Expiry > DateTimeOffset.UnixEpoch);
             Assert.False(resp.Invoice.IsExpired);
-            Assert.Null(resp.Invoice.AmountValue.ToNullable());
+            Assert.Null(resp.Invoice.AmountValue);
         }
 
         [Fact]

@@ -98,44 +98,50 @@ namespace NRustLightning.Server.Tests
 
             var addr = await clients.NRustLightningHttpClient.GetNewDepositAddressAsync();
             await clients.BitcoinRPCClient.GenerateToAddressAsync(10, addr.Address);
+            var localId = (await clients.NRustLightningHttpClient.GetInfoAsync()).ConnectionString.NodeId;
             await Support.Utils.Retry(20, TimeSpan.FromSeconds(1.2), async () =>
             {
+                var maybeLocalChannel = (await clients.NRustLightningHttpClient.GetChannelDetailsAsync()).Details.FirstOrDefault(cd => cd.RemoteNetworkId.Equals(theirNodeKey));
+                if (maybeLocalChannel is null)
+                    return false;
                 // CLightning client throws null reference exception when it is used as ILightningClient.
                 // So we do dirty fallback here.
                 if (remoteClient is CLightningClient cli)
                 {
-                    var channelList = await cli.ListChannelsAsync();
-                    Assert.NotNull(channelList);
-                    return channelList.Length > 0;
+                    var maybeRemoteChannel = (await cli.ListChannelsAsync()).FirstOrDefault(c => new PubKey(c.Destination).Equals(localId));
+                    return maybeRemoteChannel != null;
                 }
                 else
                 {
-                    var channelList = await remoteClient.ListChannels(CancellationToken.None);
-                    Assert.NotNull(channelList);
-                    return channelList.Length > 0;
+                    var maybeRemoteChannel = (await remoteClient.ListChannels()).FirstOrDefault(c => c.RemoteNode.Equals(localId));
+                    return maybeRemoteChannel != null;
                 }
             });
         }
         async Task OutboundChannelCloseRoundtrip(Clients clients, ILightningClient remoteClient)
         {
             var info = await remoteClient.GetInfo();
-            var id = info.NodeInfoList.FirstOrDefault()?.NodeId;
-            await clients.NRustLightningHttpClient.CloseChannelAsync(id);
-            await Support.Utils.Retry(9, TimeSpan.FromSeconds(2), async () =>
+            var localInfo = (await clients.NRustLightningHttpClient.GetInfoAsync());
+            var theirNodeKey = info.NodeInfoList.FirstOrDefault(x => !x.NodeId.Equals(localInfo.ConnectionString.NodeId))?.NodeId ?? Utils.Utils.Fail<PubKey>("Channel Seems already closed");
+            await clients.NRustLightningHttpClient.CloseChannelAsync(theirNodeKey);
+            await Support.Utils.Retry(20, TimeSpan.FromSeconds(2), async () =>
             {
                 var add = await clients.BitcoinRPCClient.GetNewAddressAsync();
-                await clients.BitcoinRPCClient.GenerateToAddressAsync(1, add);
-                var aliveChannels = (await clients.NRustLightningHttpClient.GetChannelDetailsAsync()).Details.Where(x => x.RemoteNetworkId == id && x.IsLive);
-                return !(await remoteClient.ListChannels()).Any(x => x.IsActive)
-                       && !aliveChannels.Any();
+                await clients.BitcoinRPCClient.GenerateToAddressAsync(2, add);
+                
+                var maybeLocalChannel = (await clients.NRustLightningHttpClient.GetChannelDetailsAsync()).Details.FirstOrDefault(cd => cd.RemoteNetworkId.Equals(theirNodeKey));
+                if (maybeLocalChannel != null && maybeLocalChannel.IsLive)
+                    return false;
+                var maybeRemoteChannel = (await remoteClient.ListChannels()).FirstOrDefault(c => c.RemoteNode.Equals(localInfo.ConnectionString.NodeId));
+                return (maybeRemoteChannel is null || !maybeRemoteChannel.IsActive);
             });
         }
         async Task InboundChannelOpenRoundtrip(Clients clients, ILightningClient remoteClient)
         {
-            var nrlInfo = await clients.NRustLightningHttpClient.GetInfoAsync();
+            var localInfo = await clients.NRustLightningHttpClient.GetInfoAsync();
             var feeRate = (await clients.NBXClient.GetFeeRateAsync(3)).FeeRate;
             await remoteClient.OpenChannel(new BTCPayServer.Lightning.OpenChannelRequest()
-                {NodeInfo = nrlInfo.ConnectionString.ToNodeInfo(), ChannelAmount = 100000, FeeRate = feeRate});
+                {NodeInfo = localInfo.ConnectionString.ToNodeInfo(), ChannelAmount = 100000, FeeRate = feeRate});
             // wait until bitcoind detects unconfirmed funding tx on mempool.
             await Support.Utils.Retry(12, TimeSpan.FromSeconds(1.5), async () =>
             {
@@ -143,30 +149,54 @@ namespace NRustLightning.Server.Tests
                 return m.Length > 0;
             });
 
+
+            var remoteInfo = await remoteClient.GetInfo();
+            var theirNodeKey = remoteInfo.NodeInfoList.FirstOrDefault(x => !x.NodeId.Equals(localInfo.ConnectionString.NodeId))?.NodeId ?? Utils.Utils.Fail<PubKey>("Channel Seems already closed");
             var addr = await clients.NRustLightningHttpClient.GetNewDepositAddressAsync();
             await clients.BitcoinRPCClient.GenerateToAddressAsync(10, addr.Address);
-            await Support.Utils.Retry(20, TimeSpan.FromSeconds(1.2), async () =>
+            await Support.Utils.Retry(16, TimeSpan.FromSeconds(2.0), async () =>
             {
+                await clients.BitcoinRPCClient.GenerateToAddressAsync(2, addr.Address);
+                var maybeLocalChannel = (await clients.NRustLightningHttpClient.GetChannelDetailsAsync()).Details.FirstOrDefault(c => c.RemoteNetworkId.Equals(theirNodeKey));
+                if (maybeLocalChannel is null || !maybeLocalChannel.IsLive)
+                    return false;
                 // CLightning client throws null reference exception when it is used as ILightningClient.
                 // So we do dirty fallback here.
                 if (remoteClient is CLightningClient cli)
                 {
                     var channelList = await cli.ListChannelsAsync();
                     Assert.NotNull(channelList);
-                    return channelList.Length > 0;
+                    return channelList.Length > 0 && channelList.First().Active && new PubKey(channelList.First().Destination).Equals(localInfo.ConnectionString.NodeId);
                 }
                 else
                 {
                     var channelList = await remoteClient.ListChannels(CancellationToken.None);
                     Assert.NotNull(channelList);
-                    return channelList.Length > 0;
+                    return (channelList.Length > 0 && channelList.First().IsActive && channelList.First().RemoteNode.Equals(localInfo.ConnectionString.NodeId));
                 }
             });
         }
-        [Fact]
-        public async Task CanOpenCloseChannels()
+
+        private async Task InboundPaymentRoundTrip(Clients clients, ILightningClient lnClient)
         {
-            var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanOpenCloseChannels));
+            
+            var resp = await clients.NRustLightningHttpClient.GetInvoiceAsync(new InvoiceCreationOption { Amount = LNMoney.MilliSatoshis(100L), Description = "foo bar" });
+            var ts = 2.0;
+            await Support.Utils.Retry(5, TimeSpan.FromSeconds(ts), async () =>
+            {
+                var payResp = await clients.LndLNClient.Pay(resp.Invoice.ToString());
+                if (payResp.Result != PayResult.Ok)
+                {
+                    output.WriteLine($"Failed inbound payment {payResp.Result}... retrying in {ts} seconds.");
+                }
+                return payResp.Result == PayResult.Ok;
+            });
+        }
+        
+        [Fact]
+        public async Task CanOpenCloseChannelsWithLND()
+        {
+            var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanOpenCloseChannelsWithLND));
             var walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
             Assert.NotNull(walletInfo.DerivationStrategy);
             Assert.Equal(0, walletInfo.OnChainBalanceSatoshis);
@@ -181,23 +211,40 @@ namespace NRustLightning.Server.Tests
             var explorerInfo = await clients.NBXClient.GetBalanceAsync(walletInfo.DerivationStrategy);
             Assert.Equal(NBitcoin.Money.Satoshis(walletInfo.OnChainBalanceSatoshis), explorerInfo.Total);
 
-            await OutBoundChannelOpenRoundtrip(clients, clients.LndLNClient);
-            await OutBoundChannelOpenRoundtrip(clients, clients.CLightningClient);
-            await OutboundChannelCloseRoundtrip(clients, clients.LndLNClient);
-            await OutboundChannelCloseRoundtrip(clients, clients.ClightningLNClient);
+            // await OutBoundChannelOpenRoundtrip(clients, clients.LndLNClient);
+            // await OutboundChannelCloseRoundtrip(clients, clients.LndLNClient);
             await InboundChannelOpenRoundtrip(clients, clients.LndClient);
-            
-            
-            // Inbound chanel opening is a bit flaky for c-lightning. ignoring for now.
-            // await InboundChannelOpenRoundtrip(clients, clients.CLightningClient);
 
             // ---- payment tests ----
-            var resp = await clients.NRustLightningHttpClient.GetInvoiceAsync(new InvoiceCreationOption() { Amount = LNMoney.MilliSatoshis(100L), Description = "foo bar" });
-            var payResp = await clients.LndLNClient.Pay(resp.Invoice.ToString());
-            Assert.Equal(PayResult.Ok,payResp.Result);
+            await InboundPaymentRoundTrip(clients, clients.LndClient);
         }
         
         [Fact]
-        public async Task CanPayToOtherNodes() {}
+        public async Task CanOpenCloseChannelsWithLightningD()
+        {
+            var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanOpenCloseChannelsWithLND));
+            var walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
+            Assert.NotNull(walletInfo.DerivationStrategy);
+            Assert.Equal(0, walletInfo.OnChainBalanceSatoshis);
+            Assert.DoesNotContain("legacy", walletInfo.DerivationStrategy.ToString());
+            await clients.ConnectAll();
+            await clients.PrepareFunds();
+            await clients.CreateEnoughTxToEstimateFee();
+            
+            // check wallet info and nbxplorer info is synchronized.
+            walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
+            Assert.NotEqual(0, walletInfo.OnChainBalanceSatoshis);
+            var explorerInfo = await clients.NBXClient.GetBalanceAsync(walletInfo.DerivationStrategy);
+            Assert.Equal(NBitcoin.Money.Satoshis(walletInfo.OnChainBalanceSatoshis), explorerInfo.Total);
+
+            await OutBoundChannelOpenRoundtrip(clients, clients.CLightningClient);
+            await OutboundChannelCloseRoundtrip(clients, clients.ClightningLNClient);
+            await InboundChannelOpenRoundtrip(clients, clients.CLightningClient);
+
+            // ---- payment tests ----
+            var resp = await clients.NRustLightningHttpClient.GetInvoiceAsync(new InvoiceCreationOption { Amount = LNMoney.MilliSatoshis(100L), Description = "foo bar" });
+            var payResp = await clients.ClightningLNClient.Pay(resp.Invoice.ToString());
+            Assert.Equal(PayResult.Ok,payResp.Result);
+        }
     }
 }
