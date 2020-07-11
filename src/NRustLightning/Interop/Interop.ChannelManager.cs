@@ -241,6 +241,17 @@ namespace NRustLightning
             return MaybeCheck(_claim_funds(paymentPreimage, paymentSecret, expectedAmount, handle, out result), true);
         }
         
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "claim_funds_without_secret",
+            ExactSpelling = true)]
+        static extern FFIResult _claim_funds_without_secret(IntPtr paymentPreimage, ulong expectedAmount, ChannelManagerHandle handle, out byte result);
+
+        internal static FFIResult claim_funds_without_secret(IntPtr paymentPreimage, ulong expectedAmount, ChannelManagerHandle handle, out byte result)
+        {
+            return MaybeCheck(_claim_funds_without_secret(paymentPreimage, expectedAmount, handle, out result), true);
+        }
+        
         
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,

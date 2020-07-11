@@ -255,17 +255,27 @@ namespace NRustLightning
             }
         }
 
-        public unsafe bool ClaimFunds(Primitives.PaymentPreimage paymentPreimage, uint256 paymentSecret, ulong expectedAmount)
+        public unsafe bool ClaimFunds(Primitives.PaymentPreimage paymentPreimage, uint256? paymentSecret, ulong expectedAmount)
         {
             if (paymentPreimage == null) throw new ArgumentNullException(nameof(paymentPreimage));
-            if (paymentSecret == null) throw new ArgumentNullException(nameof(paymentSecret));
             var b1 = paymentPreimage.ToBytes().ToArray();
-            var b2 = paymentSecret.ToBytes().ToArray();
-            fixed(byte* p1 = b1)
-            fixed (byte* p2 = b2)
+            if (paymentSecret != null)
             {
-                Interop.claim_funds((IntPtr) p1, (IntPtr) p2, expectedAmount, Handle, out var result);
-                return result == 1;
+                var b2 = paymentSecret.ToBytes().ToArray();
+                fixed (byte* p1 = b1)
+                fixed (byte* p2 = b2)
+                {
+                    Interop.claim_funds((IntPtr) p1, (IntPtr) p2, expectedAmount, Handle, out var result);
+                    return result == 1;
+                }
+            }
+            else
+            {
+                fixed (byte* p1 = b1)
+                {
+                    Interop.claim_funds_without_secret((IntPtr) p1, expectedAmount, Handle, out var result);
+                    return result == 1;
+                }
             }
         }
 
