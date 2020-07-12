@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Threading.Tasks;
+using DotNetLightning.Peer;
 using Microsoft.AspNetCore.Mvc;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Models.Request;
@@ -38,7 +39,7 @@ namespace NRustLightning.Server.Controllers
 
             throw new HttpRequestException($"Invalid connection string {connectionString}");
         }
-
+        
         [HttpDelete]
         [Route("disconnect")]
         public async Task<bool> Disconnect([FromBody] string connectionString)

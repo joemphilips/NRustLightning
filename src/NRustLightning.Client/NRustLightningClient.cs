@@ -75,6 +75,13 @@ namespace NRustLightning.Client
             return RequestAsync<InvoiceResponse>($"/v1/payment/{cryptoCode}/invoice", HttpMethod.Post, option);
         }
 
+        public Task<PaymentResult> PayToInvoiceAsync(PaymentRequest invoice) => PayToInvoiceAsync(invoice.ToString());
+        
+        public Task<PaymentResult> PayToInvoiceAsync(string invoice)
+        {
+            return RequestAsync<PaymentResult>($"/v1/payment/{cryptoCode}/pay/{invoice}", HttpMethod.Post);
+        }
+
         public Task<ChannelInfoResponse> GetChannelDetailsAsync()
         {
             return RequestAsync<ChannelInfoResponse>($"/v1/channel/{cryptoCode}/", HttpMethod.Get);

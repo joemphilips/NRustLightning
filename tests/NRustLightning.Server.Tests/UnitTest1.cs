@@ -156,7 +156,7 @@ namespace NRustLightning.Server.Tests
             // push_msat is larger than channel_value. so RL must complain about it.
             var request = new OpenChannelRequest{ TheirNetworkKey = i, ChannelValueSatoshis = 100000, PushMSat = 10000000000000 };
             var ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await c.OpenChannelAsync(request));
-            Assert.Contains("FFI against rust-lightning failed", ex.Message);
+            Assert.Contains("Unknown peer", ex.Message);
 
             // but works fine if amount specified is decent.
             request.PushMSat = 10000;
