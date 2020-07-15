@@ -5,11 +5,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Threading;
+using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
 using NRustLightning.Utils;
+using RustLightningTypes;
 using static NRustLightning.Utils.Utils;
 using Network = NRustLightning.Adaptors.Network;
 
@@ -211,6 +213,29 @@ namespace NRustLightning
                     }
 
                     result.Check();
+                }
+            }
+        }
+
+        public void SendPayment(PubKey theirNodeId, Primitives.PaymentHash paymentHash, IList<RouteHint> lastHops,
+            LNMoney valueToSend, Primitives.BlockHeightOffset32 finalCLTV)
+        {
+            if (theirNodeId == null) throw new ArgumentNullException(nameof(theirNodeId));
+            if (paymentHash == null) throw new ArgumentNullException(nameof(paymentHash));
+            if (lastHops == null) throw new ArgumentNullException(nameof(lastHops));
+            if (theirNodeId == null) throw new ArgumentNullException(nameof(theirNodeId));
+            if (!theirNodeId.IsCompressed) throw new ArgumentException("pubkey not compressed");
+            var pkBytes = theirNodeId.ToBytes();
+            var paymentHashBytes = paymentHash.ToBytes(false);
+            var routeHintBytes = lastHops.ToBytes();
+            unsafe
+            {
+                fixed (byte* pkPtr = pkBytes)
+                fixed (byte* paymentHashPtr = paymentHashBytes)
+                fixed (byte* lastHopsPtr = routeHintBytes)
+                {
+                    var lastHopsFfiBytes = new FFIBytes((IntPtr)lastHopsPtr, (UIntPtr)routeHintBytes.Length);
+                    Interop.send_payment_with_peer_manager(pkPtr, paymentHashPtr, ref lastHopsFfiBytes, (ulong)valueToSend.MilliSatoshi, finalCLTV.Value, _handle, ChannelManager.Handle);
                 }
             }
         }

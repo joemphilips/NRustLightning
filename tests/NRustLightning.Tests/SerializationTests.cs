@@ -121,9 +121,9 @@ namespace NRustLightning.Tests
         {
             var c = ChannelDetailsInterop();
             Assert.Single(c);
-            var channelId = new uint256(Hex.Decode("4141414141414141414141414141414141414141414141414141414141414142"), true);
+            var channelId = new uint256(Hex.Decode("4141414141414141414141414141414141414141414141414141414141414142"), false);
             Assert.Equal( channelId, c[0].ChannelId);
-            Assert.Equal(FSharpOption<ulong>.Some(3), c[0].ShortChannelId);
+            Assert.Equal(Primitives.ShortChannelId.FromUInt64(3), c[0].ShortChannelId.Value);
             Assert.Equal(new PubKey("02aca35d6de21baefaf65db590611fabd42ed4d52683c36caff58761d309314f65"), c[0].RemoteNetworkId);
             Assert.True(c[0].CounterPartyFeatures.HasFeature(Feature.OptionDataLossProtect, FSharpOption<FeaturesSupport>.None));
             Assert.True(c[0].CounterPartyFeatures.HasFeature(Feature.InitialRoutingSync, FSharpOption<FeaturesSupport>.Some(FeaturesSupport.Optional)));

@@ -144,6 +144,28 @@ namespace NRustLightning
         {
             return MaybeCheck(_get_peer_node_ids(bufOut, bufLen, out actualNodeIdsLength, handle), check);
         }
+
+        [DllImport(RustLightning, EntryPoint = "send_payment_with_peer_manager", ExactSpelling = true,
+            CallingConvention = CallingConvention.Cdecl)]
+        private static extern unsafe FFIResult _send_payment_with_peer_manager(
+            byte* theirNodeIdPtr,
+            byte* paymentHashPtr,
+            ref FFIBytes lastHopsPtr,
+            ulong finalValueMSat,
+            uint finalCLTV,
+            PeerManagerHandle peerManagerHandle,
+            ChannelManagerHandle channelManagerHandle);
+
+        internal static unsafe FFIResult send_payment_with_peer_manager(
+            byte* theirNodeIdPtr,
+            byte* paymentHashPtr,
+            ref FFIBytes lastHopsPtr,
+            ulong finalValueMSat,
+            uint finalCLTV,
+            PeerManagerHandle peerManagerHandle,
+            ChannelManagerHandle channelManagerHandle,
+            bool check = true)
+            => MaybeCheck(_send_payment_with_peer_manager(theirNodeIdPtr, paymentHashPtr, ref lastHopsPtr, finalValueMSat, finalCLTV, peerManagerHandle, channelManagerHandle), check);
         
         [DllImport(RustLightning, EntryPoint = "release_peer_manager", ExactSpelling = true,
             CallingConvention = CallingConvention.Cdecl)]
@@ -151,6 +173,6 @@ namespace NRustLightning
 
         internal static FFIResult release_peer_manager(IntPtr handle, bool check = true) =>
             MaybeCheck(_release_peer_manager(handle), check);
-
+        
     }
 }

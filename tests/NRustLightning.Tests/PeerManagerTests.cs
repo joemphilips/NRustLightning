@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DotNetLightning.Serialize;
@@ -10,6 +11,7 @@ using NRustLightning.Adaptors;
 using NRustLightning.Facades;
 using NRustLightning.Tests.Utils;
 using NRustLightning.Utils;
+using RustLightningTypes;
 using Xunit;
 using Xunit.Abstractions;
 using Network = NRustLightning.Adaptors.Network;
@@ -25,6 +27,8 @@ namespace NRustLightning.Tests
             new Key(Hex.DecodeData("0101010101010101010101010101010101010101010101010101010101010101")),
             new Key(Hex.DecodeData("0202020202020202020202020202020202020202020202020202020202020202")),
         };
+        
+        private const uint TEST_FINAL_CTLV = 32u;
 
         private static PubKey[] _pubKeys = _keys.Select(k => k.PubKey).ToArray();
         private static Primitives.NodeId[] _nodeIds = _pubKeys.Select(x => Primitives.NodeId.NewNodeId(x)).ToArray();
@@ -115,6 +119,16 @@ namespace NRustLightning.Tests
             peerMan.BlockNotifier.BlockConnected(block, 400003);
             peerMan.BlockNotifier.BlockDisconnected(block.Header, 400001);
             peerMan.Dispose();
+        }
+
+        [Fact]
+        public void CanCallSendPayment()
+        {
+            var peerMan = getTestPeerManager();
+            var paymentHash = Primitives.PaymentHash.NewPaymentHash(uint256.Parse("4141414141414141414141414141414141414141414141414141414141414142"));
+            var lastHops = new List<RouteHint>();
+            var e = Assert.Throws<FFIException>(()  => peerMan.SendPayment(_keys[0].PubKey, paymentHash, lastHops, LNMoney.MilliSatoshis(100L), TEST_FINAL_CTLV));
+            Assert.Contains( "Cannot route when there are no outbound routes away from us",e.Message);
         }
     }
 }
