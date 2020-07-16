@@ -217,8 +217,21 @@ namespace NRustLightning
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="theirNodeId"></param>
+        /// <param name="paymentHash"></param>
+        /// <param name="lastHops"></param>
+        /// <param name="valueToSend"></param>
+        /// <param name="finalCLTV"></param>
+        /// <param name="paymentSecret"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="PaymentSendException">When the payment fails for some reason. See its `Kind` property and rust-lightning's `PaymentSendFailure` type for more detail.</exception>
+        /// <exception cref="FFIException">when other unexpected error happens in rl side.</exception>
         public void SendPayment(PubKey theirNodeId, Primitives.PaymentHash paymentHash, IList<RouteHint> lastHops,
-            LNMoney valueToSend, Primitives.BlockHeightOffset32 finalCLTV)
+            LNMoney valueToSend, Primitives.BlockHeightOffset32 finalCLTV, uint256? paymentSecret = null)
         {
             if (theirNodeId == null) throw new ArgumentNullException(nameof(theirNodeId));
             if (paymentHash == null) throw new ArgumentNullException(nameof(paymentHash));
@@ -234,8 +247,21 @@ namespace NRustLightning
                 fixed (byte* paymentHashPtr = paymentHashBytes)
                 fixed (byte* lastHopsPtr = routeHintBytes)
                 {
-                    var lastHopsFfiBytes = new FFIBytes((IntPtr)lastHopsPtr, (UIntPtr)routeHintBytes.Length);
-                    Interop.send_payment_with_peer_manager(pkPtr, paymentHashPtr, ref lastHopsFfiBytes, (ulong)valueToSend.MilliSatoshi, finalCLTV.Value, _handle, ChannelManager.Handle);
+                    var lastHopsFfiBytes = new FFIBytes((IntPtr) lastHopsPtr, (UIntPtr) routeHintBytes.Length);
+                    if (paymentSecret is null)
+                    {
+                        Interop.send_non_mpp_payment_with_peer_manager(pkPtr, paymentHashPtr, ref lastHopsFfiBytes,
+                            (ulong) valueToSend.MilliSatoshi, finalCLTV.Value, _handle, ChannelManager.Handle);
+                    }
+                    else
+                    {
+                        var paymentSecretBytes = paymentSecret.ToBytes(false);
+                        fixed (byte* paymentSecretPtr = paymentSecretBytes)
+                        {
+                            Interop.send_mpp_payment_with_peer_manager(pkPtr, paymentHashPtr, ref lastHopsFfiBytes,
+                                (ulong) valueToSend.MilliSatoshi, finalCLTV.Value, paymentSecretPtr, _handle, ChannelManager.Handle);
+                        }
+                    }
                 }
             }
         }

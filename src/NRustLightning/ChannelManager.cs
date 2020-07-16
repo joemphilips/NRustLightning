@@ -23,7 +23,7 @@ namespace NRustLightning
         internal readonly ChannelManagerHandle Handle;
         private bool _disposed = false;
         private readonly object[] _deps;
-        internal ChannelManager(ChannelManagerHandle handle, object[] deps = null)
+        internal ChannelManager(ChannelManagerHandle handle, object[]? deps = null)
         {
             _deps = deps ?? new object[] {};
             Handle = handle ?? throw new ArgumentNullException(nameof(handle));
@@ -187,6 +187,15 @@ namespace NRustLightning
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash)
             => SendPayment(routesWithFeature, paymentHash, new byte[0]);
         
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="routesWithFeature"></param>
+        /// <param name="paymentHash"></param>
+        /// <param name="paymentSecret"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="PaymentSendException"></exception>
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash, Span<byte> paymentSecret)
         {
             if (routesWithFeature == null) throw new ArgumentNullException(nameof(routesWithFeature));
@@ -201,12 +210,19 @@ namespace NRustLightning
                 fixed (byte* s = paymentSecret)
                 {
                     var route = new FFIRoute((IntPtr)r, (UIntPtr)routesInBytes.Length);
+                    FFIResult result;
                     if (paymentSecret.Length == 32)
-                        Interop.send_payment(Handle, ref route, (IntPtr)p, (IntPtr)s);
+                        result = Interop.send_payment(Handle, ref route, (IntPtr)p, (IntPtr)s, false);
                     if (paymentSecret.Length == 0)
                     {
-                        Interop.send_payment(Handle, ref route, (IntPtr)p);
+                        result = Interop.send_payment(Handle, ref route, (IntPtr)p);
                     }
+                    else
+                    {
+                        throw new Exception("Unreachable");
+                    }
+                    if (result.IsPaymentSendFailure)
+                    {}
                 }
             }
         }

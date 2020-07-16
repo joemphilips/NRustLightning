@@ -104,8 +104,8 @@ namespace NRustLightning.Tests
             var routes = new RoutesWithFeature(route1);
             
             var paymentHash = new uint256();
-            var e = Assert.Throws<FFIException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
-            Assert.Equal("FFI against rust-lightning failed (InternalError), Error: AllFailedRetrySafe([No channel available with first hop!])", e.Message);
+            var e = Assert.Throws<PaymentSendException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
+            Assert.Equal(PaymentSendFailureType.AllFailedRetrySafe, e.Kind);
 
             peerMan.Dispose();
         }
@@ -128,6 +128,10 @@ namespace NRustLightning.Tests
             var paymentHash = Primitives.PaymentHash.NewPaymentHash(uint256.Parse("4141414141414141414141414141414141414141414141414141414141414142"));
             var lastHops = new List<RouteHint>();
             var e = Assert.Throws<FFIException>(()  => peerMan.SendPayment(_keys[0].PubKey, paymentHash, lastHops, LNMoney.MilliSatoshis(100L), TEST_FINAL_CTLV));
+            Assert.Contains( "Cannot route when there are no outbound routes away from us",e.Message);
+            
+            var secret = uint256.Parse("4141414141414141414141414141414141414141414141414141414141414143");
+            e = Assert.Throws<FFIException>(() => peerMan.SendPayment(_keys[0].PubKey, paymentHash, lastHops, LNMoney.MilliSatoshis(100L), TEST_FINAL_CTLV, secret));
             Assert.Contains( "Cannot route when there are no outbound routes away from us",e.Message);
         }
     }

@@ -14,6 +14,11 @@ namespace NRustLightning
             return check ? result.Check() : result;
         }
 
+        private static FFIResult MaybeCheckPaymentFailure(FFIResult result, bool check)
+        {
+            return check ? result.CheckPaymentSendFailure() : result;
+        }
+
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "create_channel_manager",
@@ -168,9 +173,9 @@ namespace NRustLightning
         {
             if (paymentSecret is null)
             {
-                return MaybeCheck(_send_payment_without_secret(handle, ref route, paymentHash), check);
+                return MaybeCheckPaymentFailure(_send_payment_without_secret(handle, ref route, paymentHash), check);
             }
-            return MaybeCheck(_send_payment(handle, ref route, paymentHash, paymentSecret.Value), check);
+            return MaybeCheckPaymentFailure(_send_payment(handle, ref route, paymentHash, paymentSecret.Value), check);
         }
 
         [DllImport(RustLightning,
