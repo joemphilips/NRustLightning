@@ -36,6 +36,8 @@ namespace NRustLightning.Server.Configuration
 
         public Func<Task<byte[]>>? GetSeed;
         
+        public string InvoiceDBFilePath { get; set; }
+        
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
 
         public Config LoadArgs(IConfiguration config, ILogger logger)
@@ -144,6 +146,10 @@ namespace NRustLightning.Server.Configuration
                 seed = RandomUtils.GetUInt256().ToString();
             }
 
+            InvoiceDBFilePath = Path.Combine(DataDir, "InvoiceDb");
+            if (!Directory.Exists(InvoiceDBFilePath))
+                Directory.CreateDirectory(InvoiceDBFilePath);
+            
             var h = new HexEncoder();
             if (!(h.IsValid(seed) && seed.Length == 64))
             {

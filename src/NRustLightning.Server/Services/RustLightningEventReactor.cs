@@ -39,6 +39,7 @@ namespace NRustLightning.Server.Services
                         serviceProvider.GetRequiredService<IPeerManagerProvider>(),
                         serviceProvider.GetRequiredService<IWalletService>(),
                         n,
+                        serviceProvider.GetRequiredService<EventAggregator>(),
                         loggerFactory.CreateLogger(nameof(RustLightningEventReactor)+ $":{n.CryptoCode}"),
                         serviceProvider.GetRequiredService<IInvoiceRepository>()
                     );
@@ -65,6 +66,7 @@ namespace NRustLightning.Server.Services
         private readonly PeerManager _peerManager;
         private readonly MemoryPool<byte> _pool;
         private readonly NRustLightningNetwork _network;
+        private readonly EventAggregator _eventAggregator;
         private readonly ILogger _logger;
         private readonly IInvoiceRepository _invoiceRepository;
 
@@ -76,6 +78,7 @@ namespace NRustLightning.Server.Services
             IPeerManagerProvider peerManagerProvider,
             IWalletService walletService,
             NRustLightningNetwork network,
+            EventAggregator eventAggregator,
             ILogger logger,
             IInvoiceRepository invoiceRepository)
         {
@@ -84,6 +87,7 @@ namespace NRustLightning.Server.Services
             _peerManagerProvider = peerManagerProvider;
             _walletService = walletService;
             _network = network;
+            _eventAggregator = eventAggregator;
             _logger = logger;
             _invoiceRepository = invoiceRepository;
             _peerManager = peerManagerProvider.TryGetPeerManager(network.CryptoCode);
@@ -92,6 +96,7 @@ namespace NRustLightning.Server.Services
         private async Task HandleEvent(Event e, CancellationToken cancellationToken)
         {
             _logger.LogDebug($"Handling event {e}");
+            _eventAggregator.Publish(e);
             var chanMan = _peerManager.ChannelManager;
             if (e is Event.FundingGenerationReady f)
             {
@@ -123,14 +128,14 @@ namespace NRustLightning.Server.Services
                 var a = paymentReceived.Item.Amount;
                 var hash = paymentReceived.Item.PaymentHash;
                 var secret = paymentReceived.Item.PaymentSecret.GetOrDefault();
-                var (result, intendedAmount) = _invoiceRepository.PaymentReceived(hash,a,secret);
+                var (result, intendedAmount) = await _invoiceRepository.PaymentReceived(hash,a,secret);
                 _logger.LogDebug($"Received payment of type {result}. Payment hash {hash}. PaymentSecret: {secret}");
                 if (result == PaymentReceivedType.UnknownPaymentHash)
                 {
                     _logger.LogError($"Received payment for unknown payment_hash({hash}). ignoring.");
                     return;
                 }
-                var preImage = _invoiceRepository.GetPreimage(hash);
+                var preImage = await _invoiceRepository.GetPreimage(hash);
                 _logger.LogDebug($"preimage {preImage.ToHex()}");
                 if (result == PaymentReceivedType.Ok)
                 {
@@ -153,7 +158,7 @@ namespace NRustLightning.Server.Services
             }
             else if (e is Event.PaymentSent paymentSent)
             {
-                await _invoiceRepository.PaymentFinished(paymentSent.Item);
+                await _invoiceRepository.SetPreimage(paymentSent.Item);
             }
             else if (e is Event.PaymentFailed paymentFailed)
             {

@@ -1,8 +1,11 @@
+using System.IO;
 using System.Threading.Channels;
 using DotNetLightning.Utils;
 using LSATAuthenticationHandler;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Entities;
@@ -23,7 +26,8 @@ namespace NRustLightning.Server
             services.AddSingleton<ISocketDescriptorFactory, SocketDescriptorFactory>();
             services.AddSingleton<IKeysRepository, FlatFileKeyRepository>();
             services.AddSingleton<IRPCClientProvider, RPCClientProvider>();
-            services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
+            services.AddSingleton<IInvoiceRepository, DBTrieInvoiceRepository>();
+            services.AddSingleton<InvoiceService>();
             services.AddSingleton<RepositoryProvider>();
             services.AddSingleton<IWalletService, WalletService>();
             services.AddSingleton<P2PConnectionFactory>();
@@ -33,6 +37,7 @@ namespace NRustLightning.Server
             services.AddTransient<RequestResponseLoggingMiddleware>();
             services.AddHostedService<NBXplorerListeners>();
             services.AddSingleton<ChannelProvider>();
+            services.AddSingleton<EventAggregator>();
             services.AddHostedService<RustLightningEventReactors>();
         }
 

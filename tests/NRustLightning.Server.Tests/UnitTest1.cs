@@ -158,11 +158,6 @@ namespace NRustLightning.Server.Tests
             var ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await c.OpenChannelAsync(request));
             Assert.Contains("Unknown peer", ex.Message);
 
-            // but works fine if amount specified is decent.
-            request.PushMSat = 10000;
-            var resp = await c.OpenChannelAsync(request);
-            Assert.NotEqual(0UL, resp);
-            
             // overriding config with bogus value will cause an error. (too short too-self-delay)
             var overrideConfig = UserConfig.GetDefault();
             var bogusOwnChannelConfig = Adaptors.ChannelHandshakeConfig.GetDefault();
@@ -172,15 +167,18 @@ namespace NRustLightning.Server.Tests
             ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await c.OpenChannelAsync(request));
             Assert.Contains("Unknown peer", ex.Message);
             
-            // But works fine if the value is sane.
-            request.OverrideConfig = UserConfig.GetDefault();
-            resp = await c.OpenChannelAsync(request);
-            Assert.NotEqual(0UL, resp);
-            
-            var pk = new PubKey("03f8d2c299d24e4dac07dd920516a082b637b4f7918c2712ad7e1e0e841f90d7c2");
-            var newReq = new OpenChannelRequest { TheirNetworkKey = pk, ChannelValueSatoshis = 100000, PushMSat = 1000};
-            resp = await c.OpenChannelAsync(newReq);
+        }
 
+        [Fact]
+        public async Task CanCallSendPayment()
+        {
+            var hostBuilder = new HostBuilder().ConfigureTestHost();
+            using var host = await hostBuilder.StartAsync();
+            var c = host.GetTestNRustLightningClient();
+            var e = await Assert.ThrowsAsync<HttpRequestException>(async ()  => await c.PayToInvoiceAsync("lnbcrt1p03zqaapp54vmm7lg9fjjnm6v998v8cafzqcnzecjnqlq8dk55rhgzlrgstzasdqqcqzpgsp58vt9tjxuvx8jmy4q0wtdakdu24k6zlx8np67w8pxmvcmwcacsa3q9qy9qsqx8h8dmt0fsqel426tu0ayrscaty0pt4t3tg2rz0jpl7p3xyx6hynwhhc86h7apmmf9043n250275cuuad6npdasqclk0ga9htyq0v0qqjs26z3"));
+            Assert.Equal("You must specify payment amount if it is not included in invoice", e.Message);
+            e = await Assert.ThrowsAsync<HttpRequestException>(async ()  => await c.PayToInvoiceAsync("lnbcrt1p03zqaapp54vmm7lg9fjjnm6v998v8cafzqcnzecjnqlq8dk55rhgzlrgstzasdqqcqzpgsp58vt9tjxuvx8jmy4q0wtdakdu24k6zlx8np67w8pxmvcmwcacsa3q9qy9qsqx8h8dmt0fsqel426tu0ayrscaty0pt4t3tg2rz0jpl7p3xyx6hynwhhc86h7apmmf9043n250275cuuad6npdasqclk0ga9htyq0v0qqjs26z3", LNMoney.MilliSatoshis(100L)));
+            Assert.Contains("Cannot route when there are no outbound routes away from us", e.Message);
         }
 
         [Fact(Skip = "We must tackle on this when ready.")]

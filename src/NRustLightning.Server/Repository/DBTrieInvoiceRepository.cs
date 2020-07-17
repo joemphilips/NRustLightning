@@ -6,32 +6,38 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DBTrie;
 using DotNetLightning.Payment;
 using DotNetLightning.Utils;
 using LSATAuthenticationHandler;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NBitcoin;
 using NBitcoin.Crypto;
+using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Entities;
 using NRustLightning.Server.Extensions;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Networks;
+using NRustLightning.Server.Utils;
 using ResultUtils;
 
 namespace NRustLightning.Server.Repository
 {
-    public class InMemoryInvoiceRepository : IInvoiceRepository, ILSATInvoiceProvider
+    public class DBTrieInvoiceRepository : IInvoiceRepository, IAsyncDisposable
     {
-        private readonly IKeysRepository _keysRepository;
-        private readonly ISystemClock _systemClock;
-        private readonly NRustLightningNetworkProvider _networkProvider;
-        private readonly ILogger<InMemoryInvoiceRepository> _logger;
-        private readonly ConcurrentDictionary<Primitives.PaymentHash, (PaymentRequest, Primitives.PaymentPreimage)> _paymentRequests = new ConcurrentDictionary<Primitives.PaymentHash,(PaymentRequest, Primitives.PaymentPreimage)>();
+        private readonly string _dbPath;
+        private IKeysRepository _keysRepository;
+        private ISystemClock _systemClock;
+        private NRustLightningNetworkProvider _networkProvider;
+        private ILogger<DBTrieInvoiceRepository> _logger;
+        private DBTrieEngine? _engine;
 
-        public InMemoryInvoiceRepository(IKeysRepository keysRepository, ISystemClock systemClock, NRustLightningNetworkProvider networkProvider, ILogger<InMemoryInvoiceRepository> logger)
+        public DBTrieInvoiceRepository(IOptions<Config> conf, IKeysRepository keysRepository, ISystemClock systemClock, NRustLightningNetworkProvider networkProvider, ILogger<DBTrieInvoiceRepository> logger)
         {
+            _dbPath = conf.Value.InvoiceDBFilePath;
             _keysRepository = keysRepository;
             _systemClock = systemClock;
             _networkProvider = networkProvider;
@@ -48,7 +54,7 @@ namespace NRustLightning.Server.Repository
             throw new System.NotImplementedException();
         }
 
-        public Task<PaymentRequest> GetNewInvoice(NRustLightningNetwork network, InvoiceCreationOption option)
+        public async Task<PaymentRequest> GetNewInvoice(NRustLightningNetwork network, InvoiceCreationOption option)
         {
             if (network == null) throw new ArgumentNullException(nameof(network));
             
@@ -78,15 +84,34 @@ namespace NRustLightning.Server.Repository
             }
 
             _logger.LogDebug($"Publish new invoice with hash {paymentHash}");
-            Debug.Assert(_paymentRequests.TryAdd(paymentHash, (r.ResultValue, paymentPreimage)));
-            return Task.FromResult(r.ResultValue);
+            
+            _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
+            var tx = await _engine.OpenTransaction();
+            var table = tx.GetTable("hash-preimage");
+            await table.Insert(paymentHash.ToBytes(false), paymentPreimage.ToByteArray());
+            var table2 = tx.GetTable("hash-invoice");
+            await table2.Insert(paymentHash.ToBytes(false).ToHexString(), r.ResultValue.ToString());
+            await tx.Commit();
+            
+            return r.ResultValue;
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (_engine != null) await _engine.DisposeAsync();
         }
 
         public async Task<(PaymentReceivedType, LNMoney)> PaymentReceived(Primitives.PaymentHash paymentHash, LNMoney amount, uint256? secret = null)
         {
-            if (_paymentRequests.TryGetValue(paymentHash, out var item))
+            _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
+            var tx = await _engine.OpenTransaction();
+            var invoiceRow = await tx.GetTable("hash-invoice").Get(paymentHash.ToBytes(false));
+            if (invoiceRow != null)
             {
-                var (req, _preImage) = item;
+                var res = PaymentRequest.Parse(await invoiceRow.ReadValueString());
+                if (res.IsError)
+                    throw new NRustLightningException($"Failed to read payment request for {res.ErrorValue}");
+                var req = res.ResultValue;
                 if (req.AmountValue is null)
                 {
                     return (PaymentReceivedType.Ok, amount);
@@ -106,15 +131,12 @@ namespace NRustLightning.Server.Repository
             return (PaymentReceivedType.UnknownPaymentHash, amount);
         }
 
-        public Task<Primitives.PaymentPreimage> GetPreimage(Primitives.PaymentHash hash)
+        public async Task<Primitives.PaymentPreimage> GetPreimage(Primitives.PaymentHash hash)
         {
-            return Task.FromResult(_paymentRequests[hash].Item2);
-        }
-
-        public Task<PaymentRequest> GetNewInvoiceAsync(LNMoney amount)
-        {
-            var n = _networkProvider.GetByCryptoCode("BTC");
-            return GetNewInvoice(n, new InvoiceCreationOption {Amount = amount});
+            _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
+            var tx = await _engine.OpenTransaction();
+            var preimageRow = await tx.GetTable("hash-preimage").Get(hash.ToBytes(false));
+            return Primitives.PaymentPreimage.Create((await preimageRow.ReadValue()).ToArray());
         }
     }
 }

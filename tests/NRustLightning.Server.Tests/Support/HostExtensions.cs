@@ -17,6 +17,15 @@ namespace NRustLightning.Server.Tests.Support
             client.HttpClient = httpClient;
             return client;
         }
+
+        public static NRustLightningClient GetTestNRustLightningClient(this CustomWebApplicationFactory factory)
+        {
+            var httpClient = factory.CreateClient();
+            var client = new NRustLightningClient(httpClient.BaseAddress.ToString(), new NRustLightningNetworkProvider(NetworkType.Regtest).GetByCryptoCode("BTC"));
+            client.HttpClient = httpClient;
+            return client;
+        }
+        
         /// <summary>
         /// Removes all registered <see cref="ServiceLifetime.Transient"/> registrations of <see cref="TService"/> and adds in <see cref="TImplementation"/>.
         /// </summary>

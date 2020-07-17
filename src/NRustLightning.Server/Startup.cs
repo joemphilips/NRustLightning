@@ -52,8 +52,8 @@ namespace NRustLightning.Server
             });
             services.AddHttpClient();
             services.AddSingleton<ISystemClock, SystemClock>();
-            services.AddNRustLightning();
             services.ConfigureNRustLightning(Configuration, logger);
+            services.AddNRustLightning();
             services.AddMvc();
             services.ConfigureNRustLightningAuth(Configuration);
         }

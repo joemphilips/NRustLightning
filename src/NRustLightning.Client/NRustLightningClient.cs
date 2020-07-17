@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using DotNetLightning.Payment;
+using DotNetLightning.Utils;
 using Microsoft.AspNetCore.Http;
 using NBitcoin;
 using NBXplorer;
@@ -75,11 +76,12 @@ namespace NRustLightning.Client
             return RequestAsync<InvoiceResponse>($"/v1/payment/{cryptoCode}/invoice", HttpMethod.Post, option);
         }
 
-        public Task<PaymentResult> PayToInvoiceAsync(PaymentRequest invoice) => PayToInvoiceAsync(invoice.ToString());
+        public Task<PaymentResult> PayToInvoiceAsync(PaymentRequest invoice, LNMoney? amount = null) => PayToInvoiceAsync(invoice.ToString(), amount);
         
-        public Task<PaymentResult> PayToInvoiceAsync(string invoice)
+        public Task<PaymentResult> PayToInvoiceAsync(string invoice, LNMoney? amount = null)
         {
-            return RequestAsync<PaymentResult>($"/v1/payment/{cryptoCode}/pay/{invoice}", HttpMethod.Post);
+            var queryString = amount != null ? $"/?amountMSat={amount.Value.MilliSatoshi}" : "";
+            return RequestAsync<PaymentResult>($"/v1/payment/pay/{invoice}{queryString}", HttpMethod.Post);
         }
 
         public Task<ChannelInfoResponse> GetChannelDetailsAsync()
