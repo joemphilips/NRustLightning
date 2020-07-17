@@ -63,7 +63,12 @@ services:
 
   lnd:
     restart: unless-stopped
-    image: joemphilips/lnd:v0.9.0-beta
+    image: joemphilips/lnd:v0.10.2-beta
+    build:
+      context: ../../Dockerfiles
+      dockerfile: lnd
+      args:
+        LND_VERSION: v0.10.2-beta
     entrypoint: ["./start-lnd.sh"]
     environment:
       NETWORK: regtest
