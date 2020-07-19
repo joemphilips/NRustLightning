@@ -20,6 +20,7 @@ namespace NRustLightning.Server.Configuration
         public static int DefaultP2PPort = 9735;
         public static int DefaultHttpPort = 80;
         public static int DefaultHttpsPort = 443;
+        public static int DefaultPaymentTimeoutSec = 10;
         public static string DefaultP2PExternalIpStr = $"{DefaultP2PHost}:{DefaultP2PPort}";
         public static IPEndPoint DefaultP2PExternalIp = IPEndPoint.Parse($"{DefaultP2PHost}:{DefaultP2PPort}");
         public static string DefaultNBXplorerCookieFile (NetworkType network) => $"{HomePath}/.nbxplorer/{network}/.cookie";

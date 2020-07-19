@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using DotNetLightning.Utils;
 using DotNetLightning.Payment;
@@ -53,7 +54,7 @@ namespace NRustLightning.Server.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)] // When Invoice is malformed, or there was no path
         [ProducesResponseType(StatusCodes.Status500InternalServerError)] // When payment failed
         [Route("pay/{bolt11Invoice}")]
-        public async Task<IActionResult> Pay(string bolt11Invoice, long? amountMSat)
+        public async Task<IActionResult> Pay(string bolt11Invoice, long? amountMSat, CancellationToken ct)
         {
             var r = PaymentRequest.Parse(bolt11Invoice);
             if (r.IsError)
@@ -62,7 +63,7 @@ namespace NRustLightning.Server.Controllers
             var invoice = r.ResultValue;
             try
             {
-                await _invoiceService.PayInvoice(invoice, amountMSat);
+                await _invoiceService.PayInvoice(invoice, amountMSat, ct);
             }
             catch (NRustLightningException ex)
             {

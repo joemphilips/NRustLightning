@@ -97,6 +97,10 @@ If the server couldn't find any, it will create a new seed.
                     new Option<string>("--nbx.rpcurl", $"rpc endpoint for nbxplorer. (default: {Constants.DefaultNBXplorerUri})")
                     {
                         Argument = new Argument<string> {Arity = ArgumentArity.ZeroOrOne}
+                    },
+                    new Option<int>("--paymenttimeout", $"the time we wait (in seconds) for payment (default: {Constants.DefaultPaymentTimeoutSec})")
+                    {
+                        Argument = new Argument<int>() {Arity = ArgumentArity.ZeroOrOne}
                     }
                 };
             options.AddRange(op);

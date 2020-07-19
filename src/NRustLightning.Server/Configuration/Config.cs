@@ -37,6 +37,8 @@ namespace NRustLightning.Server.Configuration
         public Func<Task<byte[]>>? GetSeed;
         
         public string InvoiceDBFilePath { get; set; }
+
+        public int PaymentTimeoutSec { get; set; } = Constants.DefaultPaymentTimeoutSec;
         
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
 
@@ -160,6 +162,8 @@ namespace NRustLightning.Server.Configuration
                 var s = await File.ReadAllTextAsync(filePath);
                 return h.DecodeData(s);
             };
+
+            PaymentTimeoutSec = config.GetOrDefault("paymenttimeout", Constants.DefaultPaymentTimeoutSec);
             return this;
         }
     }
