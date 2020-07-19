@@ -2,6 +2,7 @@ using System.IO;
 using System.Threading.Channels;
 using DotNetLightning.Utils;
 using LSATAuthenticationHandler;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
@@ -30,7 +31,7 @@ namespace NRustLightning.Server
             services.AddSingleton<InvoiceService>();
             services.AddSingleton<RepositoryProvider>();
             services.AddSingleton<IWalletService, WalletService>();
-            services.AddSingleton<P2PConnectionFactory>();
+            services.AddSingleton<IConnectionFactory, P2PConnectionFactory>();
             services.AddSingleton<P2PConnectionHandler>();
             services.AddSingleton<INBXplorerClientProvider, NBXplorerClientProvider>();
             services.AddSingleton<IPeerManagerProvider, PeerManagerProvider>();

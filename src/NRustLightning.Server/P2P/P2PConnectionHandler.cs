@@ -22,7 +22,7 @@ namespace NRustLightning.Server.P2P
         public PeerManager PeerManager { get; }
         private readonly ISocketDescriptorFactory descriptorFactory;
         private readonly ILoggerFactory _loggerFactory;
-        private readonly P2PConnectionFactory _connectionFactory;
+        private readonly IConnectionFactory _connectionFactory;
         private readonly ILogger<P2PConnectionHandler> _logger;
         private readonly ConcurrentDictionary<EndPoint, ConnectionLoop> _connectionLoops = new ConcurrentDictionary<EndPoint, ConnectionLoop>();
         private readonly MemoryPool<byte> _pool;
@@ -33,7 +33,7 @@ namespace NRustLightning.Server.P2P
         public Channel<byte> EventNotify { get; }
  
         public P2PConnectionHandler(ISocketDescriptorFactory descriptorFactory, IPeerManagerProvider peerManager,
-            ILoggerFactory loggerFactory, P2PConnectionFactory connectionFactory)
+            ILoggerFactory loggerFactory, IConnectionFactory connectionFactory)
         {
             // TODO: Support other chains
             this.descriptorFactory = descriptorFactory ?? throw new ArgumentNullException(nameof(descriptorFactory));
