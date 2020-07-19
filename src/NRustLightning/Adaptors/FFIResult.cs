@@ -78,6 +78,7 @@ namespace NRustLightning.Adaptors
 
         internal FFIResult CheckPaymentSendFailure()
         {
+            if (IsSuccess) return this;
             var (msg, kind) = TryGetSendPaymentFailureMsg();
             throw new PaymentSendException(this, kind, msg);
         }

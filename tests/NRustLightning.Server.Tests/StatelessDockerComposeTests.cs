@@ -101,7 +101,7 @@ namespace NRustLightning.Server.Tests
             var localId = (await clients.NRustLightningHttpClient.GetInfoAsync()).ConnectionString.NodeId;
             await Support.Utils.Retry(20, TimeSpan.FromSeconds(1.2), async () =>
             {
-                var maybeLocalChannel = (await clients.NRustLightningHttpClient.GetChannelDetailsAsync()).Details.FirstOrDefault(cd => cd.RemoteNetworkId.Equals(theirNodeKey));
+                var maybeLocalChannel = (await clients.NRustLightningHttpClient.GetChannelDetailsAsync()).Details.FirstOrDefault(cd => cd.RemoteNetworkId.Equals(theirNodeKey) && cd.IsLive);
                 if (maybeLocalChannel is null)
                     return false;
                 // CLightning client throws null reference exception when it is used as ILightningClient.
@@ -234,7 +234,7 @@ namespace NRustLightning.Server.Tests
             
             await OutBoundChannelOpenRoundtrip(clients, clients.LndClient);
             // ---- payment tests ----
-            var invoice = await clients.LndLNClient.CreateInvoice(LightMoney.MilliSatoshis(10), "Foo bar", TimeSpan.FromSeconds(3600));
+            var invoice = await clients.LndLNClient.CreateInvoice(10000, "CanCreateInvoice", TimeSpan.FromMinutes(5));
             await clients.NRustLightningHttpClient.PayToInvoiceAsync(invoice.BOLT11);
         }
         
