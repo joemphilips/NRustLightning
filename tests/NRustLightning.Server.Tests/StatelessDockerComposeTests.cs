@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using BTCPayServer.Lightning;
@@ -192,6 +193,26 @@ namespace NRustLightning.Server.Tests
                 return payResp.Result == PayResult.Ok;
             });
         }
+
+        private async Task OutboundPaymentRoundTrip(Clients clients, ILightningClient lnClient)
+        {
+            await Task.Delay(10000); // not sure why we need this.
+            await Support.Utils.Retry(3, TimeSpan.FromSeconds(12), async () =>
+            {
+                var invoice = await lnClient.CreateInvoice(10000, "CanCreateInvoice", TimeSpan.FromMinutes(5));
+                try
+                {
+                    await clients.NRustLightningHttpClient.PayToInvoiceAsync(invoice.BOLT11);
+                }
+                catch (HttpRequestException ex)
+                {
+                    output.WriteLine($"Failed outbound payment {ex.Message}. retrying....");
+                    return false;
+                }
+
+                return true;
+            });
+        }
         
         [Fact]
         public async Task CanOpenCloseChannelsWithLND()
@@ -234,8 +255,10 @@ namespace NRustLightning.Server.Tests
             
             await OutBoundChannelOpenRoundtrip(clients, clients.LndClient);
             // ---- payment tests ----
-            var invoice = await clients.LndLNClient.CreateInvoice(10000, "CanCreateInvoice", TimeSpan.FromMinutes(5));
-            await clients.NRustLightningHttpClient.PayToInvoiceAsync(invoice.BOLT11);
+            // await Task.Delay(8000);
+            // var invoice = await clients.LndLNClient.CreateInvoice(10000, "CanCreateInvoice", TimeSpan.FromMinutes(5));
+            // await clients.NRustLightningHttpClient.PayToInvoiceAsync(invoice.BOLT11);
+            await OutboundPaymentRoundTrip(clients, clients.LndClient);
         }
         
         

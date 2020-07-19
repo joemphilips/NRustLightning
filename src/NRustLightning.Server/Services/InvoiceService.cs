@@ -53,13 +53,13 @@ namespace NRustLightning.Server.Services
             {
                 if (e is Event.PaymentFailed paymentFailed && paymentFailed.Item.PaymentHash.Equals(invoice.PaymentHash))
                 {
-                    _logger.LogError($"Payment with hash ({invoice.PaymentHash}) failed");
+                    _logger.LogError($"Payment for invoice ({invoice}) failed");
                     failureTcs.SetResult(paymentFailed);
                 }
 
                 if (e is Event.PaymentSent paymentSent && paymentSent.Item.Hash.Equals(invoice.PaymentHash))
                 {
-                    _logger.LogError($"Payment with hash ({invoice.PaymentHash}) succeed");
+                    _logger.LogInformation($"Payment for invoice ({invoice}) succeed");
                     successTcs.SetResult(paymentSent);
                 }
             });

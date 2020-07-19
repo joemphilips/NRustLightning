@@ -10,7 +10,6 @@ namespace NRustLightning.Server.Interfaces
 {
     public interface IInvoiceRepository
     {
-        Task PaymentStarted(PaymentRequest bolt11);
         
         Task<PaymentRequest> GetNewInvoice(
             NRustLightningNetwork network,

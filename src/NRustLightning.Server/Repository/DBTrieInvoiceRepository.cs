@@ -44,14 +44,12 @@ namespace NRustLightning.Server.Repository
             _logger = logger;
         }
         
-        public Task PaymentStarted(PaymentRequest bolt11)
+        public async Task SetPreimage(Primitives.PaymentPreimage paymentPreimage)
         {
-            throw new System.NotImplementedException();
-        }
-
-        public Task SetPreimage(Primitives.PaymentPreimage paymentPreimage)
-        {
-            throw new System.NotImplementedException();
+            _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
+            using var tx = await _engine.OpenTransaction();
+            await tx.GetTable("hash-preimage").Insert(paymentPreimage.Hash.ToBytes(false), paymentPreimage.ToByteArray());
+            await tx.Commit();
         }
 
         public async Task<PaymentRequest> GetNewInvoice(NRustLightningNetwork network, InvoiceCreationOption option)
@@ -86,7 +84,7 @@ namespace NRustLightning.Server.Repository
             _logger.LogDebug($"Publish new invoice with hash {paymentHash}");
             
             _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
-            var tx = await _engine.OpenTransaction();
+            using var tx = await _engine.OpenTransaction();
             var table = tx.GetTable("hash-preimage");
             await table.Insert(paymentHash.ToBytes(false), paymentPreimage.ToByteArray());
             var table2 = tx.GetTable("hash-invoice");
@@ -105,7 +103,7 @@ namespace NRustLightning.Server.Repository
         {
             _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
             var tx = await _engine.OpenTransaction();
-            var invoiceRow = await tx.GetTable("hash-invoice").Get(paymentHash.ToBytes(false));
+            using var invoiceRow = await tx.GetTable("hash-invoice").Get(paymentHash.ToBytes(false));
             if (invoiceRow != null)
             {
                 var res = PaymentRequest.Parse(await invoiceRow.ReadValueString());
@@ -135,7 +133,7 @@ namespace NRustLightning.Server.Repository
         {
             _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
             var tx = await _engine.OpenTransaction();
-            var preimageRow = await tx.GetTable("hash-preimage").Get(hash.ToBytes(false));
+            using var preimageRow = await tx.GetTable("hash-preimage").Get(hash.ToBytes(false));
             return Primitives.PaymentPreimage.Create((await preimageRow.ReadValue()).ToArray());
         }
     }

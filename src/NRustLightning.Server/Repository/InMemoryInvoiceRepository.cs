@@ -38,11 +38,6 @@ namespace NRustLightning.Server.Repository
             _logger = logger;
         }
         
-        public Task PaymentStarted(PaymentRequest bolt11)
-        {
-            throw new System.NotImplementedException();
-        }
-
         public Task SetPreimage(Primitives.PaymentPreimage paymentPreimage)
         {
             throw new System.NotImplementedException();
