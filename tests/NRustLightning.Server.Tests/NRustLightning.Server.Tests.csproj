@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BTCPayServer.Lightning.All" Version="1.1.8" />
     <PackageReference Include="Microsoft.AspNetcore.Mvc.Testing" Version="3.1.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
     <PackageReference Include="xunit" Version="2.4.*" />
@@ -17,7 +18,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\NRustLightning.Client\NRustLightning.Client.csproj" />
     <ProjectReference Include="..\DockerComposeFixture\DockerComposeFixture\DockerComposeFixture.csproj" />
-    <ProjectReference Include="..\BTCPayServer.Lightning\src\BTCPayServer.Lightning.All\BTCPayServer.Lightning.All.csproj" />
   </ItemGroup>
 
   <ItemGroup>

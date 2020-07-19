@@ -8,6 +8,3 @@
 [submodule "src/LiteDB"]
 	path = src/LiteDB
 	url = https://github.com/joemphilips/LiteDB
-[submodule "tests/BTCPayServer.Lightning"]
-	path = tests/BTCPayServer.Lightning
-	url = https://github.com/btcpayserver/BTCPayServer.Lightning
