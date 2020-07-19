@@ -6,7 +6,7 @@ using System.IO.Pipelines;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
-namespace NRustLightning.Server.P2P.Sockets
+namespace NRustLightning.Net.Sockets
 {
     public class SocketSender
     {

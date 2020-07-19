@@ -2,7 +2,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using NRustLightning.Server.P2P.Sockets;
+using NRustLightning.Net.Sockets;
 
 namespace NRustLightning.Server.P2P
 {

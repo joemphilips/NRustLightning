@@ -2,7 +2,7 @@ using System;
 using System.IO.Pipelines;
 using System.Net.Sockets;
 
-namespace NRustLightning.Server.P2P.Sockets
+namespace NRustLightning.Net.Sockets
 {
     public class SocketReceiver
     {

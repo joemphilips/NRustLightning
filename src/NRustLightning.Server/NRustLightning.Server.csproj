@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\NRustLightning\NRustLightning.csproj" />
     <ProjectReference Include="..\FSharp.SystemTextJson\FSharp.SystemTextJson.fsproj" />
+    <ProjectReference Include="..\NRustLightning.Net\NRustLightning.Net.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -10,9 +11,10 @@
     <PackageReference Include="LSATAuthenticationHandler" Version="1.0.0-date20200609-1247.git-f3bb08f-" />
     <PackageReference Include="Microsoft.IO.REcyclableMemoryStream" Version="1.3.3" />
     <PackageReference Include="NBXplorer.Client" Version="3.0.*" />
+    <PackageReference Condition=" '$(Configuration)' == 'Debug' " Include="NSwag.AspNetCore" Version="13.6.2" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20214.1" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.112.1" />
-    <PackageReference Include="System.IO.Pipelines" Version="4.7.1" />
+    <PackageReference Include="System.IO.Pipelines" Version="4.7.2" />
     <PackageReference Include="System.Linq.Async" Version="4.1.1" />
   </ItemGroup>
 

@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 
 using NRustLightning.Server.Interfaces;
+using NRustLightning.Net;
 
 namespace NRustLightning.Server.P2P
 {

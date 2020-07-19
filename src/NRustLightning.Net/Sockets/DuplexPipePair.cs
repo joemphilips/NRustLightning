@@ -1,6 +1,6 @@
 using System.IO.Pipelines;
 
-namespace NRustLightning.Server.P2P.Sockets
+namespace NRustLightning.Net.Sockets
 {
     public readonly struct DuplexPipePair
     {

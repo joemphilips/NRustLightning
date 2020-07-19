@@ -29,7 +29,7 @@ namespace NRustLightning.Server.Services
 
         public async Task PayInvoice(PaymentRequest invoice, long? amountMSat = null)
         {
-            var amount = invoice.AmountValue.ToNullable()?.MilliSatoshi ?? amountMSat;
+            var amount = invoice.AmountValue?.Value.MilliSatoshi ?? amountMSat;
             if (amount is null)
                 throw new NRustLightningException($"You must specify payment amount if it is not included in invoice");
             

@@ -1,7 +1,7 @@
 using System.IO.Pipelines;
 using System.Threading.Channels;
 using NRustLightning.Interfaces;
-using NRustLightning.Server.P2P;
+using NRustLightning.Net;
 
 namespace NRustLightning.Server.Interfaces
 {

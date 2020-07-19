@@ -5,8 +5,9 @@ using System.Threading;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using NRustLightning.Interfaces;
+using NRustLightning.Net;
+using NRustLightning.Net.Sockets;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.P2P;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace NRustLightning.Server.Services

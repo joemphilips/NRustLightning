@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace NRustLightning.Server.P2P.Sockets
+namespace NRustLightning.Net.Sockets
 {
     internal static class BufferExtensions
     {
