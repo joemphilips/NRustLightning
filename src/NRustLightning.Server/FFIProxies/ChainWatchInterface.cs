@@ -57,14 +57,16 @@ namespace NRustLightning.Server.FFIProxies
             var shortChannelId = Primitives.ShortChannelId.FromUInt64(utxoId);
             _logger.LogDebug($"query block by shortchannel id {shortChannelId}");
             var b = NbxplorerClient.RPCClient.GetBlock(shortChannelId.BlockHeight.Item);
-            if (b.Transactions.Count > shortChannelId.BlockIndex.Item)
+            if (b.Transactions.Count < shortChannelId.BlockIndex.Item)
             {
+                _logger.LogError($"Tx not found in block {shortChannelId.BlockHeight.Item}. block index was{shortChannelId.BlockIndex.Item}. but actual tx number in block is {b.Transactions.Count}");
                 error = ChainError.UnknownTx;
                 return false;
             }
             var tx = b.Transactions[(int)shortChannelId.BlockIndex.Item];
-            if (tx.Outputs.Count > shortChannelId.TxOutIndex.Item)
+            if (tx.Outputs.Count < shortChannelId.TxOutIndex.Item)
             {
+                _logger.LogError($"Tx not found in block {shortChannelId.BlockHeight.Item}. txout index was {shortChannelId.TxOutIndex.Item}. but actual tx number of txout is {tx.Outputs.Count}");
                 error = ChainError.UnknownTx;
                 return false;
             }
