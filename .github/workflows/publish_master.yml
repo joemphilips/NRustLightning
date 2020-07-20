@@ -54,5 +54,5 @@ jobs:
 
       - name: pack and push to nuget
         run: |
-          bash -c "dotnet pack -p:Configuration=Release src/NRustLightning --version-suffix date`date +%Y%m%d-%H%M`.git-`echo $GITHUB_SHA | cut -c 1-7`-${{ matrix.RID }}"
+          bash -c "dotnet pack -p:Configuration=Release src/NRustLightning --version-suffix date`date +%Y%m%d-%H%M`.git-`echo $GITHUB_SHA | head -c 1-7`-${{ matrix.RID }}"
           bash -c "dotnet nuget push ./src/NRustLightning/bin/Release/NRustLightning.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json"
