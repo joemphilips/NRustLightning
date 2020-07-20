@@ -5,6 +5,3 @@
 [submodule "tests/DockerComposeFixture"]
 	path = tests/DockerComposeFixture
 	url = https://github.com/joemphilips/DockerComposeFixture
-[submodule "src/LiteDB"]
-	path = src/LiteDB
-	url = https://github.com/joemphilips/LiteDB
