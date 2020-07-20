@@ -8,10 +8,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Middlewares;
+
+#if DEBUG
+using Microsoft.OpenApi.Models;
+#endif
 
 namespace NRustLightning.Server
 {
