@@ -12,7 +12,6 @@ namespace NRustLightning
             CallingConvention = CallingConvention.Cdecl)]
         private static extern unsafe FFIResult _create_peer_manager(
             IntPtr seedPtr,
-            in Network n, 
             UserConfig* userConfig,
             
             ChannelManagerHandle channelManagerHandle,
@@ -31,7 +30,6 @@ namespace NRustLightning
 
         internal static unsafe FFIResult create_peer_manager(
             IntPtr seed,
-            in Network n, 
             UserConfig* userConfig,
             
             ChannelManagerHandle channelManagerHandle,
@@ -50,7 +48,6 @@ namespace NRustLightning
             ) =>
             MaybeCheck(_create_peer_manager(
                 seed,
-                n,
                 userConfig,
                 channelManagerHandle,
                 ref installWatchTx,

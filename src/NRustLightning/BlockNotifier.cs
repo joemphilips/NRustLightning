@@ -21,20 +21,17 @@ namespace NRustLightning
             _handle = handle;
             _deps = deps;
         }
-
-        public static BlockNotifier Create(NBitcoin.Network nbitcoinNetwork, ILogger logger,
+        public static BlockNotifier Create(
             IChainWatchInterface chainWatchInterface)
         {
-            var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
-            return Create(nbitcoinNetwork, loggerDelegatesHolder, chainWatchInterfaceDelegatesHolder);
+            return Create(chainWatchInterfaceDelegatesHolder);
         }
 
-        internal static BlockNotifier Create(NBitcoin.Network nbitcoinNetwork, ILoggerDelegatesHolder loggerDelegatesHolder, IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder)
+        internal static BlockNotifier Create(IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder)
         {
-            var network = Extensions.ToFFINetwork(nbitcoinNetwork);
-            Interop.create_block_notifier(in network, loggerDelegatesHolder.Log, chainWatchInterfaceDelegatesHolder.InstallWatchTx, chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint, chainWatchInterfaceDelegatesHolder.WatchAllTxn, chainWatchInterfaceDelegatesHolder.GetChainUtxo, chainWatchInterfaceDelegatesHolder.FilterBlock ,chainWatchInterfaceDelegatesHolder.ReEntered, out var handle);
-            return new BlockNotifier(handle, new object[]{ loggerDelegatesHolder, chainWatchInterfaceDelegatesHolder });
+            Interop.create_block_notifier(chainWatchInterfaceDelegatesHolder.InstallWatchTx, chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint, chainWatchInterfaceDelegatesHolder.WatchAllTxn, chainWatchInterfaceDelegatesHolder.GetChainUtxo, chainWatchInterfaceDelegatesHolder.FilterBlock ,chainWatchInterfaceDelegatesHolder.ReEntered, out var handle);
+            return new BlockNotifier(handle, new object[]{ chainWatchInterfaceDelegatesHolder });
         }
 
         public void RegisterChannelManager(ChannelManager channelManager)

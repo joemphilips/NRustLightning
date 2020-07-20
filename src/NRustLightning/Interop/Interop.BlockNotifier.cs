@@ -13,8 +13,6 @@ namespace NRustLightning
             EntryPoint = "create_block_notifier",
             ExactSpelling = true)]
         static extern FFIResult _create_block_notifier(
-            in Network network,
-            ref Log log,
             ref InstallWatchTx installWatchTx,
             ref InstallWatchOutPoint installWatchOutPoint,
             ref WatchAllTxn watchAllTxn,
@@ -25,8 +23,6 @@ namespace NRustLightning
             );
 
         internal static FFIResult create_block_notifier(
-            in Network network,
-            Log log,
             InstallWatchTx installWatchTx,
             InstallWatchOutPoint installWatchOutPoint,
             WatchAllTxn watchAllTxn,
@@ -35,7 +31,7 @@ namespace NRustLightning
             ReEntered reEntered,
             out BlockNotifierHandle handle,
             bool check = true
-        ) => MaybeCheck(_create_block_notifier(in network, ref log, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref reEntered, out handle), check);
+        ) => MaybeCheck(_create_block_notifier(ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref reEntered, out handle), check);
 
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,

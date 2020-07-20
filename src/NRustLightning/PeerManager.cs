@@ -72,8 +72,6 @@ namespace NRustLightning
             int tickIntervalMSec = 30000
             )
         {
-            var network = nbitcoinNetwork.ToFFINetwork();
-            
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
             var keysInterfaceDelegatesHolder = new KeysInterfaceDelegatesHolder(keysInterface);
             var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
@@ -82,7 +80,7 @@ namespace NRustLightning
 
             var ourNodeSecret = keysInterface.GetNodeSecret().ToBytes();
             var chanMan = ChannelManager.Create(nbitcoinNetwork, in config, chainWatchInterfaceDelegatesHolder, keysInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder, currentBlockHeight);
-            var blockNotifier = BlockNotifier.Create(nbitcoinNetwork, loggerDelegatesHolder, chainWatchInterfaceDelegatesHolder);
+            var blockNotifier = BlockNotifier.Create(chainWatchInterfaceDelegatesHolder);
             blockNotifier.RegisterChannelManager(chanMan);
             unsafe
             {
@@ -92,7 +90,6 @@ namespace NRustLightning
                 {
                     Interop.create_peer_manager(
                         (IntPtr)seedPtr,
-                        in network,
                         configPtr,
                         chanMan.Handle,
                         chainWatchInterfaceDelegatesHolder.InstallWatchTx,
