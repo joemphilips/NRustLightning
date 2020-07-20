@@ -7,11 +7,13 @@ open DotNetLightning.Serialize
 
 open System
 
+open DotNetLightning.Utils
+
 open NBitcoin
 open ResultUtils
 type ChannelDetails = {
     ChannelId: uint256
-    ShortChannelId: Option<uint64>
+    ShortChannelId: Option<ShortChannelId>
     RemoteNetworkId: PubKey
     CounterPartyFeatures: FeatureBit
     ChannelValueSatoshis: uint64
@@ -23,7 +25,7 @@ type ChannelDetails = {
     with
     static member Deserialize(ls: LightningReaderStream) =
         let channelId = ls.ReadUInt256(false)
-        let shortChannelId = ls.ReadOption() |> Option.map(fun x -> UInt64.FromSpan (x.AsSpan(), false))
+        let shortChannelId = ls.ReadOption() |> Option.map(ShortChannelId.From8Bytes)
         {
             ChannelId = channelId
             ShortChannelId = shortChannelId
@@ -38,7 +40,7 @@ type ChannelDetails = {
         
     member this.Serialize(ls: LightningWriterStream) =
         ls.Write(this.ChannelId, false)
-        ls.Write(this.ShortChannelId |> Option.map(fun x -> x.GetBytesBigEndian()))
+        ls.Write(this.ShortChannelId |> Option.map(fun x -> x.ToBytes()))
         ls.Write(this.RemoteNetworkId)
         ls.WriteWithLen16(this.CounterPartyFeatures.ToByteArray())
         ls.Write(this.ChannelValueSatoshis, false)

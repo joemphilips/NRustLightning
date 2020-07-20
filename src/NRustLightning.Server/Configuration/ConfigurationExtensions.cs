@@ -45,6 +45,8 @@ namespace NRustLightning.Server.Configuration
             var dict = new Dictionary<string, string>();
             foreach (var op in CommandLine.GetOptions())
             {
+                if (op.Name == "nrustlightning")
+                    continue;
                 var s = op.Name.Replace(".", ":").Replace("_", "");
                 var v = commandline.CommandResult.ValueForOption<object>(op.Name);
                 if (v != null)
@@ -107,6 +109,5 @@ namespace NRustLightning.Server.Configuration
                 NetworkType.Mainnet;
         }
         public static string EnvironmentVariablePrefix => "_NRUSTLIGHTNING";
-
     }
 }

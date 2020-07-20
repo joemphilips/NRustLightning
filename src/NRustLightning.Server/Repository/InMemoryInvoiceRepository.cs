@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DotNetLightning.Payment;
 using DotNetLightning.Utils;
 using LSATAuthenticationHandler;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBitcoin.Crypto;
 using NRustLightning.Server.Entities;
@@ -15,6 +18,7 @@ using NRustLightning.Server.Extensions;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Networks;
+using ResultUtils;
 
 namespace NRustLightning.Server.Repository
 {
@@ -23,39 +27,37 @@ namespace NRustLightning.Server.Repository
         private readonly IKeysRepository _keysRepository;
         private readonly ISystemClock _systemClock;
         private readonly NRustLightningNetworkProvider _networkProvider;
+        private readonly ILogger<InMemoryInvoiceRepository> _logger;
         private readonly ConcurrentDictionary<Primitives.PaymentHash, (PaymentRequest, Primitives.PaymentPreimage)> _paymentRequests = new ConcurrentDictionary<Primitives.PaymentHash,(PaymentRequest, Primitives.PaymentPreimage)>();
 
-        public InMemoryInvoiceRepository(IKeysRepository keysRepository, ISystemClock systemClock, NRustLightningNetworkProvider networkProvider)
+        public InMemoryInvoiceRepository(IKeysRepository keysRepository, ISystemClock systemClock, NRustLightningNetworkProvider networkProvider, ILogger<InMemoryInvoiceRepository> logger)
         {
             _keysRepository = keysRepository;
             _systemClock = systemClock;
             _networkProvider = networkProvider;
+            _logger = logger;
         }
         
-        public Task PaymentStarted(PaymentRequest bolt11)
+        public Task SetPreimage(Primitives.PaymentPreimage paymentPreimage)
         {
             throw new System.NotImplementedException();
         }
 
-        public Task PaymentFinished(Primitives.PaymentPreimage paymentPreimage)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public PaymentRequest GetNewInvoice(NRustLightningNetwork network, Primitives.PaymentPreimage paymentPreimage,
-            InvoiceCreationOption option)
+        public Task<PaymentRequest> GetNewInvoice(NRustLightningNetwork network, InvoiceCreationOption option)
         {
             if (network == null) throw new ArgumentNullException(nameof(network));
-            if (paymentPreimage == null) throw new ArgumentNullException(nameof(paymentPreimage));
+            
+            Primitives.PaymentPreimage paymentPreimage = Primitives.PaymentPreimage.Create(RandomUtils.GetBytes(32));
 
             var nodeId = Primitives.NodeId.NewNodeId(_keysRepository.GetNodeId());
+            var paymentHash = paymentPreimage.Hash;
             var taggedFields =
                 new List<TaggedField>
                 {
-                    TaggedField.NewPaymentHashTaggedField(paymentPreimage.Hash),
+                    TaggedField.NewPaymentHashTaggedField(paymentHash),
                     TaggedField.NewNodeIdTaggedField(nodeId),
                     (option.EncodeDescriptionWithHash.HasValue && option.EncodeDescriptionWithHash.Value) ?
-                        TaggedField.NewDescriptionHashTaggedField(new uint256(Hashes.SHA256(Encoding.UTF8.GetBytes(option.Description)))) :
+                        TaggedField.NewDescriptionHashTaggedField(new uint256(Hashes.SHA256(Encoding.UTF8.GetBytes(option.Description)), false)) :
                         TaggedField.NewDescriptionTaggedField(option.Description),
                 };
             if (option.PaymentSecret != null)
@@ -70,16 +72,17 @@ namespace NRustLightning.Server.Repository
                 throw new InvalidDataException($"Error when creating our payment request: {r.ErrorValue}");
             }
 
-            _paymentRequests.TryAdd(paymentPreimage.Hash, (r.ResultValue, paymentPreimage));
-            return r.ResultValue;
+            _logger.LogDebug($"Publish new invoice with hash {paymentHash}");
+            Debug.Assert(_paymentRequests.TryAdd(paymentHash, (r.ResultValue, paymentPreimage)));
+            return Task.FromResult(r.ResultValue);
         }
 
-        public (PaymentReceivedType, LNMoney) PaymentReceived(Primitives.PaymentHash paymentHash, LNMoney amount, uint256? secret = null)
+        public async Task<(PaymentReceivedType, LNMoney)> PaymentReceived(Primitives.PaymentHash paymentHash, LNMoney amount, uint256? secret = null)
         {
             if (_paymentRequests.TryGetValue(paymentHash, out var item))
             {
                 var (req, _preImage) = item;
-                if (req.AmountValue.ToNullable() is null)
+                if (req.AmountValue is null)
                 {
                     return (PaymentReceivedType.Ok, amount);
                 }
@@ -98,16 +101,15 @@ namespace NRustLightning.Server.Repository
             return (PaymentReceivedType.UnknownPaymentHash, amount);
         }
 
-        public Primitives.PaymentPreimage GetPreimage(Primitives.PaymentHash hash)
+        public Task<Primitives.PaymentPreimage> GetPreimage(Primitives.PaymentHash hash)
         {
-            return _paymentRequests[hash].Item2;
+            return Task.FromResult(_paymentRequests[hash].Item2);
         }
-        
+
         public Task<PaymentRequest> GetNewInvoiceAsync(LNMoney amount)
         {
-            var n = _networkProvider.GetByCryptoCode("btc");
-            var p = Primitives.PaymentPreimage.Create(RandomUtils.GetBytes(32));
-            return Task.FromResult(GetNewInvoice(n, p, new InvoiceCreationOption(){Amount = amount}));
+            var n = _networkProvider.GetByCryptoCode("BTC");
+            return GetNewInvoice(n, new InvoiceCreationOption {Amount = amount});
         }
     }
 }

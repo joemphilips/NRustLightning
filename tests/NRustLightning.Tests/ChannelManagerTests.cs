@@ -48,8 +48,9 @@ namespace NRustLightning.Tests
             var feeEstiamtor = new TestFeeEstimator();
             var n = NBitcoin.Network.TestNet;
             var chainWatchInterface = new ChainWatchInterfaceUtil(n);
-            var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }.AsSpan();
-            var channelManager = ChannelManager.Create(seed, n, in TestUserConfig.Default, chainWatchInterface, logger, broadcaster, feeEstiamtor, 400000);
+            var keySeed = new byte[]{ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 };
+            var keysInterface = new KeysManager(keySeed, DateTime.UnixEpoch);
+            var channelManager = ChannelManager.Create(n, in TestUserConfig.Default, chainWatchInterface, keysInterface, logger, broadcaster, feeEstiamtor, 400000);
             return channelManager;
         }
         
@@ -65,8 +66,8 @@ namespace NRustLightning.Tests
             var routes = new RoutesWithFeature(route1);
             
             var paymentHash = new uint256();
-            var e = Assert.Throws<FFIException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
-            Assert.Equal("FFI against rust-lightning failed (InternalError), Error: AllFailedRetrySafe([No channel available with first hop!])", e.Message);
+            var e = Assert.Throws<PaymentSendException>(() => channelManager.SendPayment(routes, paymentHash.ToBytes()));
+            Assert.Equal(PaymentSendFailureType.AllFailedRetrySafe, e.Kind);
             channelManager.Dispose();
         }
 

@@ -5,15 +5,18 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 using CommandLine;
 using DotNetLightning.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
+using NBitcoin.DataEncoders;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
 using NRustLightning.Server.Configuration.SubConfiguration;
 using NRustLightning.Server.Networks;
+using NRustLightning.Server.Utils;
 using StandardConfiguration;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using Network = NBitcoin.Network;
@@ -30,7 +33,14 @@ namespace NRustLightning.Server.Configuration
         public List<ChainConfiguration> ChainConfiguration { get; } = new List<ChainConfiguration>();
 
         public UserConfigObject RustLightningConfig { get; set; } = new UserConfigObject();
+
+        public Func<Task<byte[]>>? GetSeed;
         
+        public string InvoiceDBFilePath { get; set; }
+
+        public int PaymentTimeoutSec { get; set; } = Constants.DefaultPaymentTimeoutSec;
+
+        public int DBCacheMB { get; set; } = Constants.DefaultDBCacheMB;
         
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
 
@@ -123,6 +133,41 @@ namespace NRustLightning.Server.Configuration
                 throw new ConfigException($"Invalid chains {invalidChains}");
 
             config.GetSection("ln").Bind(RustLightningConfig);
+
+            string? seed = null;
+            var filePath = Path.Join(DataDir, "node_secret");
+            if (File.Exists(filePath))
+            {
+                logger.LogDebug($"reading seed from {filePath}");
+                seed = File.ReadAllText(filePath);
+            }
+            if (seed is null)
+                seed = config.GetOrDefault("seed", String.Empty);
+            if (String.IsNullOrEmpty(seed))
+            {
+                logger.LogWarning($"seed not found in {filePath}! You can specify it with --seed option.");
+                logger.LogInformation("generating new seed...");
+                seed = RandomUtils.GetUInt256().ToString();
+            }
+
+            InvoiceDBFilePath = Path.Combine(DataDir, "InvoiceDb");
+            if (!Directory.Exists(InvoiceDBFilePath))
+                Directory.CreateDirectory(InvoiceDBFilePath);
+            
+            var h = new HexEncoder();
+            if (!(h.IsValid(seed) && seed.Length == 64))
+            {
+                throw new NRustLightningException($"Seed corrupted {seed}");
+            }
+            File.WriteAllText(filePath, seed);
+            GetSeed = async () => {
+                var s = await File.ReadAllTextAsync(filePath);
+                return h.DecodeData(s);
+            };
+
+            PaymentTimeoutSec = config.GetOrDefault("paymenttimeout", Constants.DefaultPaymentTimeoutSec);
+
+            DBCacheMB = config.GetOrDefault("dbcache", Constants.DefaultDBCacheMB);
             return this;
         }
     }

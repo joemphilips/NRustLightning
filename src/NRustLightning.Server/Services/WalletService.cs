@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,6 +35,13 @@ namespace NRustLightning.Server.Services
         private readonly ILogger<WalletService> _logger;
         private readonly ConcurrentDictionary<NRustLightningNetwork, BitcoinExtKey> BaseXPrivs = new ConcurrentDictionary<NRustLightningNetwork, BitcoinExtKey>();
         private readonly ConcurrentDictionary<NRustLightningNetwork, DerivationStrategyBase> DerivationStrategyBaseCache = new ConcurrentDictionary<NRustLightningNetwork, DerivationStrategyBase>();
+        
+        /// <summary>
+        /// To prevent using same outpoint when we try to create more than one channel in a short timespan, we want to
+        /// hold the information about which outpoint has already been used (but not actually broadcasted.)
+        /// </summary>
+        private SemaphoreSlim _outpointAssumedAsSpentLock = new SemaphoreSlim(1, 1);
+        private readonly FixedSizeQueue<OutPoint> _outpointAssumedAsSpent  = new FixedSizeQueue<OutPoint>(30);
 
         /// <summary>
         /// Service for handling on-chain balance
@@ -83,26 +91,41 @@ namespace NRustLightning.Server.Services
         {
             var deriv = await GetOurDerivationStrategyAsync(network, cancellationToken).ConfigureAwait(false);
             var nbXplorerClient = _nbXplorerClientProvider.GetClient(network);
-            var req = new CreatePSBTRequest()
+            await _outpointAssumedAsSpentLock.WaitAsync(cancellationToken);
+            try
             {
-                Destinations =
-                    new []
-                    {
-                        new CreatePSBTDestination
+                var req = new CreatePSBTRequest()
+                {
+                    Destinations =
+                        new[]
                         {
-                            Amount = amount,
-                            Destination = destination
-                        },
-                    }.ToList()
-            };
-            var psbtResponse = await nbXplorerClient.CreatePSBTAsync(deriv, req, cancellationToken).ConfigureAwait(false);
-            var psbt = SignPSBT(psbtResponse.PSBT, network);
-            if (!psbt.IsAllFinalized())
-            {
-                psbt.Finalize();
-            }
+                            new CreatePSBTDestination
+                            {
+                                Amount = amount,
+                                Destination = destination
+                            },
+                        }.ToList(),
+                    ExcludeOutpoints = _outpointAssumedAsSpent.ToList()
+                };
+                var psbtResponse = await nbXplorerClient.CreatePSBTAsync(deriv, req, cancellationToken)
+                    .ConfigureAwait(false);
+                var psbt = SignPSBT(psbtResponse.PSBT, network);
+                if (!psbt.IsAllFinalized())
+                {
+                    psbt.Finalize();
+                }
 
-            return psbt.ExtractTransaction();
+                var tx = psbt.ExtractTransaction();
+                foreach (var prevOut in tx.Inputs.Select(txIn => txIn.PrevOut))
+                {
+                    _outpointAssumedAsSpent.Enqueue(prevOut);
+                }
+                return tx;
+            }
+            finally
+            {
+                _outpointAssumedAsSpentLock.Release();
+            }
         }
 
         public async Task<Money> GetBalanceAsync(NRustLightningNetwork network, CancellationToken ct = default)
@@ -123,9 +146,9 @@ namespace NRustLightning.Server.Services
             return a.Address;
         }
 
-        public Task BroadcastAsync(Transaction tx, NRustLightningNetwork n)
+        public async Task BroadcastAsync(Transaction tx, NRustLightningNetwork n)
         {
-            return _nbXplorerClientProvider.GetClient(n).BroadcastAsync(tx);
+            await _nbXplorerClientProvider.GetClient(n).BroadcastAsync(tx);
         }
 
         private PSBT SignPSBT(PSBT psbt, NRustLightningNetwork network)

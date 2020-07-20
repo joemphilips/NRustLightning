@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading.Tasks;
 using BTCPayServer.Lightning;
 using BTCPayServer.Lightning.CLightning;
@@ -74,6 +75,14 @@ namespace NRustLightning.Server.Tests
                 {"NBXPLORER_PORT", ports[4]},
                 {"DATA_PATH", dataPath }
             };
+            var envFile = Path.Join(dataPath, "env.sh");
+            using (TextWriter w = File.AppendText(envFile))
+            {
+                foreach (var kv in env)
+                {
+                    w.WriteLine($"export {kv.Key}='{kv.Value}'");
+                }
+            }
             try
             {
                 await dockerFixture.InitAsync(() => new DockerFixtureOptions
@@ -81,7 +90,11 @@ namespace NRustLightning.Server.Tests
                     DockerComposeFiles = new[] {"docker-compose.yml"},
                     EnvironmentVariables = env,
                     DockerComposeDownArgs = "--remove-orphans --volumes",
+                    // we need this because c-lightning is not working well with bind mount.
+                    // If we use volume mount instead, this is the only way to recreate the volume at runtime.
+                    DockerComposeUpArgs = "--renew-anon-volumes",
                     StartupTimeoutSecs = 400,
+                    LogFilePath = Path.Join(dataPath, "docker-compose.log"),
                     CustomUpTest = o =>
                     {
                         return
@@ -130,7 +143,6 @@ namespace NRustLightning.Server.Tests
                 webHost.ConfigureTestServices(services =>
                 {
                     services.AddSingleton(Network.RegTest);
-                    services.AddSingleton<IKeysRepository, InMemoryKeysRepository>();
                     services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
                     services.AddSingleton<IMacaroonSecretRepository, InMemoryMacaroonSecretRepository>();
                     services.AddSingleton<ILSATInvoiceProvider, InMemoryInvoiceRepository>();

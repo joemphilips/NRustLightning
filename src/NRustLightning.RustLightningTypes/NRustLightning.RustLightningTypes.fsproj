@@ -10,10 +10,12 @@
         <Compile Include="StreamExtensions.fs" />
         <Compile Include="Event.fs" />
         <Compile Include="ChannelDetails.fs" />
+        <Compile Include="RouteHint.fs" />
+        <Compile Include="ChannelKeys.fs" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200618-0035-git-d1d600d" />
+      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200716-0844-git-70da61d" />
     </ItemGroup>
 
 </Project>

@@ -14,12 +14,16 @@ namespace NRustLightning
             return check ? result.Check() : result;
         }
 
+        private static FFIResult MaybeCheckPaymentFailure(FFIResult result, bool check)
+        {
+            return check ? result.CheckPaymentSendFailure() : result;
+        }
+
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "create_channel_manager",
             ExactSpelling = true)]
         private static unsafe extern FFIResult _create_ffi_channel_manager(
-            IntPtr seed,
             in Network n,
             UserConfig* config,
             
@@ -30,6 +34,13 @@ namespace NRustLightning
             ref FilterBlock filterBlock,
             ref ReEntered reEntered,
             
+            ref GetNodeSecret getNodeSecret,
+            ref GetDestinationScript getDestinationScript,
+            ref GetShutdownKey getShutdownKey,
+            ref GetChannelKeys getChannelKeys,
+            ref GetOnionRand getOnionRand,
+            ref GetChannelId getChannelId,
+            
             ref BroadcastTransaction broadcastTransaction,
             ref Log log,
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
@@ -38,7 +49,6 @@ namespace NRustLightning
             );
 
         internal static unsafe FFIResult create_ffi_channel_manager(
-            IntPtr seed,
             in Network n,
             UserConfig* config,
             
@@ -49,6 +59,13 @@ namespace NRustLightning
             FilterBlock filterBlock,
             ReEntered reEntered,
             
+            GetNodeSecret getNodeSecret,
+            GetDestinationScript getDestinationScript,
+            GetShutdownKey getShutdownKey,
+            GetChannelKeys getChannelKeys,
+            GetOnionRand getOnionRand,
+            GetChannelId getChannelId,
+            
             BroadcastTransaction broadcastTransaction,
             Log log,
             GetEstSatPer1000Weight getEstSatPer1000Weight,
@@ -57,7 +74,9 @@ namespace NRustLightning
             bool check = true
         )
         {
-            return MaybeCheck(_create_ffi_channel_manager(seed, n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref  reEntered, ref broadcastTransaction,ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
+            return MaybeCheck(_create_ffi_channel_manager(n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref  reEntered,
+                ref getNodeSecret, ref getDestinationScript, ref getShutdownKey, ref getChannelKeys, ref getOnionRand, ref getChannelId,
+                ref broadcastTransaction,ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
         }
         
         [DllImport(RustLightning,
@@ -154,9 +173,9 @@ namespace NRustLightning
         {
             if (paymentSecret is null)
             {
-                return MaybeCheck(_send_payment_without_secret(handle, ref route, paymentHash), check);
+                return MaybeCheckPaymentFailure(_send_payment_without_secret(handle, ref route, paymentHash), check);
             }
-            return MaybeCheck(_send_payment(handle, ref route, paymentHash, paymentSecret.Value), check);
+            return MaybeCheckPaymentFailure(_send_payment(handle, ref route, paymentHash, paymentSecret.Value), check);
         }
 
         [DllImport(RustLightning,
@@ -227,6 +246,17 @@ namespace NRustLightning
             return MaybeCheck(_claim_funds(paymentPreimage, paymentSecret, expectedAmount, handle, out result), true);
         }
         
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "claim_funds_without_secret",
+            ExactSpelling = true)]
+        static extern FFIResult _claim_funds_without_secret(IntPtr paymentPreimage, ulong expectedAmount, ChannelManagerHandle handle, out byte result);
+
+        internal static FFIResult claim_funds_without_secret(IntPtr paymentPreimage, ulong expectedAmount, ChannelManagerHandle handle, out byte result)
+        {
+            return MaybeCheck(_claim_funds_without_secret(paymentPreimage, expectedAmount, handle, out result), true);
+        }
+        
         
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,
@@ -249,6 +279,16 @@ namespace NRustLightning
         internal static FFIResult get_and_clear_pending_events(ChannelManagerHandle handle, IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualBufLen,
             bool check = true)
             => MaybeCheck(_get_and_clear_pending_events(handle, bufOut, bufLen, out actualBufLen), check);
+        
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "serialize_channel_manager",
+            ExactSpelling = true)]
+        static extern FFIResult _serialize_channel_manager(IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualBufLen, ChannelManagerHandle handle);
+
+        internal static FFIResult serialize_channel_manager(IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualBufLen, ChannelManagerHandle handle,
+            bool check = true)
+            => MaybeCheck(_serialize_channel_manager(bufOut, bufLen, out actualBufLen, handle), check);
         
 
         [DllImport(RustLightning,

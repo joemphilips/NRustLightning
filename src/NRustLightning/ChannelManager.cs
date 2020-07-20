@@ -23,17 +23,17 @@ namespace NRustLightning
         internal readonly ChannelManagerHandle Handle;
         private bool _disposed = false;
         private readonly object[] _deps;
-        internal ChannelManager(ChannelManagerHandle handle, object[] deps = null)
+        internal ChannelManager(ChannelManagerHandle handle, object[]? deps = null)
         {
             _deps = deps ?? new object[] {};
             Handle = handle ?? throw new ArgumentNullException(nameof(handle));
         }
 
         public static ChannelManager Create(
-            Span<byte> seed,
             NBitcoin.Network nbitcoinNetwork,
             IUserConfigProvider config,
             IChainWatchInterface chainWatchInterface,
+            IKeysInterface keysInterface,
             ILogger logger,
             IBroadcaster broadcaster,
             IFeeEstimator feeEstimator,
@@ -41,14 +41,14 @@ namespace NRustLightning
         )
         {
             var c = config.GetUserConfig();
-            return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
+            return Create(nbitcoinNetwork, in c, chainWatchInterface, keysInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
         }
 
         public static ChannelManager Create(
-            Span<byte> seed,
             NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
+            IKeysInterface keysInterface,
             ILogger logger,
             IBroadcaster broadcaster,
             IFeeEstimator feeEstimator,
@@ -57,14 +57,15 @@ namespace NRustLightning
         {
             
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            var keysInterfaceDelegatesHolder = new KeysInterfaceDelegatesHolder(keysInterface);
             var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
             var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
             var feeEstimatorDelegatesHolder = new FeeEstimatorDelegatesHolder(feeEstimator);
             return Create(
-                seed,
                 nbitcoinNetwork,
                 in config,
                 chainWatchInterfaceDelegatesHolder,
+                keysInterfaceDelegatesHolder,
                 loggerDelegatesHolder,
                 broadcasterDelegatesHolder,
                 feeEstimatorDelegatesHolder,
@@ -72,25 +73,22 @@ namespace NRustLightning
                 );
         }
         internal static ChannelManager Create(
-            Span<byte> seed,
             NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
+            KeysInterfaceDelegatesHolder keysInterfaceDelegatesHolder,
             ILoggerDelegatesHolder loggerDelegatesHolder,
             IBroadcasterDelegatesHolder broadcasterDelegatesHolder,
             IFeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder,
             ulong currentBlockHeight
             )
         {
-            Errors.AssertDataLength(nameof(seed), seed.Length, 32);
             var n = nbitcoinNetwork.ToFFINetwork();
             unsafe
             {
-                fixed (byte* b = seed)
                 fixed (UserConfig* configPtr = &config)
                 {
                     Interop.create_ffi_channel_manager(
-                        (IntPtr)b,
                         in n,
                         configPtr,
                         chainWatchInterfaceDelegatesHolder.InstallWatchTx,
@@ -99,12 +97,20 @@ namespace NRustLightning
                         chainWatchInterfaceDelegatesHolder.GetChainUtxo,
                         chainWatchInterfaceDelegatesHolder.FilterBlock,
                         chainWatchInterfaceDelegatesHolder.ReEntered,
+                        
+                        keysInterfaceDelegatesHolder.GetNodeSecret,
+                        keysInterfaceDelegatesHolder.GetDestinationScript,
+                        keysInterfaceDelegatesHolder.GetShutdownKey,
+                        keysInterfaceDelegatesHolder.GetChannelKeys,
+                        keysInterfaceDelegatesHolder.GetOnionRand,
+                        keysInterfaceDelegatesHolder.GetChannelId,
+                        
                         broadcasterDelegatesHolder.BroadcastTransaction,
                         loggerDelegatesHolder.Log,
                         feeEstimatorDelegatesHolder.getEstSatPer1000Weight,
                         currentBlockHeight,
                         out var handle);
-                    return new ChannelManager(handle, new object[] {chainWatchInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder});
+                    return new ChannelManager(handle, new object[] {chainWatchInterfaceDelegatesHolder, keysInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder});
                 }
             }
         }
@@ -166,7 +172,7 @@ namespace NRustLightning
         public unsafe void ForceCloseChannel(uint256 channelId)
         {
             if (channelId == null) throw new ArgumentNullException(nameof(channelId));
-            var bytes = channelId.ToBytes();
+            var bytes = channelId.ToBytes(false);
             fixed (byte* b = bytes)
             {
                 Interop.force_close_channel((IntPtr) b, Handle);
@@ -181,6 +187,15 @@ namespace NRustLightning
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash)
             => SendPayment(routesWithFeature, paymentHash, new byte[0]);
         
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="routesWithFeature"></param>
+        /// <param name="paymentHash"></param>
+        /// <param name="paymentSecret"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="PaymentSendException"></exception>
         public void SendPayment(RoutesWithFeature routesWithFeature, Span<byte> paymentHash, Span<byte> paymentSecret)
         {
             if (routesWithFeature == null) throw new ArgumentNullException(nameof(routesWithFeature));
@@ -195,12 +210,19 @@ namespace NRustLightning
                 fixed (byte* s = paymentSecret)
                 {
                     var route = new FFIRoute((IntPtr)r, (UIntPtr)routesInBytes.Length);
+                    FFIResult result;
                     if (paymentSecret.Length == 32)
-                        Interop.send_payment(Handle, ref route, (IntPtr)p, (IntPtr)s);
+                        result = Interop.send_payment(Handle, ref route, (IntPtr)p, (IntPtr)s, false);
                     if (paymentSecret.Length == 0)
                     {
-                        Interop.send_payment(Handle, ref route, (IntPtr)p);
+                        result = Interop.send_payment(Handle, ref route, (IntPtr)p);
                     }
+                    else
+                    {
+                        throw new Exception("Unreachable");
+                    }
+                    if (result.IsPaymentSendFailure)
+                    {}
                 }
             }
         }
@@ -228,10 +250,10 @@ namespace NRustLightning
             Interop.timer_chan_freshness_every_min(Handle);
         }
 
-        public unsafe bool FailHTLCBackwards(Primitives.PaymentHash paymentHash, Primitives.PaymentPreimage paymentSecret = null)
+        public unsafe bool FailHTLCBackwards(Primitives.PaymentHash paymentHash, uint256? paymentSecret = null)
         {
             if (paymentHash == null) throw new ArgumentNullException(nameof(paymentHash));
-            var paymentHashBytes = paymentHash.Value.ToBytes();
+            var paymentHashBytes = paymentHash.ToBytes(false);
             if (paymentSecret is null)
             {
                 fixed (byte* p1 = paymentHashBytes)
@@ -240,7 +262,7 @@ namespace NRustLightning
                     return result == 1;
                 }
             }
-            var paymentSecretBytes = paymentSecret.ToBytes().ToArray();
+            var paymentSecretBytes = paymentSecret.ToBytes(false).ToArray();
             fixed (byte* p1 = paymentHashBytes)
             fixed (byte* p2 = paymentSecretBytes)
             {
@@ -249,28 +271,50 @@ namespace NRustLightning
             }
         }
 
-        public unsafe bool ClaimFunds(Primitives.PaymentPreimage paymentPreimage, uint256 paymentSecret, ulong expectedAmount)
+        public unsafe bool ClaimFunds(Primitives.PaymentPreimage paymentPreimage, uint256? paymentSecret, ulong expectedAmount)
         {
             if (paymentPreimage == null) throw new ArgumentNullException(nameof(paymentPreimage));
-            if (paymentSecret == null) throw new ArgumentNullException(nameof(paymentSecret));
             var b1 = paymentPreimage.ToBytes().ToArray();
-            var b2 = paymentSecret.ToBytes().ToArray();
-            fixed(byte* p1 = b1)
-            fixed (byte* p2 = b2)
+            if (paymentSecret != null)
             {
-                Interop.claim_funds((IntPtr) p1, (IntPtr) p2, expectedAmount, Handle, out var result);
-                return result == 1;
+                var b2 = paymentSecret.ToBytes(false).ToArray();
+                fixed (byte* p1 = b1)
+                fixed (byte* p2 = b2)
+                {
+                    Interop.claim_funds((IntPtr) p1, (IntPtr) p2, expectedAmount, Handle, out var result);
+                    return result == 1;
+                }
+            }
+            else
+            {
+                fixed (byte* p1 = b1)
+                {
+                    Interop.claim_funds_without_secret((IntPtr) p1, expectedAmount, Handle, out var result);
+                    return result == 1;
+                }
             }
         }
 
         public unsafe void UpdateFee(uint256 channelId, uint feeRatePerKw)
         {
             if (channelId == null) throw new ArgumentNullException(nameof(channelId));
-            var b = channelId.ToBytes();
+            var b = channelId.ToBytes(false);
             fixed (byte* c = b)
             {
                 Interop.update_fee((IntPtr)c, feeRatePerKw, Handle, true);
             }
+        }
+
+        public unsafe byte[] SerializerChannelManager(MemoryPool<byte> pool)
+        {
+            Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
+                (bufOut, bufLength, handle) =>
+                {
+                    var ffiResult = Interop.serialize_channel_manager(bufOut, bufLength, out var actualLength, Handle);
+                    return (ffiResult, actualLength);
+                };
+
+            return WithVariableLengthReturnBuffer(pool, func, Handle);
         }
         
         public Event[] GetAndClearPendingEvents(MemoryPool<byte> pool)

@@ -7,11 +7,10 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
-using NRustLightning.Utils;
+using NRustLightning.Net.Sockets;
 
-namespace NRustLightning.Server.P2P.Sockets
+namespace NRustLightning.Server.P2P
 {
     public class SocketConnection : ConnectionContext, IConnectionInherentKeepAliveFeature
     {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -118,7 +119,10 @@ namespace NRustLightning.Interfaces
             {
                 if (chainWatchInterface.TryGetChainUtxoImpl(hash.ToUInt256(), id, ref error, out var script, out var a))
                 {
-                    var scriptPubKeyBytes = script.ToBytes();
+                    using var m = new MemoryStream();
+                    var stream = new BitcoinStream(m, true);
+                    stream.ReadWrite(ref script);
+                    var scriptPubKeyBytes = m.ToArray();
                     scriptLen = (UIntPtr) scriptPubKeyBytes.Length;
                     satoshis = (ulong) a.Satoshi;
                     Unsafe.CopyBlock(ref scriptPtr, ref scriptPubKeyBytes[0], (uint) scriptPubKeyBytes.Length);

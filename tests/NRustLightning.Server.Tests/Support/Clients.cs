@@ -7,6 +7,7 @@ using BTCPayServer.Lightning.LND;
 using NBitcoin;
 using NBitcoin.RPC;
 using NRustLightning.Client;
+using System.Linq;
 
 namespace NRustLightning.Server.Tests.Support
 {
@@ -51,16 +52,61 @@ namespace NRustLightning.Server.Tests.Support
             var nrlAddress = (await NRustLightningHttpClient.GetNewDepositAddressAsync()).Address;
             foreach (var addr in new[] {clAddress, lndAddress, nrlAddress})
             {
-                await this.BitcoinRPCClient.GenerateToAddressAsync(1, addr);
+                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(2m));
+                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(2m));
+                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(2m));
             }
 
-            await this.BitcoinRPCClient.GenerateAsync(Network.RegTest.Consensus.CoinbaseMaturity + 1);
+            await this.BitcoinRPCClient.GenerateAsync(20);
+            // check wallet info and nbxplorer info is synchronized.
+            await Support.Utils.Retry(5, TimeSpan.FromSeconds(3), async () =>
+            {
+                var walletInfo = await this.NRustLightningHttpClient.GetWalletInfoAsync();
+                if (walletInfo.OnChainBalanceSatoshis == 0)
+                    return false;
+                var explorerInfo = await NBXClient.GetBalanceAsync(walletInfo.DerivationStrategy);
+                return (NBitcoin.Money.Satoshis(walletInfo.OnChainBalanceSatoshis).Equals(explorerInfo.Total));
+            }, "walletinfo in nbxplorer and nrustlightning not synchronized");
+            await WaitChainSync();
+        }
+        
+        private async Task WaitChainSync()
+        {
+            await Support.Utils.Retry(6, TimeSpan.FromSeconds(3), async () =>
+            {
+                var blockHeights =
+                    await Task.WhenAll(
+                        Task.Run(async () =>
+                        {
+                            var info = await LndClient.SwaggerClient.GetInfoAsync();
+                            return info.Block_height.Value;
+                        }),
+                        Task.Run(async () =>
+                        {
+                            var i = await CLightningClient.GetInfoAsync();
+                            return (long)i.BlockHeight;
+                        }),
+                        Task.Run(async () =>
+                        {
+                            var i = await NBXClient.GetStatusAsync();
+                            return (long)i.ChainHeight;
+                        }),
+                        Task.Run(async () =>
+                        {
+                            var i = await BitcoinRPCClient.GetBlockchainInfoAsync();
+                            return (long) i.Blocks;
+                        })
+                    );
+                return !(blockHeights.Any(h => h != blockHeights[0]));
+            }, "Block height never synchronized!");
+            await Task.Delay(1000);
+
         }
 
         public async Task CreateEnoughTxToEstimateFee()
         {
-            var txPerBlock = 20;
-            var nBlock = 20;
+            var txPerBlock = 6;
+            var nBlock = 6;
             for (int i = 0; i < nBlock; i++)
             {
                 for (int j = 0; j < txPerBlock; j++)
@@ -71,6 +117,8 @@ namespace NRustLightning.Server.Tests.Support
 
                 await BitcoinRPCClient.GenerateAsync(1);
             }
+
+            await WaitChainSync();
         }
     }
 }

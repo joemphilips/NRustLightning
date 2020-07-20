@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
 
-namespace NRustLightning.Server.P2P
+namespace NRustLightning.Net
 {
     public class SocketDescriptor : ISocketDescriptor
     {

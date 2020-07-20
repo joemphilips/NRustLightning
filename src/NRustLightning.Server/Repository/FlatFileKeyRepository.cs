@@ -1,44 +1,44 @@
+using System;
 using System.IO;
-using System.Security.Permissions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NBitcoin;
+using NRustLightning.Interfaces;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Interfaces;
+using NRustLightning.Utils;
+using RustLightningTypes;
 
 namespace NRustLightning.Server.Repository
 {
     public class FlatFileKeyRepository : IKeysRepository
     {
-        private readonly IOptions<Config> config;
-        private readonly ILogger<FlatFileKeyRepository> logger;
-        private Key Secret;
+        private readonly IOptions<Config> _config;
+        private readonly ILogger<FlatFileKeyRepository> _logger;
+        private KeysManager _keysManager;
 
         public FlatFileKeyRepository(IOptions<Config> config, ILogger<FlatFileKeyRepository> logger)
         {
-            this.config = config;
-            this.logger = logger;
-            var filePath = Path.Join(config.Value.DataDir, "node_secret");
-            if (File.Exists(filePath))
-            {
-                Secret = new Key(File.ReadAllBytes(filePath));
-            }
-            else
-            {
-                Secret = new Key(RandomUtils.GetBytes(32));
-                this.logger.LogInformation($"Could not find key file in {filePath} . So creating new key");
-                File.WriteAllBytes(filePath, Secret.ToBytes());
-            }
-            NodeId = Secret.PubKey;
-            logger.LogInformation($"Our nodeid is {NodeId}");
+            _config = config;
+            _logger = logger;
+            var seed = _config.Value.GetSeed().GetAwaiter().GetResult();
+            _keysManager = new KeysManager(seed, DateTime.UtcNow);
+            _logger.LogInformation($"Our nodeid is {GetNodeSecret().PubKey.ToHex()}");
         }
 
         public RepositorySerializer Serializer { get; set; }
+        public Key GetNodeSecret() => _keysManager.GetNodeSecret();
+        public Script GetDestinationScript() => _keysManager.GetDestinationScript();
 
-        public PubKey NodeId { get; set; }
+        public PubKey GetShutdownKey() => _keysManager.GetShutdownKey();
 
-        public Key GetNodeSecret() => Secret;
+        public ChannelKeys GetChannelKeys(bool inbound, ulong channelValueSatoshis) =>
+            _keysManager.GetChannelKeys(inbound, channelValueSatoshis);
 
-        public PubKey GetNodeId() => NodeId;
+        public Tuple<Key, uint256> GetOnionRand() =>
+            _keysManager.GetOnionRand();
+
+        public uint256 GetChannelId() => _keysManager.GetChannelId();
+
     }
 }

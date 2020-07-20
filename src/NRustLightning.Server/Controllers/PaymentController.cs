@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using DotNetLightning.Utils;
 using DotNetLightning.Payment;
@@ -6,12 +8,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
+using NRustLightning.Adaptors;
+using NRustLightning.Server.Extensions;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Models.Response;
 using NRustLightning.Server.Networks;
 using NRustLightning.Server.Repository;
 using NRustLightning.Server.Services;
+using NRustLightning.Server.Utils;
+using RustLightningTypes;
 
 namespace NRustLightning.Server.Controllers
 {
@@ -21,26 +27,25 @@ namespace NRustLightning.Server.Controllers
     public class PaymentController : ControllerBase
     {
         private readonly IInvoiceRepository _invoiceRepository;
-        private readonly IPeerManagerProvider _peerManagerProvider;
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly RepositoryProvider _repositoryProvider;
+        private readonly InvoiceService _invoiceService;
 
-        public PaymentController(IInvoiceRepository invoiceRepository, IPeerManagerProvider peerManagerProvider,
-            NRustLightningNetworkProvider networkProvider, RepositoryProvider repositoryProvider)
+        public PaymentController(IInvoiceRepository invoiceRepository,
+            NRustLightningNetworkProvider networkProvider, RepositoryProvider repositoryProvider, InvoiceService invoiceService)
         {
             _invoiceRepository = invoiceRepository;
-            _peerManagerProvider = peerManagerProvider;
             _networkProvider = networkProvider;
             _repositoryProvider = repositoryProvider;
+            _invoiceService = invoiceService;
         }
         
         [HttpPost]
         [Route("{cryptoCode}/invoice")]
-        public JsonResult Invoice(string cryptoCode,[FromBody] InvoiceCreationOption option)
+        public async Task<JsonResult> Invoice(string cryptoCode,[FromBody] InvoiceCreationOption option)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode);
-            var preimage = Primitives.PaymentPreimage.Create(RandomUtils.GetBytes(32));
-            var invoice = _invoiceRepository.GetNewInvoice(n, preimage, option);
+            var invoice = await _invoiceRepository.GetNewInvoice(n, option);
             var resp = new InvoiceResponse {Invoice = invoice};
             return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);
         }
@@ -48,16 +53,28 @@ namespace NRustLightning.Server.Controllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status400BadRequest)] // When Invoice is malformed, or there was no path
         [ProducesResponseType(StatusCodes.Status500InternalServerError)] // When payment failed
-        public async Task<IActionResult> Pay(string cryptoCode, string bolt11Invoice)
+        [Route("pay/{bolt11Invoice}")]
+        public async Task<IActionResult> Pay(string bolt11Invoice, long? amountMSat, CancellationToken ct)
         {
-            var n = _networkProvider.GetByCryptoCode(cryptoCode);
             var r = PaymentRequest.Parse(bolt11Invoice);
-            if (r.IsOk)
+            if (r.IsError)
+                return BadRequest($"Failed to parse invoice ({bolt11Invoice}): " + r.ErrorValue);
+            
+            var invoice = r.ResultValue;
+            try
             {
-                await _invoiceRepository.PaymentStarted(r.ResultValue);
-                return Ok();
+                await _invoiceService.PayInvoice(invoice, amountMSat, ct);
             }
-            throw new HttpRequestException(r.ErrorValue);
+            catch (NRustLightningException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (FFIException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            return Ok();
         }
     }
 }

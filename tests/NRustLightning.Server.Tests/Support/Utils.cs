@@ -35,14 +35,14 @@ namespace NRustLightning.Server.Tests.Support
             }
         }
 
-        public static async Task Retry(int times, TimeSpan delay, Func<Task<bool>> operationToRetryUntilItReturnsTrue)
+        public static async Task Retry(int times, TimeSpan delay, Func<Task<bool>> operationToRetryUntilItReturnsTrue, string? msg = null)
         {
             var attempts = 0;
             while (!(await operationToRetryUntilItReturnsTrue.Invoke()))
             {
                 attempts++;
                 if (attempts == times)
-                    throw new Exception("operation failed.");
+                    throw new Exception("operation failed. " + msg);
                 await Task.Delay(delay);
             }
         }

@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace NRustLightning.Server.P2P.Sockets
+namespace NRustLightning.Net.Sockets
 {
     public class SocketAwaitable : ICriticalNotifyCompletion
     {

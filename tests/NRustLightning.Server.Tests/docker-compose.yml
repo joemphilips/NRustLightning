@@ -63,7 +63,12 @@ services:
 
   lnd:
     restart: unless-stopped
-    image: joemphilips/lnd:v0.9.0-beta
+    image: joemphilips/lnd:v0.10.2-beta
+    build:
+      context: ../../Dockerfiles
+      dockerfile: lnd
+      args:
+        LND_VERSION: v0.10.2-beta
     entrypoint: ["./start-lnd.sh"]
     environment:
       NETWORK: regtest
@@ -106,23 +111,29 @@ services:
           - lnd
   lightningd:
     restart: "unless-stopped"
-    stop_signal: SIGKILL
-    image: btcpayserver/lightning:v0.8.2-dev
+    # stop_signal: SIGKILL
+    image: joemphilips/lightningd:v0.8.2.1-dev
+    build:
+      context: ../../Dockerfiles
+      dockerfile: lightningd
+      args:
+        DEVELOPER: 1
     environment:
       EXPOSE_TCP: "true"
       LIGHTNINGD_NETWORK: regtest
-      LIGHTNINGD_CHAIN: btc
-      LIGHTNINGD_OPT: |
-        bitcoin-datadir=/etc/bitcoin
-        bitcoin-rpcconnect=bitcoind
-        bitcoin-rpcuser=${BITCOIND_RPC_USER}
-        bitcoin-rpcpassword=${BITCOIND_RPC_PASS}
-        bitcoin-rpcport=${BITCOIND_RPC_PORT}
-        network=regtest
-        announce-addr=lightningd
-        log-level=debug
-        dev-fast-gossip
-        dev-bitcoind-poll=1
+      LIGHTNINGD_VERSION: master-dev
+    command:
+      - --network=regtest
+      - --addr=lightningd:9735
+      - --bitcoin-datadir=/etc/bitcoin
+      - --bitcoin-rpcconnect=bitcoind
+      - --bitcoin-rpcuser=${BITCOIND_RPC_USER}
+      - --bitcoin-rpcpassword=${BITCOIND_RPC_PASS}
+      - --bitcoin-rpcport=${BITCOIND_RPC_PORT}
+      - --announce-addr=lightningd
+      - --log-level=debug
+      - --dev-fast-gossip
+      - --dev-bitcoind-poll=1
     expose:
       - "9735" # p2p port
       - "9835" # rpc port
@@ -134,10 +145,13 @@ services:
       main:
         aliases:
           - lightningd
-    # We wanted to use bind mount here, but sometimes socket name becomes
-    # Too long and lightningd cannot bind rpc socket.
     volumes:
-      - "lightningd_dir:/root/.lightning"
+      # We use anonymous volumes for persisting data for c-lightning.
+      # This is because c-lightning's unix-socket-based RPC does not work well with
+      # bind mounts. And we will assure that tests will be run with blank volume by
+      # `--renew-anon-volumes` option (thus we couldn't use named volumes), but be
+      # careful to clean the volume if you run docker-compose up manually.
+      - "/root/.lightning"
       - "${DATA_PATH}/.bitcoin:/etc/bitcoin"
 
   nrustlightning:
@@ -158,6 +172,7 @@ services:
       - --externalip="nrustlightning:9735"
       - --nbx.rpcurl="http://nbxplorer:${NBXPLORER_PORT}"
       - --ln.channel_options.announced_channel=true
+      - --seed=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 
     ports:
       - "${HTTP_PORT:?no_http_port_set}:8080"
     expose:
@@ -175,8 +190,5 @@ services:
       main:
         aliases:
           - nrustlightning
-volumes:
-  lightningd_dir:
-
 networks:
   main:

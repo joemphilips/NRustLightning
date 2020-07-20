@@ -3,13 +3,12 @@ using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-
 using Microsoft.Extensions.Logging;
 using NRustLightning.Adaptors;
 
-namespace NRustLightning.Server.P2P
+namespace NRustLightning.Net
 {
-    internal class ConnectionLoop : IAsyncDisposable
+    public class ConnectionLoop : IAsyncDisposable
     {
         public PeerManager PeerManager { get; }
         private readonly IDuplexPipe _transport;

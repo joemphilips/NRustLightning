@@ -1,5 +1,8 @@
 using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
+using NRustLightning.Interfaces;
 
 namespace NRustLightning.Adaptors
 {
@@ -14,6 +17,7 @@ namespace NRustLightning.Adaptors
             DeserializationFailure,
             BufferTooSmall,
             InternalError,
+            PaymentSendFailure
         }
 
         private readonly Kind _kind;
@@ -25,6 +29,7 @@ namespace NRustLightning.Adaptors
 
         public bool IsSuccess => _kind == Kind.Ok;
         public bool IsBufferTooSmall => _kind == Kind.BufferTooSmall;
+        public bool IsPaymentSendFailure => _kind == Kind.PaymentSendFailure;
 
         internal FFIResult Check()
         {
@@ -40,6 +45,62 @@ namespace NRustLightning.Adaptors
 
             throw new FFIException($"FFI against rust-lightning failed with {_kind}", lastResult);
         }
+
+        private (string, PaymentSendFailureType) TryGetSendPaymentFailureMsg()
+        {
+            var (lastResult, msg) = GetLastResult();
+            if (!(lastResult._kind == _kind && lastResult._id == _id))
+            {
+                return ("Failed to send payment for unknown reason", PaymentSendFailureType.Unknown);
+            }
+            if (msg.Contains("ParameterError"))
+            {
+                return (msg, PaymentSendFailureType.ParameterError);
+            }
+
+            if (msg.Contains("PathParameterError"))
+            {
+                return (msg, PaymentSendFailureType.PathParameterError);
+            }
+
+            if (msg.Contains("AllFailedRetrySafe"))
+            {
+                return (msg, PaymentSendFailureType.AllFailedRetrySafe);
+            }
+            if (msg.Contains("PartialFailure"))
+            {
+                return (msg, PaymentSendFailureType.PartialFailure);
+            }
+
+            this.Check();
+            throw new Exception("Unreachable");
+        }
+
+        internal FFIResult CheckPaymentSendFailure()
+        {
+            if (IsSuccess) return this;
+            var (msg, kind) = TryGetSendPaymentFailureMsg();
+            throw new PaymentSendException(this, kind, msg);
+        }
+    }
+
+    public class PaymentSendException : FFIException
+    {
+        public PaymentSendFailureType Kind;
+
+        public PaymentSendException(FFIResult result, PaymentSendFailureType kind, string msg) : base(msg, result)
+        {
+            Kind = kind;
+        }
+    }
+
+    public enum PaymentSendFailureType : uint
+    {
+        Unknown,
+        ParameterError,
+        PathParameterError,
+        AllFailedRetrySafe,
+        PartialFailure
     }
 
     public class FFIException : Exception

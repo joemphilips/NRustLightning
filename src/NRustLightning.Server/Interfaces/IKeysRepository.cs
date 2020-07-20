@@ -1,13 +1,13 @@
 using DotNetLightning.Payment;
 using NBitcoin;
+using NRustLightning.Interfaces;
 using NRustLightning.Server.Repository;
 
 namespace NRustLightning.Server.Interfaces
 {
-    public interface IKeysRepository
+    public interface IKeysRepository : IKeysInterface
     {
-        Key GetNodeSecret();
-        PubKey GetNodeId();
+        PubKey GetNodeId() => this.GetNodeSecret().PubKey;
 
         RepositorySerializer Serializer { get; set; }
     }

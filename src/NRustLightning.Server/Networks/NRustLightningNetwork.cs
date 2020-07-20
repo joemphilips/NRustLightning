@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DotNetLightning.Payment;
 using NBitcoin;
 using NBitcoin.Altcoins;
 using NBXplorer;
@@ -42,10 +43,14 @@ namespace NRustLightning.Server.Networks
     {
         public NetworkType NetworkType { get; }
         Dictionary<string, NRustLightningNetwork> _Networks = new Dictionary<string, NRustLightningNetwork>();
+        Dictionary<string, NRustLightningNetwork> _invoicePrefixToNetwork = new Dictionary<string, NRustLightningNetwork>();
 
         private void Add(INetworkSet networkSet, NetworkType networkType, NBXplorerNetwork nbXplorerNetwork, KeyPath baseKeyPath, string bolt11InvoicePrefix)
         {
-            _Networks.Add(networkSet.CryptoCode.ToLowerInvariant(), new NRustLightningNetwork(networkSet, networkType, nbXplorerNetwork, baseKeyPath, bolt11InvoicePrefix));
+            var n = new NRustLightningNetwork(networkSet, networkType, nbXplorerNetwork, baseKeyPath,
+                bolt11InvoicePrefix);
+            _Networks.Add(networkSet.CryptoCode.ToLowerInvariant(), n);
+            _invoicePrefixToNetwork.Add(bolt11InvoicePrefix, n);
         }
         NBXplorerNetworkProvider nbXplorerNetworkProvider;
         public NRustLightningNetworkProvider(NetworkType networkType)
@@ -64,6 +69,18 @@ namespace NRustLightning.Server.Networks
         public NRustLightningNetwork GetByCryptoCode(string cryptoCode)
         {
             return _Networks[cryptoCode.ToLowerInvariant()];
+        }
+
+        public NRustLightningNetwork? TryGetByInvoice(PaymentRequest payreq)
+        {
+            NRustLightningNetwork? result;
+            _invoicePrefixToNetwork.TryGetValue(payreq.PrefixValue, out result);
+            return result;
+        }
+
+        public NRustLightningNetwork GetByInvoice(PaymentRequest payreq)
+        {
+            return TryGetByInvoice(payreq) ?? Utils.Utils.Fail<NRustLightningNetwork>($"Unknown invoice prefix {payreq.PrefixValue}");
         }
     }
 }

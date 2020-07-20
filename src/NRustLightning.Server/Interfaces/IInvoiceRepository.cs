@@ -10,12 +10,9 @@ namespace NRustLightning.Server.Interfaces
 {
     public interface IInvoiceRepository
     {
-        Task PaymentStarted(PaymentRequest bolt11);
-        Task PaymentFinished(Primitives.PaymentPreimage paymentPreimage);
         
-        PaymentRequest GetNewInvoice(
+        Task<PaymentRequest> GetNewInvoice(
             NRustLightningNetwork network,
-            Primitives.PaymentPreimage paymentPreimage,
             InvoiceCreationOption option);
         
         /// <summary>
@@ -28,10 +25,11 @@ namespace NRustLightning.Server.Interfaces
         /// 1. How we consider this payment (is it valid? if it is not, why?)
         /// 2. amount we specified in invoice (If we didn't, then just return the amount received)
         /// </returns>
-        (PaymentReceivedType, LNMoney) PaymentReceived(Primitives.PaymentHash paymentHash,
+        Task<(PaymentReceivedType, LNMoney)> PaymentReceived(Primitives.PaymentHash paymentHash,
             LNMoney amount,
             uint256? secret = null);
 
-        Primitives.PaymentPreimage GetPreimage(Primitives.PaymentHash hash);
+        Task<Primitives.PaymentPreimage> GetPreimage(Primitives.PaymentHash hash);
+        Task SetPreimage(Primitives.PaymentPreimage paymentPreimage);
     }
 }

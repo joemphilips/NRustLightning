@@ -52,10 +52,14 @@ namespace NRustLightning.Server
             });
             services.AddHttpClient();
             services.AddSingleton<ISystemClock, SystemClock>();
-            services.AddNRustLightning();
             services.ConfigureNRustLightning(Configuration, logger);
+            services.AddNRustLightning();
             services.AddMvc();
             services.ConfigureNRustLightningAuth(Configuration);
+            
+#if DEBUG
+            services.AddSwaggerDocument();
+#endif
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -67,6 +71,11 @@ namespace NRustLightning.Server
                 var useLoggingMiddleware = Configuration.GetSection("debug").GetOrDefault("http", true);
                 if (useLoggingMiddleware)
                     app.UseMiddleware<RequestResponseLoggingMiddleware>();
+
+#if DEBUG
+                app.UseOpenApi();
+                app.UseSwaggerUi3();
+#endif
             }
             else
             {
