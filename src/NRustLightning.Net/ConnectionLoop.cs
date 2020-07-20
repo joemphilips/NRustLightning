@@ -20,10 +20,10 @@ namespace NRustLightning.Net
         private readonly Guid _id;
         public Task? ExecutionTask { get; private set; }
 
-        private CancellationTokenSource _cts;
+        private CancellationTokenSource? _cts;
 
         public ConnectionLoop(IDuplexPipe transport, SocketDescriptor socketDescriptor, PeerManager peerManager,
-            ILogger<ConnectionLoop> logger, ChannelReader<byte> writeAvailReceiver, ChannelWriter<byte> eventNotify, Action cleanup = null)
+            ILogger<ConnectionLoop> logger, ChannelReader<byte> writeAvailReceiver, ChannelWriter<byte> eventNotify, Action? cleanup = null)
         {
             PeerManager = peerManager;
             _transport = transport;
@@ -46,7 +46,7 @@ namespace NRustLightning.Net
         public async ValueTask DisposeAsync()
         {
             _cleanup?.Invoke();
-            _cts.Cancel();
+            _cts?.Cancel();
             _logger.LogTrace($"Disposing connection loop: {_id}");
             if (ExecutionTask != null)
                 await ExecutionTask;

@@ -12,7 +12,7 @@ namespace NRustLightning.Net.Sockets
     {
         private static readonly Action _callbackCompleted = () => { };
         private readonly PipeScheduler _ioScheduler;
-        private Action _callback;
+        private Action? _callback;
         private int _bytesTransferred;
         private SocketError _error;
         
