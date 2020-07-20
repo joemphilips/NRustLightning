@@ -26,5 +26,7 @@ namespace NRustLightning.Server.Configuration
         public static string DefaultNBXplorerCookieFile (NetworkType network) => $"{HomePath}/.nbxplorer/{network}/.cookie";
 
         public static string DefaultNBXplorerUri = "http://127.0.0.1:4774";
+
+        public static int DefaultDBCacheMB = 600;
     }
 }

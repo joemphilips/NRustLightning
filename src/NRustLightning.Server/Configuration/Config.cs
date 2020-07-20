@@ -39,6 +39,8 @@ namespace NRustLightning.Server.Configuration
         public string InvoiceDBFilePath { get; set; }
 
         public int PaymentTimeoutSec { get; set; } = Constants.DefaultPaymentTimeoutSec;
+
+        public int DBCacheMB { get; set; } = Constants.DefaultDBCacheMB;
         
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
 
@@ -164,6 +166,8 @@ namespace NRustLightning.Server.Configuration
             };
 
             PaymentTimeoutSec = config.GetOrDefault("paymenttimeout", Constants.DefaultPaymentTimeoutSec);
+
+            DBCacheMB = config.GetOrDefault("dbcache", Constants.DefaultDBCacheMB);
             return this;
         }
     }

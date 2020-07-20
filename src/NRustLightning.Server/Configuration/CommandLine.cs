@@ -101,6 +101,10 @@ If the server couldn't find any, it will create a new seed.
                     new Option<int>("--paymenttimeout", $"the time we wait (in seconds) for payment (default: {Constants.DefaultPaymentTimeoutSec})")
                     {
                         Argument = new Argument<int>() {Arity = ArgumentArity.ZeroOrOne}
+                    },
+                    new Option<int>("--dbcache", $"database cache size (in MB). (default: {Constants.DefaultDBCacheMB})")
+                    {
+                        Argument = new Argument<int> { Arity =  ArgumentArity.ZeroOrOne }
                     }
                 };
             options.AddRange(op);

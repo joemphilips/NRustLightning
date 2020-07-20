@@ -304,6 +304,18 @@ namespace NRustLightning
                 Interop.update_fee((IntPtr)c, feeRatePerKw, Handle, true);
             }
         }
+
+        public unsafe byte[] SerializerChannelManager(MemoryPool<byte> pool)
+        {
+            Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
+                (bufOut, bufLength, handle) =>
+                {
+                    var ffiResult = Interop.serialize_channel_manager(bufOut, bufLength, out var actualLength, Handle);
+                    return (ffiResult, actualLength);
+                };
+
+            return WithVariableLengthReturnBuffer(pool, func, Handle);
+        }
         
         public Event[] GetAndClearPendingEvents(MemoryPool<byte> pool)
         {

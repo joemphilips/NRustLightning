@@ -179,7 +179,7 @@ namespace NRustLightning.Server.Services
             {
                 foreach (var o in spendableOutputs.Item)
                 {
-                    _logger.LogDebug($"New spendable on-chain funds txid: {o.OutPoint.Item.Hash}. vout: {o.OutPoint.Item.N}");
+                    _logger.LogInformation($"New spendable on-chain funds txid: {o.OutPoint.Item.Hash}. vout: {o.OutPoint.Item.N}");
                     // Do nothing. nbxplorer should handle it for us.
                 }
             }

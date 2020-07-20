@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DBTrie;
+using DBTrie.Storage.Cache;
 using DotNetLightning.Payment;
 using DotNetLightning.Utils;
 using LSATAuthenticationHandler;
@@ -33,7 +34,7 @@ namespace NRustLightning.Server.Repository
         private ISystemClock _systemClock;
         private NRustLightningNetworkProvider _networkProvider;
         private ILogger<DBTrieInvoiceRepository> _logger;
-        private DBTrieEngine? _engine;
+        private DBTrieEngine _engine;
 
         public DBTrieInvoiceRepository(IOptions<Config> conf, IKeysRepository keysRepository, ISystemClock systemClock, NRustLightningNetworkProvider networkProvider, ILogger<DBTrieInvoiceRepository> logger)
         {
@@ -42,13 +43,14 @@ namespace NRustLightning.Server.Repository
             _systemClock = systemClock;
             _networkProvider = networkProvider;
             _logger = logger;
+            _engine = DBTrieEngine.OpenFromFolder(_dbPath).Result;
+            _engine.ConfigurePagePool(new PagePool(pageSize: conf.Value.DBCacheMB));
         }
         
         public async Task SetPreimage(Primitives.PaymentPreimage paymentPreimage)
         {
-            _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
             using var tx = await _engine.OpenTransaction();
-            await tx.GetTable("hash-preimage").Insert(paymentPreimage.Hash.ToBytes(false), paymentPreimage.ToByteArray());
+            await tx.GetTable(DBKeys.HashToPreimage).Insert(paymentPreimage.Hash.ToBytes(false), paymentPreimage.ToByteArray());
             await tx.Commit();
         }
 
@@ -83,11 +85,10 @@ namespace NRustLightning.Server.Repository
 
             _logger.LogDebug($"Publish new invoice with hash {paymentHash}");
             
-            _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
             using var tx = await _engine.OpenTransaction();
-            var table = tx.GetTable("hash-preimage");
+            var table = tx.GetTable(DBKeys.HashToPreimage);
             await table.Insert(paymentHash.ToBytes(false), paymentPreimage.ToByteArray());
-            var table2 = tx.GetTable("hash-invoice");
+            var table2 = tx.GetTable(DBKeys.HashToInvoice);
             await table2.Insert(paymentHash.ToBytes(false).ToHexString(), r.ResultValue.ToString());
             await tx.Commit();
             
@@ -96,14 +97,13 @@ namespace NRustLightning.Server.Repository
 
         public async ValueTask DisposeAsync()
         {
-            if (_engine != null) await _engine.DisposeAsync();
+            await _engine.DisposeAsync();
         }
 
         public async Task<(PaymentReceivedType, LNMoney)> PaymentReceived(Primitives.PaymentHash paymentHash, LNMoney amount, uint256? secret = null)
         {
-            _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
             var tx = await _engine.OpenTransaction();
-            using var invoiceRow = await tx.GetTable("hash-invoice").Get(paymentHash.ToBytes(false));
+            using var invoiceRow = await tx.GetTable(DBKeys.HashToInvoice).Get(paymentHash.ToBytes(false));
             if (invoiceRow != null)
             {
                 var res = PaymentRequest.Parse(await invoiceRow.ReadValueString());
@@ -131,9 +131,8 @@ namespace NRustLightning.Server.Repository
 
         public async Task<Primitives.PaymentPreimage> GetPreimage(Primitives.PaymentHash hash)
         {
-            _engine ??= await DBTrieEngine.OpenFromFolder(_dbPath);
             var tx = await _engine.OpenTransaction();
-            using var preimageRow = await tx.GetTable("hash-preimage").Get(hash.ToBytes(false));
+            using var preimageRow = await tx.GetTable(DBKeys.HashToPreimage).Get(hash.ToBytes(false));
             return Primitives.PaymentPreimage.Create((await preimageRow.ReadValue()).ToArray());
         }
     }
