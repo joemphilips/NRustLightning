@@ -35,3 +35,14 @@ docker-compose -f tests/NRustLightning.Server.Tests/docker-compose.yml up
 ./tests/NRustLightning.Server.Tests/docker-lnd-cli.sh
 ```
 
+## API
+
+We expose the swagger endpoint in debug build. If you want to check it out quickly, first run regtest server by
+
+```
+source tests/NRustLightning.Server.Tests/env.sh
+docker-compose -f tests/NRustLightning.Server.Tests/docker-compose.yml up
+```
+
+
+and access to `http://localhost:10320/swagger/`

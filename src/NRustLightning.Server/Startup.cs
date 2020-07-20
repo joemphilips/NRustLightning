@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Middlewares;
@@ -56,9 +58,23 @@ namespace NRustLightning.Server
             services.AddNRustLightning();
             services.AddMvc();
             services.ConfigureNRustLightningAuth(Configuration);
-            
+
 #if DEBUG
-            services.AddSwaggerDocument();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "NRustLightning API",
+                    Description = "API endpoint for NRustlightning.Server",
+                    TermsOfService = new Uri("https://example.com/terms"),
+                    License = new OpenApiLicense
+                    {
+                        Name = "Use under MIT license",
+                        Url = new Uri("https://opensource.org/licenses/MIT"),
+                    }
+                });
+            });
 #endif
         }
 
@@ -73,8 +89,11 @@ namespace NRustLightning.Server
                     app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
 #if DEBUG
-                app.UseOpenApi();
-                app.UseSwaggerUi3();
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "NRustLightning API v1");
+                });
 #endif
             }
             else
