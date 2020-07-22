@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using NRustLightning.Server.Models.Request;
+using NRustLightning.Infrastructure.Models.Request;
 
 namespace NRustLightning.Server.ModelBinders
 {

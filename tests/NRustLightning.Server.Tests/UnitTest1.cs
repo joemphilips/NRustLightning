@@ -10,12 +10,11 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.FSharp.Core;
 using NBitcoin;
 using NRustLightning.Adaptors;
+using NRustLightning.Infrastructure.JsonConverters;
+using NRustLightning.Infrastructure.Models.Request;
+using NRustLightning.Infrastructure.Models.Response;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.RustLightningTypes;
-using NRustLightning.Server.Extensions;
-using NRustLightning.Server.JsonConverters;
-using NRustLightning.Server.Models.Request;
-using NRustLightning.Server.Models.Response;
-using NRustLightning.Server.Networks;
 using NRustLightning.Server.Tests.Support;
 using Xunit;
 

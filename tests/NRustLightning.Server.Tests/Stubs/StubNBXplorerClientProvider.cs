@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using NBXplorer;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Networks;
 
 namespace NRustLightning.Server.Tests.Stubs
 {

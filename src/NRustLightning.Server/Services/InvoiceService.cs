@@ -7,14 +7,14 @@ using DotNetLightning.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NBitcoin;
+using NRustLightning.Infrastructure.Configuration;
+using NRustLightning.Infrastructure.Entities;
+using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Utils;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Configuration;
-using NRustLightning.Server.Entities;
-using NRustLightning.Server.Extensions;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Networks;
-using NRustLightning.Server.Repository;
-using NRustLightning.Server.Utils;
 using RustLightningTypes;
 
 namespace NRustLightning.Server.Services

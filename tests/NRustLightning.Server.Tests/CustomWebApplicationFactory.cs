@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NBitcoin;
 using NRustLightning.Interfaces;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Repository;
 using NRustLightning.Server.Services;
 using NRustLightning.Server.Tests.Stubs;
 

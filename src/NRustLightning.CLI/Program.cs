@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using NBitcoin;
 using NRustLightning.Client;
-using NRustLightning.Server.Models.Request;
 
 namespace NRustLightning.CLI
 {

@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using NRustLightning.Server.Entities;
-using NRustLightning.Server.Extensions;
+using NRustLightning.Infrastructure.Entities;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Networks;
 
 namespace NRustLightning.Server.Services
 {

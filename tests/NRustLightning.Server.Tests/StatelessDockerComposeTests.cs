@@ -13,11 +13,11 @@ using DockerComposeFixture.Compose;
 using DockerComposeFixture.Exceptions;
 using DotNetLightning.Utils;
 using NBitcoin;
-using NRustLightning.Server.Models.Request;
+using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Server.Tests.Support;
 using Xunit;
 using Xunit.Abstractions;
-using OpenChannelRequest = NRustLightning.Server.Models.Request.OpenChannelRequest;
+using OpenChannelRequest = NRustLightning.Infrastructure.Models.Request.OpenChannelRequest;
 
 namespace NRustLightning.Server.Tests
 {
@@ -123,7 +123,7 @@ namespace NRustLightning.Server.Tests
         {
             var info = await remoteClient.GetInfo();
             var localInfo = (await clients.NRustLightningHttpClient.GetInfoAsync());
-            var theirNodeKey = info.NodeInfoList.FirstOrDefault(x => !x.NodeId.Equals(localInfo.ConnectionString.NodeId))?.NodeId ?? Utils.Utils.Fail<PubKey>("Channel Seems already closed");
+            var theirNodeKey = info.NodeInfoList.FirstOrDefault(x => !x.NodeId.Equals(localInfo.ConnectionString.NodeId))?.NodeId ?? Infrastructure.Utils.Utils.Fail<PubKey>("Channel Seems already closed");
             await clients.NRustLightningHttpClient.CloseChannelAsync(theirNodeKey);
             await Support.Utils.Retry(20, TimeSpan.FromSeconds(2), async () =>
             {
@@ -152,7 +152,7 @@ namespace NRustLightning.Server.Tests
 
 
             var remoteInfo = await remoteClient.GetInfo();
-            var theirNodeKey = remoteInfo.NodeInfoList.FirstOrDefault(x => !x.NodeId.Equals(localInfo.ConnectionString.NodeId))?.NodeId ?? Utils.Utils.Fail<PubKey>("Channel Seems already closed");
+            var theirNodeKey = remoteInfo.NodeInfoList.FirstOrDefault(x => !x.NodeId.Equals(localInfo.ConnectionString.NodeId))?.NodeId ?? Infrastructure.Utils.Utils.Fail<PubKey>("Channel Seems already closed");
             var addr = await clients.NRustLightningHttpClient.GetNewDepositAddressAsync();
             await clients.BitcoinRPCClient.GenerateToAddressAsync(10, addr.Address);
             await Support.Utils.Retry(20, TimeSpan.FromSeconds(2.0), async () =>

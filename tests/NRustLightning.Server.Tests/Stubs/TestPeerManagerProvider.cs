@@ -3,11 +3,12 @@ using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NBitcoin;
+using NRustLightning.Infrastructure.Configuration;
+using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Interfaces;
-using NRustLightning.Server.Configuration;
 using NRustLightning.Server.FFIProxies;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Networks;
 using NRustLightning.Utils;
 
 namespace NRustLightning.Server.Tests.Stubs

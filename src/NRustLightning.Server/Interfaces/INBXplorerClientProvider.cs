@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NBXplorer;
-using NRustLightning.Server.Networks;
+using NRustLightning.Infrastructure.Networks;
 
 namespace NRustLightning.Server.Interfaces
 {

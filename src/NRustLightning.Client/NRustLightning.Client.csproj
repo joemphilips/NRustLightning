@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
-      <ProjectReference Include="..\NRustLightning.Server\NRustLightning.Server.csproj" />
+      <ProjectReference Include="..\NRustLightning.Infrastructure\NRustLightning.Infrastructure.csproj" />
     </ItemGroup>
 
     <PropertyGroup>

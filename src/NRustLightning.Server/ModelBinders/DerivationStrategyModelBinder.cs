@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using NBXplorer.DerivationStrategy;
-using NRustLightning.Server.Networks;
+using NRustLightning.Infrastructure.Networks;
 
 namespace NRustLightning.Server.ModelBinders
 {

@@ -8,13 +8,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
+using NRustLightning.Infrastructure.Configuration;
+using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Repository;
 using NRustLightning.Server.Configuration;
-using NRustLightning.Server.Entities;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Middlewares;
-using NRustLightning.Server.Networks;
 using NRustLightning.Server.P2P;
-using NRustLightning.Server.Repository;
 using NRustLightning.Server.Services;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 

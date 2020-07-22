@@ -16,11 +16,12 @@ using NBitcoin;
 using NBitcoin.Altcoins.Elements;
 using NBXplorer;
 using NBXplorer.Models;
-using NRustLightning.Server.Extensions;
+using NRustLightning.Infrastructure.Entities;
+using NRustLightning.Infrastructure.Extensions;
+using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Networks;
 using NRustLightning.Server.P2P;
-using NRustLightning.Server.Entities;
 
 namespace NRustLightning.Server.Services
 {
@@ -104,7 +105,7 @@ namespace NRustLightning.Server.Services
             var chanMan = _peerManager.ChannelManager;
             if (e is Event.FundingGenerationReady f)
             {
-                var witScriptId = PayToWitScriptHashTemplate.Instance.ExtractScriptPubKeyParameters(f.Item.OutputScript) ?? Utils.Utils.Fail<WitScriptId>($"Failed to extract wit script from {f.Item.OutputScript.ToHex()}! this should never happen.");
+                var witScriptId = PayToWitScriptHashTemplate.Instance.ExtractScriptPubKeyParameters(f.Item.OutputScript) ?? Infrastructure.Utils.Utils.Fail<WitScriptId>($"Failed to extract wit script from {f.Item.OutputScript.ToHex()}! this should never happen.");
                 var outputAddress = witScriptId.GetAddress(_network.NBitcoinNetwork);
                 var tx = await _walletService.GetSendingTxAsync(outputAddress, f.Item.ChannelValueSatoshis, _network, cancellationToken);
                 var nOut =

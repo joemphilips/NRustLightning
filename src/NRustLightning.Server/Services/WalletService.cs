@@ -8,9 +8,10 @@ using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBXplorer.DerivationStrategy;
 using NBXplorer.Models;
+using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Utils;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Networks;
-using NRustLightning.Server.Utils;
 
 namespace NRustLightning.Server.Services
 {

@@ -3,11 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NRustLightning.Infrastructure.Models.Request;
+using NRustLightning.Infrastructure.Models.Response;
+using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Repository;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Models.Request;
-using NRustLightning.Server.Models.Response;
-using NRustLightning.Server.Networks;
-using NRustLightning.Server.Repository;
 using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Controllers

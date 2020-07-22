@@ -3,13 +3,15 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using NRustLightning.Infrastructure.Configuration;
+using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Models.Request;
+using NRustLightning.Infrastructure.Models.Response;
+using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Repository;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Models.Request;
-using NRustLightning.Server.Models.Response;
-using NRustLightning.Server.Networks;
 using NRustLightning.Server.P2P;
-using NRustLightning.Server.Repository;
 using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Controllers

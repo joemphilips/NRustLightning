@@ -8,11 +8,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NRustLightning.Adaptors;
+using NRustLightning.Infrastructure.Models.Request;
+using NRustLightning.Infrastructure.Models.Response;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Models.Request;
-using NRustLightning.Server.Models.Response;
-using NRustLightning.Server.Networks;
 using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Controllers

@@ -11,9 +11,9 @@ using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBXplorer;
 using NBXplorer.Models;
-using NRustLightning.Server.Entities;
+using NRustLightning.Infrastructure.Entities;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Networks;
 
 namespace NRustLightning.Server.Services
 {

@@ -8,8 +8,8 @@ using NBitcoin;
 using NBXplorer;
 using NBXplorer.Models;
 using NRustLightning.Adaptors;
+using NRustLightning.Infrastructure.Entities;
 using NRustLightning.Interfaces;
-using NRustLightning.Server.Entities;
 
 namespace NRustLightning.Server.FFIProxies
 {

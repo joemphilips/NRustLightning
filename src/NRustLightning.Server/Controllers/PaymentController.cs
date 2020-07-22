@@ -9,14 +9,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
 using NRustLightning.Adaptors;
-using NRustLightning.Server.Extensions;
+using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Models.Request;
+using NRustLightning.Infrastructure.Models.Response;
+using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Repository;
+using NRustLightning.Infrastructure.Utils;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Models.Request;
-using NRustLightning.Server.Models.Response;
-using NRustLightning.Server.Networks;
-using NRustLightning.Server.Repository;
 using NRustLightning.Server.Services;
-using NRustLightning.Server.Utils;
 using RustLightningTypes;
 
 namespace NRustLightning.Server.Controllers

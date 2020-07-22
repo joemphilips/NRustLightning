@@ -2,7 +2,7 @@ using System;
 using System.Net;
 using BTCPayServer.Lightning;
 using NBitcoin;
-using NRustLightning.Server.Models.Request;
+using NRustLightning.Infrastructure.Models.Request;
 
 namespace NRustLightning.Server.Tests.Support
 {

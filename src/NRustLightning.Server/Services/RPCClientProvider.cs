@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using System.Net.Http;
 using Microsoft.Extensions.Options;
 using NBitcoin.RPC;
+using NRustLightning.Infrastructure.Configuration;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Server.Configuration;
-using NRustLightning.Server.Configuration.SubConfiguration;
 using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Networks;
 
 namespace NRustLightning.Server.Services
 {

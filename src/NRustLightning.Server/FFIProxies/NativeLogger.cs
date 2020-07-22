@@ -2,8 +2,8 @@ using System;
 using Microsoft.Extensions.Logging;
 using NBitcoin.Logging;
 using NRustLightning.Adaptors;
+using NRustLightning.Infrastructure.Extensions;
 using NRustLightning.Interfaces;
-using NRustLightning.Server.Extensions;
 using ILogger = NRustLightning.Interfaces.ILogger;
 
 namespace NRustLightning.Server.FFIProxies

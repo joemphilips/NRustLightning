@@ -2,8 +2,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using NBitcoin;
 using NBXplorer.DerivationStrategy;
-using NRustLightning.Server.Interfaces;
-using NRustLightning.Server.Networks;
+using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Tests.Stubs

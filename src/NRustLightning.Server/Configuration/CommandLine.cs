@@ -10,8 +10,9 @@ using Microsoft.Extensions.Hosting;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using NRustLightning.Adaptors;
-using NRustLightning.Server.Configuration.SubConfiguration;
-using NRustLightning.Server.Networks;
+using NRustLightning.Infrastructure.Configuration;
+using NRustLightning.Infrastructure.Configuration.SubConfiguration;
+using NRustLightning.Infrastructure.Networks;
 
 namespace NRustLightning.Server.Configuration
 {

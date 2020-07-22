@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NBitcoin;
 using NRustLightning.Client;
-using NRustLightning.Server.Networks;
+using NRustLightning.Infrastructure.Networks;
 
 namespace NRustLightning.Server.Tests.Support
 {

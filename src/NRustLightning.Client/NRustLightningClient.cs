@@ -1,28 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading;
 using DotNetLightning.Payment;
 using DotNetLightning.Utils;
-using Microsoft.AspNetCore.Http;
 using NBitcoin;
-using NBXplorer;
-using NRustLightning.Server.JsonConverters;
-using NRustLightning.Server.Models;
-using NRustLightning.Server.Models.Request;
-using NRustLightning.Server.Models.Response;
-using NRustLightning.Server.Networks;
-using NRustLightning.Server.Repository;
+using NRustLightning.Infrastructure.Models.Request;
+using NRustLightning.Infrastructure.Models.Response;
+using NRustLightning.Infrastructure.Repository;
+using NRustLightning.Infrastructure.Networks;
 
 namespace NRustLightning.Client
 {
-    public class NRustLightningClient : IDisposable, INRustLightningClient
+    public class NRustLightningClient : IDisposable
     {
         public HttpClient HttpClient;
         private Uri _baseUri;

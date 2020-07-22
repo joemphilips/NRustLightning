@@ -8,6 +8,10 @@
 
   <ItemGroup>
     <PackageReference Include="DBTrie" Version="1.0.31" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.6" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.6" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.6" />
+    <PackageReference Include="NBXplorer.Client" Version="3.0.*" />
   </ItemGroup>
 
   <PropertyGroup>

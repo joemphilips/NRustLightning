@@ -13,7 +13,7 @@ using NRustLightning.Interfaces;
 using NRustLightning.Server.Services;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
-using NRustLightning.Server.Networks;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Utils;
 using Network = NBitcoin.Network;
 
