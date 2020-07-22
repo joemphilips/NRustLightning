@@ -290,6 +290,80 @@ namespace NRustLightning
             bool check = true)
             => MaybeCheck(_serialize_channel_manager(bufOut, bufLen, out actualBufLen, handle), check);
         
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "deserialize_channel_manager",
+            ExactSpelling = true)]
+        static extern FFIResult _deserialize_channel_manager(
+            IntPtr bufOut,
+            UIntPtr bufLen,
+            in UserConfig config,
+            ref InstallWatchTx installWatchTx,
+            ref InstallWatchOutPoint installWatchOutPoint,
+            ref WatchAllTxn watchAllTxn,
+            ref GetChainUtxo getChainUtxo,
+            ref FilterBlock filterBlock,
+            ref ReEntered reEntered,
+            
+            ref GetNodeSecret getNodeSecret,
+            ref GetDestinationScript getDestinationScript,
+            ref GetShutdownKey getShutdownKey,
+            ref GetChannelKeys getChannelKeys,
+            ref GetOnionRand getOnionRand,
+            ref GetChannelId getChannelId,
+            
+            ref BroadcastTransaction broadcastTransaction,
+            ref Log log,
+            ref GetEstSatPer1000Weight getEstSatPer1000Weight,
+            
+            out ChannelManagerHandle handle);
+
+        internal static FFIResult deserialize_channel_manager(
+            IntPtr bufOut,
+            UIntPtr bufLen,
+            in UserConfig config,
+            
+            ref InstallWatchTx installWatchTx,
+            ref InstallWatchOutPoint installWatchOutPoint,
+            ref WatchAllTxn watchAllTxn,
+            ref GetChainUtxo getChainUtxo,
+            ref FilterBlock filterBlock,
+            ref ReEntered reEntered,
+            
+            ref GetNodeSecret getNodeSecret,
+            ref GetDestinationScript getDestinationScript,
+            ref GetShutdownKey getShutdownKey,
+            ref GetChannelKeys getChannelKeys,
+            ref GetOnionRand getOnionRand,
+            ref GetChannelId getChannelId,
+            
+            ref BroadcastTransaction broadcastTransaction,
+            ref Log log,
+            ref GetEstSatPer1000Weight getEstSatPer1000Weight,
+            
+            out ChannelManagerHandle handle,
+            bool check = true)
+            => MaybeCheck(_deserialize_channel_manager(
+                bufOut,
+                bufLen,
+                in config,
+                ref installWatchTx,
+                ref installWatchOutPoint,
+                ref watchAllTxn,
+                ref getChainUtxo,
+                ref filterBlock,
+                ref reEntered,
+                ref getNodeSecret,
+                ref getDestinationScript,
+                ref getShutdownKey,
+                ref getChannelKeys,
+                ref getOnionRand,
+                ref getChannelId,
+                ref broadcastTransaction,
+                ref log,
+                ref getEstSatPer1000Weight,
+                out handle), check);
+        
 
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,

@@ -27,7 +27,7 @@ namespace NRustLightning.Server
             services.AddSingleton<ISocketDescriptorFactory, SocketDescriptorFactory>();
             services.AddSingleton<IKeysRepository, FlatFileKeyRepository>();
             services.AddSingleton<IRPCClientProvider, RPCClientProvider>();
-            services.AddSingleton<IInvoiceRepository, DBTrieInvoiceRepository>();
+            services.AddSingleton<IRepository, DbTrieRepository>();
             services.AddSingleton<InvoiceService>();
             services.AddSingleton<RepositoryProvider>();
             services.AddSingleton<IWalletService, WalletService>();
@@ -35,6 +35,7 @@ namespace NRustLightning.Server
             services.AddSingleton<P2PConnectionHandler>();
             services.AddSingleton<INBXplorerClientProvider, NBXplorerClientProvider>();
             services.AddSingleton<IPeerManagerProvider, PeerManagerProvider>();
+            services.AddHostedService<PeerManagerProvider>();
             services.AddTransient<RequestResponseLoggingMiddleware>();
             services.AddHostedService<NBXplorerListeners>();
             services.AddSingleton<ChannelProvider>();
@@ -55,7 +56,7 @@ namespace NRustLightning.Server
         {
             // configure lsat/macaroon authentication
             services.AddSingleton<IMacaroonSecretRepository, InMemoryMacaroonSecretRepository>();
-            services.AddSingleton<ILSATInvoiceProvider, InMemoryInvoiceRepository>();
+            // services.AddSingleton<ILSATInvoiceProvider, InMemoryRepository>();
             
             string? ourServiceName = null;
             int ourServiceTier = 0;

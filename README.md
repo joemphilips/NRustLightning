@@ -27,6 +27,17 @@ You must make sure to connect to your [nbxplorer](https://github.com/dgarage/NBX
 
 If you don't have any, you can try with regtest in docker-compsoe. See below.
 
+## Single file executable
+
+`NRustLightning.CLI` and `NRustLightning.Server` supports single file executable.
+Run
+
+```
+dotnet publish -c Release -r <your RID>
+```
+
+for which RID to use, see [microsoft official](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog)
+
 ## How to test
 
 ```

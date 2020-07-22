@@ -6,11 +6,14 @@ using DotNetLightning.Payment;
 using DotNetLightning.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NBitcoin;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Configuration;
+using NRustLightning.Server.Entities;
 using NRustLightning.Server.Extensions;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Networks;
+using NRustLightning.Server.Repository;
 using NRustLightning.Server.Utils;
 using RustLightningTypes;
 
@@ -18,21 +21,45 @@ namespace NRustLightning.Server.Services
 {
     public class InvoiceService
     {
-        private readonly IInvoiceRepository _invoiceRepository;
+        private readonly IRepository _repository;
         private readonly EventAggregator _eventAggregator;
         private readonly IPeerManagerProvider _peerManagerProvider;
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly ILogger<InvoiceService> _logger;
         private readonly IOptions<Config> _config;
 
-        public InvoiceService(IInvoiceRepository invoiceRepository, EventAggregator eventAggregator, IPeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<InvoiceService> logger, IOptions<Config> config)
+        public InvoiceService(IRepository repository, EventAggregator eventAggregator, IPeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<InvoiceService> logger, IOptions<Config> config)
         {
-            _invoiceRepository = invoiceRepository;
+            _repository = repository;
             _eventAggregator = eventAggregator;
             _peerManagerProvider = peerManagerProvider;
             _networkProvider = networkProvider;
             _logger = logger;
             _config = config;
+        }
+        
+        public async Task<(PaymentReceivedType, LNMoney)> PaymentReceived(Primitives.PaymentHash paymentHash, LNMoney amount, uint256? secret = null)
+        {
+            var invoice = await _repository.GetInvoice(paymentHash);
+            if (invoice != null)
+            {
+                if (invoice.AmountValue is null)
+                {
+                    return (PaymentReceivedType.Ok, amount);
+                }
+
+                var intendedAmount = invoice.AmountValue.Value;
+                if (amount.MilliSatoshi < intendedAmount.MilliSatoshi)
+                {
+                    return (PaymentReceivedType.AmountTooLow, intendedAmount);
+                }
+
+                if (intendedAmount.MilliSatoshi * 2 < amount.MilliSatoshi)
+                    return (PaymentReceivedType.AmountTooHigh, intendedAmount);
+
+                return (PaymentReceivedType.Ok, intendedAmount);
+            }
+            return (PaymentReceivedType.UnknownPaymentHash, amount);
         }
 
         public async Task PayInvoice(PaymentRequest invoice, long? amountMSat = null, CancellationToken ct = default)
@@ -84,7 +111,7 @@ namespace NRustLightning.Server.Services
 
             if (resultEvent is Event.PaymentSent paymentSent)
             {
-                await _invoiceRepository.SetPreimage(paymentSent.Item);
+                await _repository.SetPreimage(paymentSent.Item);
             }
         }
     }

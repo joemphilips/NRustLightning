@@ -9,9 +9,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using NRustLightning.Server.Configuration;
+using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.JsonConverters;
 using NRustLightning.Server.Middlewares;
-
+using NRustLightning.Server.Networks;
 #if DEBUG
 using Microsoft.OpenApi.Models;
 #endif
@@ -82,7 +83,7 @@ namespace NRustLightning.Server
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifetime)
         {
             if (env.IsDevelopment())
             {

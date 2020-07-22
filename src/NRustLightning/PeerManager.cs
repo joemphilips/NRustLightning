@@ -20,7 +20,7 @@ namespace NRustLightning
     public class PeerManager : IDisposable
     {
         private readonly PeerManagerHandle _handle;
-        private readonly object[] _deps;
+        private readonly IList<object> _deps;
         private readonly Timer tick;
         private bool _disposed = false;
 
@@ -32,7 +32,7 @@ namespace NRustLightning
             ChannelManager channelManager,
             BlockNotifier blockNotifier,
             int tickInterval,
-            object[] deps
+            IList<object> deps
             )
         {
             _deps = deps;
@@ -55,10 +55,55 @@ namespace NRustLightning
             int tickIntervalMSec = 30000
         )
         {
+            if (config == null) throw new ArgumentNullException(nameof(config));
             var c = config.GetUserConfig();
             return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, keysInterface, broadcaster, logger, feeEstimator, currentBlockHeight, tickIntervalMSec);
         }
 
+        public static PeerManager Create(
+            Span<byte> seed,
+            NBitcoin.Network nbitcoinNetwork,
+            in UserConfig config,
+            IChainWatchInterface chainWatchInterface,
+            ILogger logger,
+            byte[] ourNodeSecret,
+            ChannelManager channelManager,
+            uint currentBlockHeight,
+            int tickIntervalMSec = 30000,
+            IList<object> objectsToKeepAlive = null
+        )
+        {
+            objectsToKeepAlive ??= new object[]{};
+            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
+            var blockNotifier = BlockNotifier.Create(chainWatchInterfaceDelegatesHolder);
+            blockNotifier.RegisterChannelManager(channelManager);
+            unsafe
+            {
+                fixed (byte* seedPtr = seed)
+                fixed (UserConfig* configPtr = &config)
+                fixed (byte* secretPtr = ourNodeSecret)
+                {
+                    Interop.create_peer_manager(
+                        (IntPtr)seedPtr,
+                        configPtr,
+                        channelManager.Handle,
+                        chainWatchInterfaceDelegatesHolder.InstallWatchTx,
+                        chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
+                        chainWatchInterfaceDelegatesHolder.WatchAllTxn,
+                        chainWatchInterfaceDelegatesHolder.GetChainUtxo,
+                        chainWatchInterfaceDelegatesHolder.FilterBlock,
+                        chainWatchInterfaceDelegatesHolder.ReEntered,
+                        loggerDelegatesHolder.Log,
+                        (IntPtr)secretPtr,
+                        out var handle
+                        );
+                    objectsToKeepAlive.Add(chainWatchInterfaceDelegatesHolder);
+                    objectsToKeepAlive.Add(loggerDelegatesHolder);
+                    return new PeerManager(handle, channelManager, blockNotifier, tickIntervalMSec, objectsToKeepAlive);
+                }
+            }
+        }
         public static PeerManager Create(
             Span<byte> seed,
             NBitcoin.Network nbitcoinNetwork,
@@ -72,6 +117,9 @@ namespace NRustLightning
             int tickIntervalMSec = 30000
             )
         {
+            if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
+            if (keysInterface == null) throw new ArgumentNullException(nameof(keysInterface));
+            if (broadcaster == null) throw new ArgumentNullException(nameof(broadcaster));
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
             var keysInterfaceDelegatesHolder = new KeysInterfaceDelegatesHolder(keysInterface);
             var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);

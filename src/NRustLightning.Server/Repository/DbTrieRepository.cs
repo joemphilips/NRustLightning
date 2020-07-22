@@ -1,42 +1,39 @@
 using System;
-using System.Collections.Concurrent;
+using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using DBTrie;
 using DBTrie.Storage.Cache;
 using DotNetLightning.Payment;
 using DotNetLightning.Utils;
-using LSATAuthenticationHandler;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NBitcoin;
 using NBitcoin.Crypto;
+using NRustLightning.Adaptors;
 using NRustLightning.Server.Configuration;
-using NRustLightning.Server.Entities;
 using NRustLightning.Server.Extensions;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Models.Request;
 using NRustLightning.Server.Networks;
-using NRustLightning.Server.Utils;
-using ResultUtils;
 
 namespace NRustLightning.Server.Repository
 {
-    public class DBTrieInvoiceRepository : IInvoiceRepository, IAsyncDisposable
+    public class DbTrieRepository : IRepository, IAsyncDisposable
     {
         private readonly string _dbPath;
         private IKeysRepository _keysRepository;
         private ISystemClock _systemClock;
         private NRustLightningNetworkProvider _networkProvider;
-        private ILogger<DBTrieInvoiceRepository> _logger;
+        private ILogger<DbTrieRepository> _logger;
         private DBTrieEngine _engine;
+        private MemoryPool<byte> _pool;
 
-        public DBTrieInvoiceRepository(IOptions<Config> conf, IKeysRepository keysRepository, ISystemClock systemClock, NRustLightningNetworkProvider networkProvider, ILogger<DBTrieInvoiceRepository> logger)
+        public DbTrieRepository(IOptions<Config> conf, IKeysRepository keysRepository, ISystemClock systemClock, NRustLightningNetworkProvider networkProvider, ILogger<DbTrieRepository> logger)
         {
             _dbPath = conf.Value.InvoiceDBFilePath;
             _keysRepository = keysRepository;
@@ -45,9 +42,10 @@ namespace NRustLightning.Server.Repository
             _logger = logger;
             _engine = DBTrieEngine.OpenFromFolder(_dbPath).Result;
             _engine.ConfigurePagePool(new PagePool(pageSize: conf.Value.DBCacheMB));
+            _pool = MemoryPool<byte>.Shared;
         }
         
-        public async Task SetPreimage(Primitives.PaymentPreimage paymentPreimage)
+        public async Task SetPreimage(Primitives.PaymentPreimage paymentPreimage, CancellationToken ct = default)
         {
             using var tx = await _engine.OpenTransaction();
             await tx.GetTable(DBKeys.HashToPreimage).Insert(paymentPreimage.Hash.ToBytes(false), paymentPreimage.ToByteArray());
@@ -100,40 +98,40 @@ namespace NRustLightning.Server.Repository
             await _engine.DisposeAsync();
         }
 
-        public async Task<(PaymentReceivedType, LNMoney)> PaymentReceived(Primitives.PaymentHash paymentHash, LNMoney amount, uint256? secret = null)
+
+        public async Task<Primitives.PaymentPreimage?> GetPreimage(Primitives.PaymentHash hash, CancellationToken ct = default)
         {
-            var tx = await _engine.OpenTransaction();
-            using var invoiceRow = await tx.GetTable(DBKeys.HashToInvoice).Get(paymentHash.ToBytes(false));
-            if (invoiceRow != null)
-            {
-                var res = PaymentRequest.Parse(await invoiceRow.ReadValueString());
-                if (res.IsError)
-                    throw new NRustLightningException($"Failed to read payment request for {res.ErrorValue}");
-                var req = res.ResultValue;
-                if (req.AmountValue is null)
-                {
-                    return (PaymentReceivedType.Ok, amount);
-                }
-
-                var intendedAmount = req.AmountValue.Value;
-                if (amount.MilliSatoshi < intendedAmount.MilliSatoshi)
-                {
-                    return (PaymentReceivedType.AmountTooLow, intendedAmount);
-                }
-
-                if (intendedAmount.MilliSatoshi * 2 < amount.MilliSatoshi)
-                    return (PaymentReceivedType.AmountTooHigh, intendedAmount);
-
-                return (PaymentReceivedType.Ok, intendedAmount);
-            }
-            return (PaymentReceivedType.UnknownPaymentHash, amount);
-        }
-
-        public async Task<Primitives.PaymentPreimage> GetPreimage(Primitives.PaymentHash hash)
-        {
-            var tx = await _engine.OpenTransaction();
+            using var tx = await _engine.OpenTransaction(ct);
             using var preimageRow = await tx.GetTable(DBKeys.HashToPreimage).Get(hash.ToBytes(false));
             return Primitives.PaymentPreimage.Create((await preimageRow.ReadValue()).ToArray());
         }
+
+        public async Task SetChannelManager(ChannelManager channelManager, CancellationToken ct = default)
+        {
+            var b = channelManager.Serialize(_pool);
+            using var tx = await _engine.OpenTransaction(ct);
+            var table = tx.GetTable(DBKeys.ChannelManager);
+            await table.Insert(DBKeys.ChannelManagerVersion, b);
+            await tx.Commit();
+        }
+
+        public async Task<ChannelManager?> GetChannelManager(ChannelManagerReadArgs readArgs, CancellationToken ct = default)
+        {
+            using var tx = await _engine.OpenTransaction(ct);
+            using var chanManRow = await tx.GetTable(DBKeys.ChannelManager).Get(DBKeys.ChannelManagerVersion);
+            var val = await chanManRow.ReadValue();
+            return val.IsEmpty ? null : ChannelManager.Deserialize(val.Span, readArgs);
+        }
+
+        public Task<PaymentRequest?> GetInvoice(Primitives.PaymentHash hash, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SetInvoice(PaymentRequest paymentRequest, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }

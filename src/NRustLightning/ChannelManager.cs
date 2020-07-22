@@ -305,7 +305,7 @@ namespace NRustLightning
             }
         }
 
-        public unsafe byte[] SerializerChannelManager(MemoryPool<byte> pool)
+        public unsafe byte[] Serialize(MemoryPool<byte> pool)
         {
             Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
                 (bufOut, bufLength, handle) =>
@@ -315,6 +315,11 @@ namespace NRustLightning
                 };
 
             return WithVariableLengthReturnBuffer(pool, func, Handle);
+        }
+
+        public static ChannelManager Deserialize(ReadOnlySpan<byte> bytes, ChannelManagerReadArgs readArgs)
+        {
+            throw new NotImplementedException();
         }
         
         public Event[] GetAndClearPendingEvents(MemoryPool<byte> pool)

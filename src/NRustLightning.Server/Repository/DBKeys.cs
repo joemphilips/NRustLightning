@@ -4,5 +4,7 @@ namespace NRustLightning.Server.Repository
     {
         public const string HashToPreimage = "hp";
         public const string HashToInvoice = "hi";
+        public const string ChannelManager = "cm";
+        public const string ChannelManagerVersion = "v1";
     }
 }

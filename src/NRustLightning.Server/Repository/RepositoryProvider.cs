@@ -16,7 +16,7 @@ namespace NRustLightning.Server.Repository
         public Config Config { get; }
         
         Dictionary<string, IKeysRepository> _keysRepositories = new Dictionary<string, IKeysRepository>();
-        Dictionary<string, IInvoiceRepository> _invoiceRepositories = new Dictionary<string, IInvoiceRepository>();
+        Dictionary<string, IRepository> _invoiceRepositories = new Dictionary<string, IRepository>();
         Dictionary<string, RepositorySerializer> _repositorySerializers = new Dictionary<string, RepositorySerializer>();
 
         public RepositoryProvider(NRustLightningNetworkProvider networks, IOptions<Config> config, IServiceProvider serviceProvider)
@@ -37,7 +37,7 @@ namespace NRustLightning.Server.Repository
                     _keysRepositories.Add(n.CryptoCode, keysRepository);
                     _repositorySerializers.Add(n.CryptoCode, serializer);
                     
-                    var invoiceRepository = serviceProvider.GetRequiredService<IInvoiceRepository>();
+                    var invoiceRepository = serviceProvider.GetRequiredService<IRepository>();
                     _invoiceRepositories.Add(n.CryptoCode, invoiceRepository);
                 }
             }
@@ -48,7 +48,7 @@ namespace NRustLightning.Server.Repository
             return Config.ChainConfiguration.FirstOrDefault(c => c.CryptoCode == n.CryptoCode);
         }
 
-        public IEnumerable<IInvoiceRepository> GetAllInvoiceRepositories()
+        public IEnumerable<IRepository> GetAllRepositories()
         {
             return _invoiceRepositories.Values;
         }
@@ -58,7 +58,7 @@ namespace NRustLightning.Server.Repository
             return _keysRepositories.Values;
         }
 
-        public IInvoiceRepository? GetInvoiceRepository(NRustLightningNetwork network)
+        public IRepository? GetRepository(NRustLightningNetwork network)
         {
             _invoiceRepositories.TryGetValue(network.CryptoCode, out var repo);
             return repo;
