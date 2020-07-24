@@ -92,10 +92,10 @@ namespace NRustLightning.Server.Services
                     {
                         maybeChanMan = await repo.GetChannelManager(new ChannelManagerReadArgs(_keysRepository, b, feeEst, logger), cancellationToken);
                     }
-                    catch when (tried < 10)
+                    catch when (tried < 4)
                     {
                         tried++;
-                        await Task.Delay(600, cancellationToken);
+                        await Task.Delay(800, cancellationToken);
                         goto retry;
                     }
                     catch (Exception ex)

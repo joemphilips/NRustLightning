@@ -38,6 +38,15 @@ dotnet publish -c Release -r <your RID>
 
 for which RID to use, see [microsoft official](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog)
 
+For command line parsing, it uses [System.CommandLine](https://github.com/dotnet/command-line-api/).
+If you think parsing is not working as expected, Directives in `System.CommandLine` might be useful. for ecample invoking with '[parse]' directive will be like...
+
+```
+cd src/NRustLightning.Server
+dotnet run -- '[parse]' --regtest <whatever-options-you-want-to-pass>
+```
+
+
 ## How to test
 
 ```

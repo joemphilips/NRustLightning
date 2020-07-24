@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NBitcoin;
+using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Interfaces;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Services;
@@ -32,6 +33,7 @@ namespace NRustLightning.Server.Tests
                 services.AddSingleton<IFeeEstimator, TestFeeEstimator>();
                 services.AddSingleton<IBroadcaster, TestBroadcaster>();
                 services.AddSingleton<IChainWatchInterface, TestChainWatchInterface>();
+                services.AddSingleton<IRepository, InMemoryRepository>();
                 services.AddSingleton<IWalletService, StubWalletService>();
                 services.AddSingleton<INBXplorerClientProvider, StubNBXplorerClientProvider>();
             });

@@ -11,9 +11,6 @@ namespace NRustLightning.Infrastructure.Interfaces
     public interface IRepository
     {
         
-        Task<PaymentRequest> GetNewInvoice(
-            NRustLightningNetwork network,
-            InvoiceCreationOption option);
         
         Task<Primitives.PaymentPreimage?> GetPreimage(Primitives.PaymentHash hash, CancellationToken ct = default);
         Task SetPreimage(Primitives.PaymentPreimage paymentPreimage, CancellationToken ct = default);

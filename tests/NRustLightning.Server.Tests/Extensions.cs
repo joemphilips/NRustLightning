@@ -22,6 +22,7 @@ using NBitcoin;
 using NBitcoin.RPC;
 using NBXplorer;
 using NRustLightning.Client;
+using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Interfaces;
 using NRustLightning.Server.Interfaces;
@@ -149,6 +150,7 @@ namespace NRustLightning.Server.Tests
                     services.AddSingleton<IBroadcaster, TestBroadcaster>();
                     services.AddSingleton<IChainWatchInterface, TestChainWatchInterface>();
                     services.AddSingleton<IWalletService, StubWalletService>();
+                    services.AddSingleton<IRepository, InMemoryRepository>();
                     services.AddSingleton<INBXplorerClientProvider, StubNBXplorerClientProvider>();
                 });
                 webHost.UseTestServer();

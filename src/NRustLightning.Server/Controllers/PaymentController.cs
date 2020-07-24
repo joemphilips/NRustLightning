@@ -26,7 +26,6 @@ namespace NRustLightning.Server.Controllers
     // [Authorize(AuthenticationSchemes = "LSAT", Policy = "Readonly")]
     public class PaymentController : ControllerBase
     {
-        private readonly IRepository _repository;
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly RepositoryProvider _repositoryProvider;
         private readonly InvoiceService _invoiceService;
@@ -34,7 +33,6 @@ namespace NRustLightning.Server.Controllers
         public PaymentController(IRepository repository,
             NRustLightningNetworkProvider networkProvider, RepositoryProvider repositoryProvider, InvoiceService invoiceService)
         {
-            _repository = repository;
             _networkProvider = networkProvider;
             _repositoryProvider = repositoryProvider;
             _invoiceService = invoiceService;
@@ -45,7 +43,7 @@ namespace NRustLightning.Server.Controllers
         public async Task<JsonResult> Invoice(string cryptoCode,[FromBody] InvoiceCreationOption option)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode);
-            var invoice = await _repository.GetNewInvoice(n, option);
+            var invoice = await _invoiceService.GetNewInvoice(n, option);
             var resp = new InvoiceResponse {Invoice = invoice};
             return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);
         }

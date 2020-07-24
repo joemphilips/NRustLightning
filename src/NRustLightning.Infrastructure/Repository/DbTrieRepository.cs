@@ -54,47 +54,6 @@ namespace NRustLightning.Infrastructure.Repository
             await tx.Commit();
         }
 
-        public async Task<PaymentRequest> GetNewInvoice(NRustLightningNetwork network, InvoiceCreationOption option)
-        {
-            if (network == null) throw new ArgumentNullException(nameof(network));
-            
-            Primitives.PaymentPreimage paymentPreimage = Primitives.PaymentPreimage.Create(RandomUtils.GetBytes(32));
-
-            var nodeId = Primitives.NodeId.NewNodeId(_keysRepository.GetNodeId());
-            var paymentHash = paymentPreimage.Hash;
-            var taggedFields =
-                new List<TaggedField>
-                {
-                    TaggedField.NewPaymentHashTaggedField(paymentHash),
-                    TaggedField.NewNodeIdTaggedField(nodeId),
-                    (option.EncodeDescriptionWithHash.HasValue && option.EncodeDescriptionWithHash.Value) ?
-                        TaggedField.NewDescriptionHashTaggedField(new uint256(Hashes.SHA256(Encoding.UTF8.GetBytes(option.Description)), false)) :
-                        TaggedField.NewDescriptionTaggedField(option.Description),
-                };
-            if (option.PaymentSecret != null)
-            {
-                taggedFields.Add(TaggedField.NewPaymentSecretTaggedField(option.PaymentSecret));
-            }
-
-            var t = new TaggedFields(taggedFields.ToFSharpList());
-            var r = PaymentRequest.TryCreate(network.BOLT11InvoicePrefix,  option.Amount.ToFSharpOption(), DateTimeOffset.UtcNow, nodeId, t, _keysRepository.AsMessageSigner());
-            if (r.IsError)
-            {
-                throw new InvalidDataException($"Error when creating our payment request: {r.ErrorValue}");
-            }
-
-            _logger.LogDebug($"Publish new invoice with hash {paymentHash}");
-            
-            using var tx = await _engine.OpenTransaction();
-            var table = tx.GetTable(DBKeys.HashToPreimage);
-            await table.Insert(paymentHash.ToBytes(false), paymentPreimage.ToByteArray());
-            var table2 = tx.GetTable(DBKeys.HashToInvoice);
-            await table2.Insert(paymentHash.ToBytes(false).ToHexString(), r.ResultValue.ToString());
-            await tx.Commit();
-            
-            return r.ResultValue;
-        }
-
 
         public async Task<Primitives.PaymentPreimage?> GetPreimage(Primitives.PaymentHash hash, CancellationToken ct = default)
         {
