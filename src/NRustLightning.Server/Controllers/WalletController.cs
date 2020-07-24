@@ -19,13 +19,13 @@ namespace NRustLightning.Server.Controllers
     {
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly IWalletService _walletService;
-        private readonly IPeerManagerProvider _peerManagerProvider;
+        private readonly PeerManagerProvider _peerManagerProvider;
         private readonly RepositoryProvider _repositoryProvider;
         private readonly MemoryPool<byte> _pool;
 
         public WalletController(NRustLightningNetworkProvider networkProvider,
             IWalletService walletService,
-            IPeerManagerProvider peerManagerProvider,
+            PeerManagerProvider peerManagerProvider,
             RepositoryProvider repositoryProvider)
         {
             _networkProvider = networkProvider;

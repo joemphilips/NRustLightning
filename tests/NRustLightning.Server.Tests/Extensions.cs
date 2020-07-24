@@ -148,7 +148,6 @@ namespace NRustLightning.Server.Tests
                     services.AddSingleton<IFeeEstimator, TestFeeEstimator>();
                     services.AddSingleton<IBroadcaster, TestBroadcaster>();
                     services.AddSingleton<IChainWatchInterface, TestChainWatchInterface>();
-                    services.AddSingleton<IPeerManagerProvider, TestPeerManagerProvider>();
                     services.AddSingleton<IWalletService, StubWalletService>();
                     services.AddSingleton<INBXplorerClientProvider, StubNBXplorerClientProvider>();
                 });

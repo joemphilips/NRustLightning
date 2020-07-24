@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.P2P;
+using NRustLightning.Server.Services;
 
 namespace NRustLightning.Server.Controllers
 {
@@ -14,10 +15,10 @@ namespace NRustLightning.Server.Controllers
     public class PeerController : ControllerBase
     {
         private readonly P2PConnectionHandler _connectionHandler;
-        public IPeerManagerProvider PeerManagerProvider { get; }
+        public PeerManagerProvider PeerManagerProvider { get; }
         public ISocketDescriptorFactory SocketDescriptorFactory { get; }
 
-        public PeerController(IPeerManagerProvider peerManagerProvider, ISocketDescriptorFactory socketDescriptorFactory, P2PConnectionHandler connectionHandler)
+        public PeerController(PeerManagerProvider peerManagerProvider, ISocketDescriptorFactory socketDescriptorFactory, P2PConnectionHandler connectionHandler)
         {
             _connectionHandler = connectionHandler;
             PeerManagerProvider = peerManagerProvider;

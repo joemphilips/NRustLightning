@@ -12,19 +12,18 @@ using NRustLightning.Infrastructure.Configuration;
 using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Infrastructure.Repository;
-using NRustLightning.Interfaces;
-using NRustLightning.Server.Configuration;
 using NRustLightning.Server.FFIProxies;
 using NRustLightning.Server.Interfaces;
 
 namespace NRustLightning.Server.Services
 {
-    public class PeerManagerProvider : IPeerManagerProvider, IHostedService
+    public class PeerManagerProvider : IHostedService
     {
         private readonly INBXplorerClientProvider _nbXplorerClientProvider;
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly IKeysRepository _keysRepository;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger<PeerManagerProvider> _logger;
         private readonly ChannelProvider _channelProvider;
         private readonly IOptions<Config> _config;
         private readonly RepositoryProvider _repositoryProvider;
@@ -44,6 +43,7 @@ namespace NRustLightning.Server.Services
             _networkProvider = networkProvider;
             _keysRepository = keysRepository;
             _loggerFactory = loggerFactory;
+            _logger = loggerFactory.CreateLogger<PeerManagerProvider>();
             _channelProvider = channelProvider;
             _config = config;
             _repositoryProvider = repositoryProvider;
@@ -55,6 +55,14 @@ namespace NRustLightning.Server.Services
             return p;
         }
 
+        public PeerManager? TryGetPeerManager(NRustLightningNetwork n) => TryGetPeerManager(n.CryptoCode);
+
+        public PeerManager GetPeerManager(string cryptoCode) =>
+            TryGetPeerManager(cryptoCode) ?? NRustLightning.Infrastructure.Utils.Utils.Fail<PeerManager>($"Failed to get peer manager for cryptocode: {cryptoCode}");
+
+        public PeerManager GetPeerManager(NRustLightningNetwork n) => GetPeerManager(n.CryptoCode);
+
+        public IEnumerable<PeerManager> GetAll() => _peerManagers.Values;
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             foreach (var n in _networkProvider.GetAll())
@@ -72,20 +80,41 @@ namespace NRustLightning.Server.Services
                     RandomUtils.GetBytes(peerManSeed);
                     
                     var logger = new NativeLogger(_loggerFactory.CreateLogger<NativeLogger>());
+                    var repo = _repositoryProvider.GetRepository(n);
 
                     /// TODO
                     uint currentBlockHeight = 0;
-                    
-                    var maybeChanMan = await _repositoryProvider.GetRepository(n).GetChannelManager(new ChannelManagerReadArgs(_keysRepository, b, feeEst, logger), cancellationToken);
+
+                    ChannelManager? maybeChanMan = null;
+                    int tried = 0;
+                    retry:
+                    try
+                    {
+                        maybeChanMan = await repo.GetChannelManager(new ChannelManagerReadArgs(_keysRepository, b, feeEst, logger), cancellationToken);
+                    }
+                    catch when (tried < 10)
+                    {
+                        tried++;
+                        await Task.Delay(600, cancellationToken);
+                        goto retry;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug($"failed to resume ChannelManager. ({ex})");
+                        // we tried enough. creating new one.
+                    }
+
                     PeerManager peerMan;
                     if (maybeChanMan is null)
                     {
+                        _logger.LogInformation($"Creating fresh PeerManager... for {n.CryptoCode}");
                         peerMan = PeerManager.Create(peerManSeed.AsSpan(), n.NBitcoinNetwork, conf, chainWatchInterface,
                             _keysRepository, b,
                             logger, feeEst, currentBlockHeight);
                     }
                     else
                     {
+                        _logger.LogInformation($"resuming PeerManager for {n.CryptoCode}");
                         var c = conf.GetUserConfig();
                         peerMan = PeerManager.Create(peerManSeed.AsSpan(), n.NBitcoinNetwork, in c, chainWatchInterface, logger, _keysRepository.GetNodeSecret().ToBytes(), maybeChanMan, currentBlockHeight);
                     }

@@ -29,6 +29,7 @@ namespace NRustLightning.Server.Configuration
                     {
                         Argument = new Argument<string> {Arity = ArgumentArity.ZeroOrOne}.FromAmong("mainnet", "testnet", "regtest")
                     },
+                    new Option<bool>(new[] {"--mainnet"}, $"Use mainnet"),
                     new Option<bool>(new[] {"--testnet"}, $"Use testnet"),
                     new Option<bool>(new[] {"--regtest"}, "Use regtest"),
                     new Option<DirectoryInfo>(new[] {"--datadir", "-d"}, "Directory to store data")
@@ -336,12 +337,17 @@ max relative lock-time (a year) and we would 'lose' money as it would be locked 
             rootCommand.AddValidator(result =>
             {
                 var hasNetwork = result.Children.Contains("network");
-                if (result.Children.Contains("mainnet") && hasNetwork)
-                    return "You cannot specify both '--network' and '--mainnet'";
-                if (result.Children.Contains("testnet") && hasNetwork)
-                    return "You cannot specify both '--network' and '--testnet'";
-                if (result.Children.Contains("regtest") && hasNetwork)
-                    return "You cannot specify both '--network' and '--regtest'";
+                var hasMainnet = result.Children.Contains("mainnet");
+                var hasTestNet = result.Children.Contains("testnet");
+                var hasRegtest = result.Children.Contains("regtest");
+                int count = 0;
+                foreach (var flag in new bool[] {hasNetwork, hasMainnet, hasTestNet, hasRegtest})
+                {
+                    if (flag) count++;
+                }
+
+                if (count > 1)
+                    return "You cannot specify more than one network.";
 
                 if (result.Children.Contains("seed"))
                 {

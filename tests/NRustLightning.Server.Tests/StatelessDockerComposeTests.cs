@@ -71,7 +71,7 @@ namespace NRustLightning.Server.Tests
             // Can disconnect from outside (lnd)
             await clients.LndClient.SwaggerClient.DisconnectPeerAsync(info.ConnectionString.NodeId.ToHex());
             lndPeerInfo = await clients.LndClient.SwaggerClient.ListPeersAsync();
-            Assert.Null(lndPeerInfo.Peers);
+            Assert.Empty(lndPeerInfo.Peers);
             info = await clients.NRustLightningHttpClient.GetInfoAsync();
             Assert.Equal(0, info.NumConnected);
             
@@ -254,10 +254,6 @@ namespace NRustLightning.Server.Tests
             await clients.CreateEnoughTxToEstimateFee();
             
             await OutBoundChannelOpenRoundtrip(clients, clients.LndClient);
-            // ---- payment tests ----
-            // await Task.Delay(8000);
-            // var invoice = await clients.LndLNClient.CreateInvoice(10000, "CanCreateInvoice", TimeSpan.FromMinutes(5));
-            // await clients.NRustLightningHttpClient.PayToInvoiceAsync(invoice.BOLT11);
             await OutboundPaymentRoundTrip(clients, clients.LndClient);
         }
         

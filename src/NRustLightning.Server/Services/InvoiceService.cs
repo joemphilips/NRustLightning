@@ -23,12 +23,12 @@ namespace NRustLightning.Server.Services
     {
         private readonly IRepository _repository;
         private readonly EventAggregator _eventAggregator;
-        private readonly IPeerManagerProvider _peerManagerProvider;
+        private readonly PeerManagerProvider _peerManagerProvider;
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly ILogger<InvoiceService> _logger;
         private readonly IOptions<Config> _config;
 
-        public InvoiceService(IRepository repository, EventAggregator eventAggregator, IPeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<InvoiceService> logger, IOptions<Config> config)
+        public InvoiceService(IRepository repository, EventAggregator eventAggregator, PeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<InvoiceService> logger, IOptions<Config> config)
         {
             _repository = repository;
             _eventAggregator = eventAggregator;

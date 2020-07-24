@@ -11,6 +11,7 @@ using NRustLightning.Adaptors;
 using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Infrastructure.Models.Response;
 using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Utils;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Services;
@@ -22,12 +23,12 @@ namespace NRustLightning.Server.Controllers
     // [Authorize(AuthenticationSchemes = "LSAT", Policy = "Readonly")]
     public class ChannelController : ControllerBase
     {
-        private readonly IPeerManagerProvider _peerManagerProvider;
+        private readonly PeerManagerProvider _peerManagerProvider;
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly ILogger<ChannelController> _logger;
         private readonly MemoryPool<byte> _pool;
 
-        public ChannelController(IPeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<ChannelController> logger)
+        public ChannelController(PeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<ChannelController> logger)
         {
             _peerManagerProvider = peerManagerProvider;
             _networkProvider = networkProvider;
@@ -37,10 +38,14 @@ namespace NRustLightning.Server.Controllers
         
         [HttpGet]
         [Route("{cryptoCode}")]
-        public ChannelInfoResponse Get(string cryptoCode)
+        public ActionResult<ChannelInfoResponse> Get(string cryptoCode)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
             var peer = _peerManagerProvider.TryGetPeerManager(n);
+            if (peer is null)
+            {
+                return BadRequest($"cyrptocode: {cryptoCode} not supported");
+            }
             var details =  peer.ChannelManager.ListChannels(_pool);
             return new ChannelInfoResponse {Details = details};
         }

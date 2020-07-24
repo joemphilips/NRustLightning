@@ -5,6 +5,7 @@ using LSATAuthenticationHandler;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
@@ -35,12 +36,13 @@ namespace NRustLightning.Server
             services.AddSingleton<IConnectionFactory, P2PConnectionFactory>();
             services.AddSingleton<P2PConnectionHandler>();
             services.AddSingleton<INBXplorerClientProvider, NBXplorerClientProvider>();
-            services.AddSingleton<IPeerManagerProvider, PeerManagerProvider>();
-            services.AddHostedService<PeerManagerProvider>();
+            services.AddSingleton<PeerManagerProvider>();
             services.AddTransient<RequestResponseLoggingMiddleware>();
-            services.AddHostedService<NBXplorerListeners>();
             services.AddSingleton<ChannelProvider>();
             services.AddSingleton<EventAggregator>();
+            
+            services.AddHostedService(sp => sp.GetRequiredService<PeerManagerProvider>());
+            services.AddHostedService<NBXplorerListeners>();
             services.AddHostedService<RustLightningEventReactors>();
         }
 

@@ -37,7 +37,7 @@ namespace NRustLightning.Server.Services
                 {
                     var reactor = new RustLightningEventReactor(
                         serviceProvider.GetRequiredService<P2PConnectionHandler>(),
-                        serviceProvider.GetRequiredService<IPeerManagerProvider>(),
+                        serviceProvider.GetRequiredService<PeerManagerProvider>(),
                         serviceProvider.GetRequiredService<IWalletService>(),
                         n,
                         serviceProvider.GetRequiredService<EventAggregator>(),
@@ -63,9 +63,8 @@ namespace NRustLightning.Server.Services
     public class RustLightningEventReactor : BackgroundService
     {
         private readonly P2PConnectionHandler _connectionHandler;
-        private readonly IPeerManagerProvider _peerManagerProvider;
+        private readonly PeerManagerProvider _peerManagerProvider;
         private readonly IWalletService _walletService;
-        private readonly PeerManager _peerManager;
         private readonly MemoryPool<byte> _pool;
         private readonly NRustLightningNetwork _network;
         private readonly EventAggregator _eventAggregator;
@@ -78,7 +77,7 @@ namespace NRustLightning.Server.Services
 
         public RustLightningEventReactor(
             P2PConnectionHandler connectionHandler,
-            IPeerManagerProvider peerManagerProvider,
+            PeerManagerProvider peerManagerProvider,
             IWalletService walletService,
             NRustLightningNetwork network,
             EventAggregator eventAggregator,
@@ -95,14 +94,14 @@ namespace NRustLightning.Server.Services
             _logger = logger;
             _invoiceService = invoiceService;
             _repository = repository;
-            _peerManager = peerManagerProvider.TryGetPeerManager(network.CryptoCode);
         }
         
         private async Task HandleEvent(Event e, CancellationToken cancellationToken)
         {
             _logger.LogDebug($"Handling event {e}");
             _eventAggregator.Publish(e);
-            var chanMan = _peerManager.ChannelManager;
+            var peerManager = _peerManagerProvider.GetPeerManager(_network);
+            var chanMan = peerManager.ChannelManager;
             if (e is Event.FundingGenerationReady f)
             {
                 var witScriptId = PayToWitScriptHashTemplate.Instance.ExtractScriptPubKeyParameters(f.Item.OutputScript) ?? Infrastructure.Utils.Utils.Fail<WitScriptId>($"Failed to extract wit script from {f.Item.OutputScript.ToHex()}! this should never happen.");
@@ -116,7 +115,7 @@ namespace NRustLightning.Server.Services
                 _logger.LogDebug($"Finished creating funding tx {tx.ToHex()}; id: {tx.GetHash()}");
                 
                 chanMan.FundingTransactionGenerated(f.Item.TemporaryChannelId.Value, fundingTxo);
-                _peerManager.ProcessEvents();
+                peerManager.ProcessEvents();
             }
             else if (e is Event.FundingBroadcastSafe fundingBroadcastSafe)
             {
@@ -146,14 +145,14 @@ namespace NRustLightning.Server.Services
                 {
                     if (chanMan.ClaimFunds(preImage, secret, (ulong) intendedAmount.MilliSatoshi))
                     {
-                        _peerManager.ProcessEvents();
+                        peerManager.ProcessEvents();
                     }
                 }
                 else
                 {
                     if (chanMan.FailHTLCBackwards(hash, secret))
                     {
-                        _peerManager.ProcessEvents();
+                        peerManager.ProcessEvents();
                     }
                     else
                     {
@@ -177,8 +176,8 @@ namespace NRustLightning.Server.Services
                 var wait = pendingHtlCsForwardable.Item.TimeToWait(_random);
 #endif
                 await Task.Delay(wait, cancellationToken);
-                _peerManager.ChannelManager.ProcessPendingHTLCForwards();
-                _peerManager.ProcessEvents();
+                peerManager.ChannelManager.ProcessPendingHTLCForwards();
+                peerManager.ProcessEvents();
             }
             else if (e is Event.SpendableOutputs spendableOutputs)
             {
@@ -201,23 +200,20 @@ namespace NRustLightning.Server.Services
             {
                 while (await _connectionHandler.EventNotify.Reader.WaitToReadAsync(cancellationToken))
                 {
-                    var _ = await _connectionHandler.EventNotify.Reader.ReadAsync(cancellationToken);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var events = _peerManager.ChannelManager.GetAndClearPendingEvents(_pool);
-                    await Task.WhenAll(events.Select(async e =>
-                        await HandleEvent(e, cancellationToken).ConfigureAwait(false)));
+                    foreach (var peerManager in _peerManagerProvider.GetAll())
+                    {
+                        var _ = await _connectionHandler.EventNotify.Reader.ReadAsync(cancellationToken);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var events = peerManager.ChannelManager.GetAndClearPendingEvents(_pool);
+                        await Task.WhenAll(events.Select(async e =>
+                            await HandleEvent(e, cancellationToken).ConfigureAwait(false)));
+                    }
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogCritical($"{ex.Message}: {ex.StackTrace}");
             }
-        }
-
-        public override async Task StopAsync(CancellationToken cancellationToken)
-        {
-            await _repository.SetChannelManager(_peerManager.ChannelManager, cancellationToken);
-            await base.StopAsync(cancellationToken);
         }
     }
 }

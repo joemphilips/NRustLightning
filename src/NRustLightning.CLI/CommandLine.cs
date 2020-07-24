@@ -19,15 +19,37 @@ namespace NRustLightning.CLI
             return new Option[]
             {
                 new Option(new[] {"-n", "--network"},
-                    "Set the network among (mainnet, testnet, regtest) (default:mainnet)"),
-                new Option(new [] {"--rpcip", "--ip"}, "An ip address for the node we send an rpc request. (default: 127.0.0.1)")
+                    "Set the network among (mainnet, testnet, regtest) (default:mainnet)")
+                {
+                    Argument = new Argument<NetworkType>()
+                    {
+                        Arity = ArgumentArity.ZeroOrOne
+                    }.FromAmong("mainnet", "testnet", "regtest")
+                },
+                new Option<bool>(new[] {"--mainnet"}, $"Use mainnet"),
+                new Option<bool>(new[] {"--testnet"}, $"Use testnet"),
+                new Option<bool>(new[] {"--regtest"}, "Use regtest"),
+                new Option<string>(new [] {"--cryptocode", "-c"}, "the cryptocode for the coin. (default: BTC)")
                 {
                     Argument = new Argument<string>
                     {
-                        Arity = ArgumentArity.ZeroOrOne
-                    }
+                        Arity = ArgumentArity.ZeroOrOne,
+                    },
                 },
-                new Option(new []{"--rpcport", "--port"}, "An port number of the rpc server listening on for http request. (default: 80)"), 
+                new Option<string>(new [] {"--rpcip", "--ip"}, "An ip address for the node we send an rpc request. (default: 127.0.0.1)")
+                {
+                    Argument = new Argument<string>
+                    {
+                        Arity = ArgumentArity.ZeroOrOne,
+                    },
+                },
+                new Option<int>(new []{"--rpcport", "--port"}, "An port number of the rpc server listening on for http request. (default: 80)")
+                {
+                    Argument = new Argument<int>
+                    {
+                        Arity = ArgumentArity.ZeroOrOne,
+                    },
+                },
             };
         }
 
@@ -96,7 +118,7 @@ namespace NRustLightning.CLI
 
         private static IEnumerable<Command> GetSubCommands()
         {
-            yield return new Command("getinfo", "get basic information from the node");
+            yield return new Command(SubCommands.GetInfo, "get basic information from the node");
             yield return Connect();
         }
 
@@ -110,13 +132,17 @@ namespace NRustLightning.CLI
             rootCommand.AddValidator(result =>
             {
                 var hasNetwork = result.Children.Contains("network");
-                if (result.Children.Contains("mainnet") && hasNetwork)
-                    return "You cannot specify both '--network' and '--mainnet'";
-                if (result.Children.Contains("testnet") && hasNetwork)
-                    return "You cannot specify both '--network' and '--testnet'";
-                if (result.Children.Contains("regtest") && hasNetwork)
-                    return "You cannot specify both '--network' and '--regtest'";
+                var hasMainnet = result.Children.Contains("mainnet");
+                var hasTestNet = result.Children.Contains("testnet");
+                var hasRegtest = result.Children.Contains("regtest");
+                int count = 0;
+                foreach (var flag in new bool[] {hasNetwork, hasMainnet, hasTestNet, hasRegtest})
+                {
+                    if (flag) count++;
+                }
 
+                if (count > 1)
+                    return "You cannot specify more than one network.";
                 return null;
             });
             return rootCommand;
