@@ -6,7 +6,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NBitcoin;
-using NBXplorer;
 using NRustLightning.Adaptors;
 using NRustLightning.Infrastructure.Configuration;
 using NRustLightning.Infrastructure.Interfaces;
@@ -82,8 +81,7 @@ namespace NRustLightning.Server.Services
                     var logger = new NativeLogger(_loggerFactory.CreateLogger<NativeLogger>());
                     var repo = _repositoryProvider.GetRepository(n);
 
-                    /// TODO
-                    uint currentBlockHeight = 0;
+                    uint currentBlockHeight = (uint)await nbx.RPCClient.GetBlockCountAsync();
 
                     ChannelManager? maybeChanMan = null;
                     int tried = 0;

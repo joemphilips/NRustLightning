@@ -116,33 +116,49 @@ namespace NRustLightning.Server.Services
                 throw new NRustLightningException($"Unknown invoice prefix {invoice.PrefixValue}");
             }
             var peerMan = _peerManagerProvider.GetPeerManager(n);
-            var failureTcs = new TaskCompletionSource<Event>();
-            var successTcs = new TaskCompletionSource<Event>();
+            var failureTcs = new TaskCompletionSource<Event>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var successTcs = new TaskCompletionSource<Event>(TaskCreationOptions.RunContinuationsAsynchronously);
             _eventAggregator.Subscribe<Event>(e =>
             {
-                if (e is Event.PaymentFailed paymentFailed && paymentFailed.Item.PaymentHash.Equals(invoice.PaymentHash))
+                if (e is Event.PaymentFailed paymentF && paymentF.Item.PaymentHash.Equals(invoice.PaymentHash))
                 {
                     _logger.LogError($"Payment for invoice ({invoice}) failed");
-                    failureTcs.SetResult(paymentFailed);
+                    failureTcs.SetResult(paymentF);
                 }
 
-                if (e is Event.PaymentSent paymentSent && paymentSent.Item.Hash.Equals(invoice.PaymentHash))
+                if (e is Event.PaymentSent paymentS && paymentS.Item.Hash.Equals(invoice.PaymentHash))
                 {
                     _logger.LogInformation($"Payment for invoice ({invoice}) succeed");
-                    successTcs.SetResult(paymentSent);
+                    successTcs.SetResult(paymentS);
                 }
             });
             peerMan.SendPayment(invoice.NodeIdValue.Item, invoice.PaymentHash, new List<RouteHint>(), LNMoney.MilliSatoshis(amount.Value), invoice.MinFinalCLTVExpiryDelta);
             peerMan.ProcessEvents();
-            var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(_config.Value.PaymentTimeoutSec));
-            var delay = Task.Delay(TimeSpan.FromMilliseconds(-1), cts.Token);
+            
+            // case 1: canceled by user.
+            var cancelTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            await using var _ = (ct.Register(state => { ((TaskCompletionSource<object>) state).TrySetResult(null); },
+                cancelTcs));
+            var cancelTask = cancelTcs.Task;
+            
+            // case 2: timeout.
+            using var cts = new CancellationTokenSource();
+            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(_config.Value.PaymentTimeoutSec), cts.Token);
+            
+            // case 3: finishes
             var task =  Task.WhenAny(failureTcs.Task, successTcs.Task);
-            await Task.WhenAny(task, delay);
-            if (cts.IsCancellationRequested)
+            
+            var resultTask = await Task.WhenAny(cancelTask, timeoutTask, task);
+            if (resultTask == cancelTask)
+            {
+                throw new NRustLightningException($"Payment canceled.");
+            }
+            if (resultTask == timeoutTask)
             {
                 throw new NRustLightningException($"Payment for {invoice} did not finish in {_config.Value.PaymentTimeoutSec} seconds");
             }
+            cts.Cancel(); // cancel the timer task so it does not fire.
+            
             var resultEvent = await await task;
             if (resultEvent is Event.PaymentFailed  paymentFailed)
             {
@@ -153,7 +169,7 @@ namespace NRustLightning.Server.Services
 
             if (resultEvent is Event.PaymentSent paymentSent)
             {
-                await _repository.SetPreimage(paymentSent.Item);
+                await _repository.SetPreimage(paymentSent.Item, ct);
             }
         }
     }

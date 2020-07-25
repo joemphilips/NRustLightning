@@ -28,7 +28,12 @@ namespace NRustLightning.Server
             var command = Configuration.CommandLine.GetRootCommand();
             command.Handler = CommandHandler.Create((ParseResult parseResult) =>
             {
-                CreateHostBuilder(args, parseResult).Build().Run();
+                var host = CreateHostBuilder(args, parseResult).Build();
+                using (var _scope = host.Services.CreateScope())
+                {
+                    // TODO: check db version and run migration by dedicated service.
+                }
+                host.Run();
             });
             await command.InvokeAsync(args);
         }
