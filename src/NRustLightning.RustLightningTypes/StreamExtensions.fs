@@ -1,9 +1,10 @@
 namespace NRustLightning.RustLightningTypes
 
-open DotNetLightning.Serialize
-open DotNetLightning.Serialize
-open DotNetLightning.Utils
+open System.IO
 open System.Runtime.CompilerServices
+open DotNetLightning.Serialize
+open DotNetLightning.Serialize.Msgs
+open DotNetLightning.Utils
 open NBitcoin
 
 
@@ -18,12 +19,21 @@ type Extensions() =
         | x ->
             let d = this.ReadBytes((int)x - 1)
             Some(d)
+            
+    [<Extension>]
+    static member WriteOption(this: LightningWriterStream, d: Option<byte[]>) =
+        match d with
+        | None -> this.WriteBigSize(0UL)
+        | Some x ->
+            let len = x.Length + 1
+            this.WriteBigSize(uint64 len)
+            this.Write x
 
     [<Extension>]
     static member ReadWithLen16(this: LightningReaderStream) =
         let length = int(this.ReadUInt16(false))
         this.ReadBytes(length)
-            
+        
     [<Extension>]
     static member ReadWithLenVarInt(this: LightningReaderStream) =
         let length = int(this.ReadBigSize())
@@ -59,3 +69,12 @@ type Extensions() =
         let len = d.Length.ToVarInt()
         this.Write(len)
         this.Write(d)
+        
+module ILightningSerializable =
+    let internal fromBytes<'T when 'T :(new :unit -> 'T) and 'T :> ILightningSerializable<'T>>(data: byte[]) = 
+        use ms = new MemoryStream(data)
+        use ls = new LightningReaderStream(ms)
+        let instance = new 'T()
+        instance.Deserialize(ls)
+        instance
+        

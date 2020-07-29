@@ -11,7 +11,14 @@
         <Compile Include="Event.fs" />
         <Compile Include="ChannelDetails.fs" />
         <Compile Include="RouteHint.fs" />
+        <Compile Include="NetworkGraph.fs" />
         <Compile Include="ChannelKeys.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>NRustLightning.RustLightningType.Tests</_Parameter1>
+      </AssemblyAttribute>
     </ItemGroup>
 
     <ItemGroup>

@@ -29,6 +29,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSharp.SystemTextJson", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRustLightning.Infrastructure", "src\NRustLightning.Infrastructure\NRustLightning.Infrastructure.csproj", "{F5D07336-D249-44E9-B516-2374FD8E20C5}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NRustLightning.RustLightningType.Tests", "tests\NRustLightning.RustLightningType.Tests\NRustLightning.RustLightningType.Tests.fsproj", "{6BDA8BCF-6431-403C-88C9-4315B81698A2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +81,10 @@ Global
 		{F5D07336-D249-44E9-B516-2374FD8E20C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F5D07336-D249-44E9-B516-2374FD8E20C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F5D07336-D249-44E9-B516-2374FD8E20C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BDA8BCF-6431-403C-88C9-4315B81698A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BDA8BCF-6431-403C-88C9-4315B81698A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BDA8BCF-6431-403C-88C9-4315B81698A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BDA8BCF-6431-403C-88C9-4315B81698A2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{718AEAA4-9B05-4467-8543-7C860A0CDC3C} = {D70FE7F4-3514-42E1-AEB0-1FF6B6FDCE0A}
@@ -93,5 +99,6 @@ Global
 		{758DEB78-4A93-438F-8E11-4FDAEE67638E} = {D70FE7F4-3514-42E1-AEB0-1FF6B6FDCE0A}
 		{B566ACBC-6E61-443C-9E19-E7234C4BA1AF} = {D70FE7F4-3514-42E1-AEB0-1FF6B6FDCE0A}
 		{F5D07336-D249-44E9-B516-2374FD8E20C5} = {D70FE7F4-3514-42E1-AEB0-1FF6B6FDCE0A}
+		{6BDA8BCF-6431-403C-88C9-4315B81698A2} = {CA473E93-5BB0-42CE-996A-1BC7136541CD}
 	EndGlobalSection
 EndGlobal

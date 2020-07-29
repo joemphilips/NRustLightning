@@ -1,6 +1,8 @@
 namespace NRustLightning.RustLightningTypes
 
 open System
+open System.Collections.Generic
+open System.IO
 open System.Runtime.CompilerServices
 open NBitcoin
 open DotNetLightning.Utils.Primitives
@@ -10,6 +12,14 @@ open DotNetLightning.Core.Utils.Extensions
 
 [<AutoOpen>]
 module PrimitiveStaticExtensions =
+    type System.UInt16 with
+        static member FromBytes(value: byte[], littleEndian) =
+            if littleEndian then
+                (uint32 value.[0]) <<< 8
+                 ||| (uint32 value.[1])
+            else
+                (uint32 value.[1])
+                ||| (uint32 value.[0] <<< 8)
     type System.UInt32 with
         static member FromBytes(value: byte[], littleEndian) =
             if littleEndian then
@@ -156,3 +166,16 @@ type PrimitiveExtensions() =
         let d = BitConverter.GetBytes(this)
         if BitConverter.IsLittleEndian then (d |> Array.rev) else d
         
+
+type Parsers =
+    static member ParseOutPointToBlockHashMap(b: byte[]): Dictionary<LNOutPoint, uint256> =
+        let len = UInt16.FromBytesBigEndian(b.[0..1])
+        use ms = new MemoryStream(b.[2..])
+        use ls = new LightningReaderStream(ms)
+        let ret = Dictionary()
+        for i in 0..(int32 len - 1) do
+            let txid = ls.ReadUInt256(false)
+            let index = ls.ReadUInt16(false)
+            let outpoint = OutPoint(txid, uint32 index) |> LNOutPoint
+            ret.Add(outpoint, ls.ReadUInt256(false))
+        ret

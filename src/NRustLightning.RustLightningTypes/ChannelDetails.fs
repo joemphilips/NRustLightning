@@ -2,15 +2,12 @@ namespace NRustLightning.RustLightningTypes
 
 open System.IO
 
-open DotNetLightning.Core.Utils.Extensions
 open DotNetLightning.Serialize
-
-open System
-
 open DotNetLightning.Utils
 
 open NBitcoin
 open ResultUtils
+
 type ChannelDetails = {
     ChannelId: uint256
     ShortChannelId: Option<ShortChannelId>
