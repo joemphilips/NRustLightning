@@ -95,7 +95,7 @@ namespace NRustLightning.Net
                 }
                 while (BlockDisconnectSocket)
                 {
-                    Task.Delay(10).GetAwaiter().GetResult();
+                    Task.Yield().GetAwaiter().GetResult();
                 }
             };
         }
