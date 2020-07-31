@@ -10,7 +10,6 @@ using NRustLightning.Handles;
 using NRustLightning.Interfaces;
 using NRustLightning.Utils;
 using static NRustLightning.Utils.Utils;
-using Network = NRustLightning.Adaptors.Network;
 using NRustLightning.RustLightningTypes;
 using RustLightningTypes;
 
@@ -19,7 +18,7 @@ namespace NRustLightning
     public class PeerManager : IDisposable
     {
         private readonly PeerManagerHandle _handle;
-        private readonly IList<object> _deps;
+        private readonly object[] _deps;
         private readonly Timer tick;
         private bool _disposed = false;
 
@@ -31,7 +30,7 @@ namespace NRustLightning
             ChannelManager channelManager,
             BlockNotifier blockNotifier,
             int tickInterval,
-            IList<object> deps
+            object[] deps
             )
         {
             _deps = deps;
@@ -44,38 +43,17 @@ namespace NRustLightning
         public static PeerManager Create(
             Span<byte> seed,
             NBitcoin.Network nbitcoinNetwork,
-            IUserConfigProvider config,
-            IChainWatchInterface chainWatchInterface,
-            IKeysInterface keysInterface,
-            IBroadcaster broadcaster,
-            ILogger logger,
-            IFeeEstimator feeEstimator,
-            uint currentBlockHeight,
-            int tickIntervalMSec = 30000
-        )
-        {
-            if (config == null) throw new ArgumentNullException(nameof(config));
-            var c = config.GetUserConfig();
-            return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, keysInterface, broadcaster, logger, feeEstimator, currentBlockHeight, tickIntervalMSec);
-        }
-
-        public static PeerManager Create(
-            Span<byte> seed,
-            NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
             ILogger logger,
             byte[] ourNodeSecret,
             ChannelManager channelManager,
-            uint currentBlockHeight,
-            int tickIntervalMSec = 30000,
-            IList<object> objectsToKeepAlive = null
+            BlockNotifier blockNotifier,
+            int tickIntervalMSec = 30000
         )
         {
-            objectsToKeepAlive ??= new object[]{};
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
             var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
-            var blockNotifier = BlockNotifier.Create(chainWatchInterfaceDelegatesHolder);
             blockNotifier.RegisterChannelManager(channelManager);
             unsafe
             {
@@ -97,59 +75,8 @@ namespace NRustLightning
                         (IntPtr)secretPtr,
                         out var handle
                         );
-                    objectsToKeepAlive.Add(chainWatchInterfaceDelegatesHolder);
-                    objectsToKeepAlive.Add(loggerDelegatesHolder);
+                    var objectsToKeepAlive = new object[]{chainWatchInterfaceDelegatesHolder, loggerDelegatesHolder};
                     return new PeerManager(handle, channelManager, blockNotifier, tickIntervalMSec, objectsToKeepAlive);
-                }
-            }
-        }
-        public static PeerManager Create(
-            Span<byte> seed,
-            NBitcoin.Network nbitcoinNetwork,
-            in UserConfig config,
-            IChainWatchInterface chainWatchInterface,
-            IKeysInterface keysInterface,
-            IBroadcaster broadcaster,
-            ILogger logger,
-            IFeeEstimator feeEstimator,
-            uint currentBlockHeight,
-            int tickIntervalMSec = 30000
-            )
-        {
-            if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
-            if (keysInterface == null) throw new ArgumentNullException(nameof(keysInterface));
-            if (broadcaster == null) throw new ArgumentNullException(nameof(broadcaster));
-            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
-            var keysInterfaceDelegatesHolder = new KeysInterfaceDelegatesHolder(keysInterface);
-            var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
-            var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
-            var feeEstimatorDelegatesHolder = new FeeEstimatorDelegatesHolder(feeEstimator);
-
-            var ourNodeSecret = keysInterface.GetNodeSecret().ToBytes();
-            var chanMan = ChannelManager.Create(nbitcoinNetwork, in config, chainWatchInterfaceDelegatesHolder, keysInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder, currentBlockHeight);
-            var blockNotifier = BlockNotifier.Create(chainWatchInterfaceDelegatesHolder);
-            blockNotifier.RegisterChannelManager(chanMan);
-            unsafe
-            {
-                fixed (byte* seedPtr = seed)
-                fixed (UserConfig* configPtr = &config)
-                fixed (byte* secretPtr = ourNodeSecret)
-                {
-                    Interop.create_peer_manager(
-                        (IntPtr)seedPtr,
-                        configPtr,
-                        chanMan.Handle,
-                        chainWatchInterfaceDelegatesHolder.InstallWatchTx,
-                        chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
-                        chainWatchInterfaceDelegatesHolder.WatchAllTxn,
-                        chainWatchInterfaceDelegatesHolder.GetChainUtxo,
-                        chainWatchInterfaceDelegatesHolder.FilterBlock,
-                        chainWatchInterfaceDelegatesHolder.ReEntered,
-                        loggerDelegatesHolder.Log,
-                        (IntPtr)secretPtr,
-                        out var handle
-                        );
-                    return new PeerManager(handle, chanMan, blockNotifier, tickIntervalMSec,new object[]{ chainWatchInterfaceDelegatesHolder, keysInterfaceDelegatesHolder, broadcasterDelegatesHolder, loggerDelegatesHolder, feeEstimatorDelegatesHolder, });
                 }
             }
         }

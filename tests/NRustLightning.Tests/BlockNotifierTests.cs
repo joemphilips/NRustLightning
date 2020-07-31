@@ -36,7 +36,7 @@ namespace NRustLightning.Tests
             
             blockNotifier.RegisterManyChannelMonitor(manyChannelMonitor);
 
-            using var channelManager = ChannelManager.Create(n, UserConfig.GetDefault(), chainWatchInterface, keysInterface, logger, broadcaster, feeEstiamtor, 0);
+            using var channelManager = ChannelManager.Create(n, UserConfig.GetDefault(), chainWatchInterface, keysInterface, logger, broadcaster, feeEstiamtor, 0, manyChannelMonitor);
             blockNotifier.RegisterChannelManager(channelManager);
             
             // second block in testnet3
@@ -52,8 +52,8 @@ namespace NRustLightning.Tests
                 Assert.Empty(keyToHeaderHash);
             }
 
-            // blockNotifier.UnregisterManyChannelMonitor(manyChannelMonitor);
-            // blockNotifier.UnregisterChannelManager(channelManager);
+            blockNotifier.UnregisterManyChannelMonitor(manyChannelMonitor);
+            blockNotifier.UnregisterChannelManager(channelManager);
         }
     }
 }

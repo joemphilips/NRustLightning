@@ -50,7 +50,8 @@ namespace NRustLightning.Tests
             var chainWatchInterface = new ChainWatchInterfaceUtil(n);
             var keySeed = new byte[]{ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 };
             var keysInterface = new KeysManager(keySeed, DateTime.UnixEpoch);
-            var channelManager = ChannelManager.Create(n, in TestUserConfig.Default, chainWatchInterface, keysInterface, logger, broadcaster, feeEstiamtor, 400000);
+            var manyChannelMonitor = ManyChannelMonitor.Create(n, chainWatchInterface, broadcaster, logger, feeEstiamtor);
+            var channelManager = ChannelManager.Create(n, in TestUserConfig.Default, chainWatchInterface, keysInterface, logger, broadcaster, feeEstiamtor, 400000, manyChannelMonitor);
             return channelManager;
         }
         

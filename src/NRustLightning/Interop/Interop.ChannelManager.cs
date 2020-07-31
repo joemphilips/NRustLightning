@@ -45,6 +45,7 @@ namespace NRustLightning
             ref Log log,
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
             ulong current_block_height,
+            ManyChannelMonitorHandle manyChannelMonitorHandle,
             out ChannelManagerHandle handle
             );
 
@@ -70,13 +71,14 @@ namespace NRustLightning
             Log log,
             GetEstSatPer1000Weight getEstSatPer1000Weight,
             ulong current_block_height,
+            ManyChannelMonitorHandle manyChannelMonitorHandle,
             out ChannelManagerHandle handle,
             bool check = true
         )
         {
             return MaybeCheck(_create_ffi_channel_manager(n , config, ref installWatchTx, ref installWatchOutPoint, ref watchAllTxn, ref getChainUtxo, ref filterBlock, ref  reEntered,
                 ref getNodeSecret, ref getDestinationScript, ref getShutdownKey, ref getChannelKeys, ref getOnionRand, ref getChannelId,
-                ref broadcastTransaction,ref log, ref getEstSatPer1000Weight, current_block_height, out handle), check);
+                ref broadcastTransaction,ref log, ref getEstSatPer1000Weight, current_block_height, manyChannelMonitorHandle, out handle), check);
         }
         
         [DllImport(RustLightning,
@@ -394,7 +396,7 @@ namespace NRustLightning
             ref BroadcastTransaction broadcastTransaction,
             ref Log log,
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
-            
+            ManyChannelMonitorHandle manyChannelMonitorHandle,
             out ChannelManagerHandle handle);
 
         internal static FFIResult deserialize_channel_manager(
@@ -420,6 +422,7 @@ namespace NRustLightning
             ref Log log,
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
             
+            ManyChannelMonitorHandle manyChannelMonitorHandle,
             out ChannelManagerHandle handle,
             bool check = true)
             => MaybeCheck(_deserialize_channel_manager(
@@ -441,6 +444,7 @@ namespace NRustLightning
                 ref broadcastTransaction,
                 ref log,
                 ref getEstSatPer1000Weight,
+                manyChannelMonitorHandle,
                 out handle), check);
         
 

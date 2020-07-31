@@ -38,11 +38,12 @@ namespace NRustLightning
             ILogger logger,
             IBroadcaster broadcaster,
             IFeeEstimator feeEstimator,
-            ulong currentBlockHeight
+            ulong currentBlockHeight,
+            ManyChannelMonitor manyChannelMonitor
         )
         {
             var c = config.GetUserConfig();
-            return Create(nbitcoinNetwork, in c, chainWatchInterface, keysInterface, logger, broadcaster, feeEstimator, currentBlockHeight);
+            return Create(nbitcoinNetwork, in c, chainWatchInterface, keysInterface, logger, broadcaster, feeEstimator, currentBlockHeight, manyChannelMonitor);
         }
 
         public static ChannelManager Create(
@@ -53,7 +54,8 @@ namespace NRustLightning
             ILogger logger,
             IBroadcaster broadcaster,
             IFeeEstimator feeEstimator,
-            ulong currentBlockHeight
+            ulong currentBlockHeight,
+            ManyChannelMonitor manyChannelMonitor
         )
         {
             
@@ -70,7 +72,8 @@ namespace NRustLightning
                 loggerDelegatesHolder,
                 broadcasterDelegatesHolder,
                 feeEstimatorDelegatesHolder,
-                currentBlockHeight
+                currentBlockHeight,
+                manyChannelMonitor
                 );
         }
         internal static ChannelManager Create(
@@ -81,7 +84,8 @@ namespace NRustLightning
             ILoggerDelegatesHolder loggerDelegatesHolder,
             IBroadcasterDelegatesHolder broadcasterDelegatesHolder,
             IFeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder,
-            ulong currentBlockHeight
+            ulong currentBlockHeight,
+            ManyChannelMonitor manyChannelMonitor
             )
         {
             var n = nbitcoinNetwork.ToFFINetwork();
@@ -110,6 +114,7 @@ namespace NRustLightning
                         loggerDelegatesHolder.Log,
                         feeEstimatorDelegatesHolder.getEstSatPer1000Weight,
                         currentBlockHeight,
+                        manyChannelMonitor.Handle,
                         out var handle);
                     return new ChannelManager(handle, new object[] {chainWatchInterfaceDelegatesHolder, keysInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder});
                 }

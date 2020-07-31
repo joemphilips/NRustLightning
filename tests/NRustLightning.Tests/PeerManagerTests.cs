@@ -53,9 +53,14 @@ namespace NRustLightning.Tests
             var chainWatchInterface = new ChainWatchInterfaceUtil(n);
             var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 };
             var keysInterface = new KeysManager(seed, DateTime.UnixEpoch);
+            var blockNotifier = BlockNotifier.Create(chainWatchInterface);
+            var manyChannelMonitor = ManyChannelMonitor.Create(n, chainWatchInterface, broadcaster, logger, feeEstiamtor);
+            var channelManager = ChannelManager.Create(n, TestUserConfig.Default, chainWatchInterface, keysInterface, logger, broadcaster, feeEstiamtor, 400000, manyChannelMonitor);
+            blockNotifier.RegisterChannelManager(channelManager);
+            blockNotifier.RegisterManyChannelMonitor(manyChannelMonitor);
             var peerManager =
                 PeerManager.Create(
-                    seed, n, in TestUserConfig.Default, chainWatchInterface, keysInterface, broadcaster, logger, feeEstiamtor, 400000
+                    seed, n, in TestUserConfig.Default, chainWatchInterface, logger, keysInterface.GetNodeSecret().ToBytes(), channelManager, blockNotifier, 10000
                     );
             return peerManager;
         }

@@ -47,8 +47,6 @@ namespace NRustLightning
 
         public void UnregisterChannelManager(ChannelManager channelManager)
         {
-            // This may cause crash. abandon for now.
-            throw new NotImplementedException();
             if (channelManager == null) throw new ArgumentNullException(nameof(channelManager));
             var h = channelManager.Handle;
             Interop.unregister_channel_manager(h, _handle);
@@ -57,8 +55,6 @@ namespace NRustLightning
 
         public void RegisterManyChannelMonitor(ManyChannelMonitor manyChannelMonitor)
         {
-            // This may cause crash. abandon for now.
-            throw new NotImplementedException();
             if (manyChannelMonitor == null) throw new ArgumentNullException(nameof(manyChannelMonitor));
             var h = manyChannelMonitor.Handle;
             Interop.register_many_channel_monitor(h, _handle);
