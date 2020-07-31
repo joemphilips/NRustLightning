@@ -10,6 +10,8 @@ namespace NRustLightning
     public class BlockNotifier : IDisposable
     {
         private readonly BlockNotifierHandle _handle;
+        private ManyChannelMonitor? _manyChannelMonitor;
+        private ChannelManager? _channelManager;
         private readonly object[] _deps;
         private bool _disposed = false;
         
@@ -24,6 +26,7 @@ namespace NRustLightning
         public static BlockNotifier Create(
             IChainWatchInterface chainWatchInterface)
         {
+            if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
             return Create(chainWatchInterfaceDelegatesHolder);
         }
@@ -36,16 +39,43 @@ namespace NRustLightning
 
         public void RegisterChannelManager(ChannelManager channelManager)
         {
-            Interop.register_channel_manager(channelManager.Handle, _handle);
+            if (channelManager == null) throw new ArgumentNullException(nameof(channelManager));
+            var h = channelManager.Handle;
+            Interop.register_channel_manager(h, _handle);
+            _channelManager = channelManager;
         }
 
         public void UnregisterChannelManager(ChannelManager channelManager)
         {
-            Interop.unregister_channel_manager(channelManager.Handle, _handle);
+            // This may cause crash. abandon for now.
+            throw new NotImplementedException();
+            if (channelManager == null) throw new ArgumentNullException(nameof(channelManager));
+            var h = channelManager.Handle;
+            Interop.unregister_channel_manager(h, _handle);
+            _channelManager = null;
         }
 
-        public unsafe void BlockConnected(NBitcoin.Block block, uint height)
+        public void RegisterManyChannelMonitor(ManyChannelMonitor manyChannelMonitor)
         {
+            // This may cause crash. abandon for now.
+            throw new NotImplementedException();
+            if (manyChannelMonitor == null) throw new ArgumentNullException(nameof(manyChannelMonitor));
+            var h = manyChannelMonitor.Handle;
+            Interop.register_many_channel_monitor(h, _handle);
+            _manyChannelMonitor = manyChannelMonitor;
+        }
+
+        public void UnregisterManyChannelMonitor(ManyChannelMonitor manyChannelMonitor)
+        {
+            if (manyChannelMonitor == null) throw new ArgumentNullException(nameof(manyChannelMonitor));
+            var h = manyChannelMonitor.Handle;
+            Interop.unregister_many_channel_monitor(h, _handle);
+            _manyChannelMonitor = null;
+        }
+
+        public unsafe void BlockConnected(Block block, uint height)
+        {
+            if (block == null) throw new ArgumentNullException(nameof(block));
             var blockBytes = block.ToBytes();
             fixed (byte* b = blockBytes)
             {
@@ -53,8 +83,9 @@ namespace NRustLightning
             }
         }
 
-        public unsafe void BlockDisconnected(NBitcoin.BlockHeader blockHeader, uint height)
+        public unsafe void BlockDisconnected(BlockHeader blockHeader, uint height)
         {
+            if (blockHeader == null) throw new ArgumentNullException(nameof(blockHeader));
             var blockHeaderBytes = blockHeader.ToBytes();
             fixed (byte* b = blockHeaderBytes)
             {
@@ -66,8 +97,10 @@ namespace NRustLightning
         {
             if (!_disposed)
             {
-                _handle.Dispose();
                 _disposed = true;
+                _channelManager?.Dispose();
+                _manyChannelMonitor?.Dispose();
+                _handle.Dispose();
             }
         }
     }

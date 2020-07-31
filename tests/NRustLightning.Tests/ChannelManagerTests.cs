@@ -91,5 +91,20 @@ namespace NRustLightning.Tests
             Assert.Empty(events);
             channelManager.Dispose();
         }
+
+        [Fact]
+        public void ChannelManagerSerializationTests()
+        {
+            using var channelManager = GetTestChannelManager();
+            var b = channelManager.Serialize(_pool);
+            
+            var keySeed = new byte[]{ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 };
+            var keysInterface = new KeysManager(keySeed, DateTime.UnixEpoch);
+            var logger = new TestLogger();
+            var broadcaster = new TestBroadcaster();
+            var feeEstiamtor = new TestFeeEstimator();
+            var args = new ChannelManagerReadArgs(keysInterface, broadcaster, feeEstiamtor, logger);
+            using var channelManager2 = ChannelManager.Deserialize(b, args);
+        }
     }
 }

@@ -2,8 +2,6 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Net.Http.Headers;
 using System.Threading;
 using DotNetLightning.Utils;
 using NBitcoin;
@@ -11,9 +9,10 @@ using NRustLightning.Adaptors;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
 using NRustLightning.Utils;
-using RustLightningTypes;
 using static NRustLightning.Utils.Utils;
 using Network = NRustLightning.Adaptors.Network;
+using NRustLightning.RustLightningTypes;
+using RustLightningTypes;
 
 namespace NRustLightning
 {
@@ -262,55 +261,33 @@ namespace NRustLightning
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="theirNodeId"></param>
-        /// <param name="paymentHash"></param>
-        /// <param name="lastHops"></param>
-        /// <param name="valueToSend"></param>
-        /// <param name="finalCLTV"></param>
-        /// <param name="paymentSecret"></param>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="PaymentSendException">When the payment fails for some reason. See its `Kind` property and rust-lightning's `PaymentSendFailure` type for more detail.</exception>
-        /// <exception cref="FFIException">when other unexpected error happens in rl side.</exception>
+        public NetworkGraph GetNetworkGraph(MemoryPool<byte> pool)
+        {
+            return NetworkGraph.FromBytes(GetNetworkGraphBytes(pool));
+        }
+
+        private byte[] GetNetworkGraphBytes(MemoryPool<byte> pool)
+        {
+            
+            FFIOperationWithVariableLengthReturnBuffer func = (ptr, len) =>
+                {
+                    var res = Interop.get_network_graph(ptr, len, out var actualLen, _handle, false);
+                    return (res, actualLen);
+                };
+            return WithVariableLengthReturnBuffer(pool, func);
+        }
+
         public void SendPayment(PubKey theirNodeId, Primitives.PaymentHash paymentHash, IList<RouteHint> lastHops,
-            LNMoney valueToSend, Primitives.BlockHeightOffset32 finalCLTV, uint256? paymentSecret = null)
+            LNMoney valueToSend, Primitives.BlockHeightOffset32 finalCLTV, MemoryPool<byte> pool, uint256? paymentSecret = null)
         {
             if (theirNodeId == null) throw new ArgumentNullException(nameof(theirNodeId));
             if (paymentHash == null) throw new ArgumentNullException(nameof(paymentHash));
             if (lastHops == null) throw new ArgumentNullException(nameof(lastHops));
-            if (theirNodeId == null) throw new ArgumentNullException(nameof(theirNodeId));
-            if (!theirNodeId.IsCompressed) throw new ArgumentException("pubkey not compressed");
-            var pkBytes = theirNodeId.ToBytes();
-            var paymentHashBytes = paymentHash.ToBytes(false);
-            var routeHintBytes = lastHops.ToBytes();
-            unsafe
-            {
-                fixed (byte* pkPtr = pkBytes)
-                fixed (byte* paymentHashPtr = paymentHashBytes)
-                fixed (byte* lastHopsPtr = routeHintBytes)
-                {
-                    var lastHopsFfiBytes = new FFIBytes((IntPtr) lastHopsPtr, (UIntPtr) routeHintBytes.Length);
-                    if (paymentSecret is null)
-                    {
-                        Interop.send_non_mpp_payment_with_peer_manager(pkPtr, paymentHashPtr, ref lastHopsFfiBytes,
-                            (ulong) valueToSend.MilliSatoshi, finalCLTV.Value, _handle, ChannelManager.Handle);
-                    }
-                    else
-                    {
-                        var paymentSecretBytes = paymentSecret.ToBytes(false);
-                        fixed (byte* paymentSecretPtr = paymentSecretBytes)
-                        {
-                            Interop.send_mpp_payment_with_peer_manager(pkPtr, paymentHashPtr, ref lastHopsFfiBytes,
-                                (ulong) valueToSend.MilliSatoshi, finalCLTV.Value, paymentSecretPtr, _handle, ChannelManager.Handle);
-                        }
-                    }
-                }
-            }
+            if (!theirNodeId.IsCompressed) throw new ArgumentException("nodeid not compressed!");
+            var graph = GetNetworkGraphBytes(pool);
+            ChannelManager.GetRouteAndSendPayment(graph, theirNodeId, paymentHash, lastHops, valueToSend, finalCLTV, paymentSecret);
         }
-
+        
         private static PubKey[] DecodePubKeyArray(byte[] arr)
         {
             var nPubKey = arr[0..2].ToUInt16BE();

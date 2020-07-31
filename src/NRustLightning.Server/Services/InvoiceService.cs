@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -34,6 +35,7 @@ namespace NRustLightning.Server.Services
         private readonly ILogger<InvoiceService> _logger;
         private readonly IOptions<Config> _config;
         private readonly IKeysRepository _keysRepository;
+        private readonly MemoryPool<byte> _pool;
 
         public InvoiceService(IRepository repository, EventAggregator eventAggregator, PeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<InvoiceService> logger, IOptions<Config> config, IKeysRepository keysRepository)
         {
@@ -44,6 +46,7 @@ namespace NRustLightning.Server.Services
             _logger = logger;
             _config = config;
             _keysRepository = keysRepository;
+            _pool = MemoryPool<byte>.Shared;
         }
         
         public async Task<(PaymentReceivedType, LNMoney)> PaymentReceived(Primitives.PaymentHash paymentHash, LNMoney amount, uint256? secret = null)
@@ -132,7 +135,7 @@ namespace NRustLightning.Server.Services
                     successTcs.SetResult(paymentS);
                 }
             });
-            peerMan.SendPayment(invoice.NodeIdValue.Item, invoice.PaymentHash, new List<RouteHint>(), LNMoney.MilliSatoshis(amount.Value), invoice.MinFinalCLTVExpiryDelta);
+            peerMan.SendPayment(invoice.NodeIdValue.Item, invoice.PaymentHash, new List<RouteHint>(), LNMoney.MilliSatoshis(amount.Value), invoice.MinFinalCLTVExpiryDelta, _pool, invoice.PaymentSecret.Value);
             peerMan.ProcessEvents();
             
             // case 1: canceled by user.

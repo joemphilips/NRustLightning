@@ -84,9 +84,9 @@ namespace NRustLightning
             EntryPoint = "list_channels",
             ExactSpelling = true)]
         static extern FFIResult _list_channels(IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualChannelsLen, ChannelManagerHandle handle);
-        internal static FFIResult list_channels(IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualChannelsLen, ChannelManagerHandle handle)
+        internal static FFIResult list_channels(IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualChannelsLen, ChannelManagerHandle handle, bool check = true)
         {
-            return MaybeCheck(_list_channels(bufOut, bufLen, out actualChannelsLen, handle), true);
+            return MaybeCheck(_list_channels(bufOut, bufLen, out actualChannelsLen, handle), check);
         }
 
         [DllImport(RustLightning,
@@ -176,6 +176,85 @@ namespace NRustLightning
                 return MaybeCheckPaymentFailure(_send_payment_without_secret(handle, ref route, paymentHash), check);
             }
             return MaybeCheckPaymentFailure(_send_payment(handle, ref route, paymentHash, paymentSecret.Value), check);
+        }
+        
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "get_route_and_send_payment_without_secret",
+            ExactSpelling = true)]
+        static extern unsafe FFIResult _get_route_and_send_payment_without_secret(
+            byte* graphBytesPtr,
+            UIntPtr graphBytesSize,
+            byte* theirNodeIdPtr,
+            ref FFIBytes lastHops,
+            ulong finalValueMsat,
+            uint finalCLTV,
+            byte* paymentHash,
+            ChannelManagerHandle handle
+            );
+
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "get_route_and_send_payment",
+            ExactSpelling = true)]
+        static extern unsafe FFIResult _get_route_and_send_payment(
+            byte* graphBytesPtr,
+            UIntPtr graphBytesSize,
+            byte* theirNodeIdPtr,
+            ref FFIBytes lastHops,
+            ulong finalValueMsat,
+            uint finalCLTV,
+            IntPtr paymentSecretRef,
+            byte* paymentHash,
+            ChannelManagerHandle handle
+            );
+        internal static unsafe FFIResult get_route_and_send_payment(
+            byte* graphBytesPtr,
+            UIntPtr graphBytesSize,
+            byte* theirNodeIdPtr,
+            ref FFIBytes lastHops,
+            ulong finalValueMsat,
+            uint finalCLTV,
+            byte* paymentHash,
+            ChannelManagerHandle handle,
+            IntPtr? paymentSecretRef,
+            bool check = true)
+        {
+            if (paymentSecretRef is null)
+            {
+                return MaybeCheck(_get_route_and_send_payment_without_secret(graphBytesPtr, graphBytesSize, theirNodeIdPtr, ref lastHops, finalValueMsat, finalCLTV,  paymentHash, handle), check);
+            }
+            return MaybeCheck(_get_route_and_send_payment(graphBytesPtr, graphBytesSize, theirNodeIdPtr, ref lastHops, finalValueMsat, finalCLTV, paymentSecretRef.Value, paymentHash, handle), check);
+        }
+
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "get_route_and_send_payment_without_secret",
+            ExactSpelling = true)]
+        static extern FFIResult _get_route_and_send_payment_without_secret(
+            IntPtr graphBytesPtr,
+            UIntPtr graphBytesSize,
+            IntPtr theirNodeIdPtr,
+            ref FFIBytes lastHops,
+            ulong finalValueMsat,
+            uint finalCLTV,
+            IntPtr paymentHash,
+            ChannelManagerHandle handle
+            );
+
+        internal static FFIResult get_route_and_send_payment_without_secret(
+            IntPtr graphBytesPtr,
+            UIntPtr graphBytesSize,
+            IntPtr theirNodeIdPtr,
+            ref FFIBytes lastHops,
+            ulong finalValueMsat,
+            uint finalCLTV,
+            IntPtr paymentHash,
+            ChannelManagerHandle handle,
+            bool check = true
+            )
+        {
+            return MaybeCheck(_get_route_and_send_payment_without_secret(graphBytesPtr, graphBytesSize, theirNodeIdPtr, ref lastHops, finalValueMsat, finalCLTV, paymentHash, handle), check);
         }
 
         [DllImport(RustLightning,

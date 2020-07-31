@@ -9,6 +9,17 @@ namespace NRustLightning.Utils
     {
         public const int BUFFER_SIZE_UNIT = 1024;
         public const int MAX_BUFFER_SIZE = 65536;
+
+
+        /// <summary>
+        /// Call FFI function which writes return value into the buffer. If the buffer is too short, it will return
+        /// FFIResult with a kind `BufferTooSmall`. In that case <see cref="WithVariableLengthReturnBuffer(x,x)"/>
+        /// will call this function again with extended buffer.
+        /// </summary>
+        /// <param name="butPtr">pointer to the first element of return buffer</param>
+        /// <param name="bufLen">length of the buffer</param>
+        /// <returns>tuple of 1. result of the operation. 2. the actual length of the buffer that rl wants to return.</returns>
+        internal delegate (FFIResult, UIntPtr) FFIOperationWithVariableLengthReturnBuffer(IntPtr butPtr, UIntPtr bufLen);
         
         /// <summary>
         /// Use this function when ffi function returns variable length return value
@@ -25,14 +36,12 @@ namespace NRustLightning.Utils
         /// <typeparam name="THandle"></typeparam>
         /// <returns></returns>
         /// <exception cref="FFIException"></exception>
-        public static unsafe byte[] WithVariableLengthReturnBuffer<THandle>(
-            MemoryPool<byte> pool,
-            Func<IntPtr, UIntPtr, THandle, (FFIResult, UIntPtr)> func,
-            THandle handle)
+        internal static byte[] WithVariableLengthReturnBuffer(
+            MemoryPool<byte> pool, FFIOperationWithVariableLengthReturnBuffer func) 
         {
             var initialBufLength = BUFFER_SIZE_UNIT;
 
-            var (resultBuf, result, actualBufferLength) = InvokeWithLength(pool, initialBufLength, func, handle);
+            var (resultBuf, result, actualBufferLength) = InvokeWithLength(pool, initialBufLength, func);
             if (actualBufferLength > MAX_BUFFER_SIZE)
             {
                 throw new FFIException(
@@ -47,7 +56,7 @@ namespace NRustLightning.Utils
 
             if (result.IsBufferTooSmall)
             {
-                var (resultBuf2, result2, actualBufferLength2) = InvokeWithLength(pool, actualBufferLength, func, handle);
+                var (resultBuf2, result2, actualBufferLength2) = InvokeWithLength(pool, actualBufferLength, func);
                 Debug.Assert(actualBufferLength == actualBufferLength2);
                 result2.Check();
                 return resultBuf2[..actualBufferLength];
@@ -55,13 +64,13 @@ namespace NRustLightning.Utils
             throw new FFIException($"Unexpected error in FFI Call {result}", result);
         }
 
-        private static unsafe (byte[], FFIResult, int) InvokeWithLength<THandle>(MemoryPool<byte> pool, int length, Func<IntPtr, UIntPtr, THandle, (FFIResult, UIntPtr)> func, THandle handle)
+        private static unsafe (byte[], FFIResult, int) InvokeWithLength(MemoryPool<byte> pool, int length, FFIOperationWithVariableLengthReturnBuffer func)
         {
             using var memoryOwner = pool.Rent(length);
             var span = memoryOwner.Memory.Span;
             fixed (byte* ptr = span)
             {
-                var (result, actualBufferLength) = func.Invoke((IntPtr) ptr, (UIntPtr) span.Length, handle);
+                var (result, actualBufferLength) = func.Invoke((IntPtr) ptr, (UIntPtr) span.Length);
                 return (span.ToArray(), result, (int) actualBufferLength);
             }
         }

@@ -11,6 +11,7 @@ using NRustLightning.Handles;
 using NRustLightning.Interfaces;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Utils;
+using RustLightningTypes;
 using Network = NRustLightning.Adaptors.Network;
 using static NRustLightning.Utils.Utils;
 using Array = DotNetLightning.Utils.Array;
@@ -117,14 +118,14 @@ namespace NRustLightning
 
         public ChannelDetails[] ListChannels(MemoryPool<byte> pool)
         {
-            Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
-                (bufOut, bufLength, handle) =>
+            FFIOperationWithVariableLengthReturnBuffer func =
+                (bufOut, bufLength) =>
                 {
-                    var ffiResult = Interop.list_channels(bufOut, bufLength, out var actualChannelsLen, handle);
+                    var ffiResult = Interop.list_channels(bufOut, bufLength, out var actualChannelsLen, Handle, false);
                     return (ffiResult, actualChannelsLen);
                 };
 
-            var arr = WithVariableLengthReturnBuffer(pool, func, Handle);
+            var arr = WithVariableLengthReturnBuffer(pool, func);
             return ChannelDetails.ParseManyUnsafe(arr);
         }
 
@@ -210,19 +211,58 @@ namespace NRustLightning
                 fixed (byte* s = paymentSecret)
                 {
                     var route = new FFIRoute((IntPtr)r, (UIntPtr)routesInBytes.Length);
-                    FFIResult result;
                     if (paymentSecret.Length == 32)
-                        result = Interop.send_payment(Handle, ref route, (IntPtr)p, (IntPtr)s, false);
+                        Interop.send_payment(Handle, ref route, (IntPtr)p, (IntPtr)s);
                     if (paymentSecret.Length == 0)
                     {
-                        result = Interop.send_payment(Handle, ref route, (IntPtr)p);
+                        Interop.send_payment(Handle, ref route, (IntPtr)p);
                     }
                     else
                     {
                         throw new Exception("Unreachable");
                     }
-                    if (result.IsPaymentSendFailure)
-                    {}
+                }
+            }
+        }
+
+        public void GetRouteAndSendPayment(NetworkGraph graph, PubKey theirNodeId, Primitives.PaymentHash paymentHash,
+            IList<RouteHint> lastHops, LNMoney valueToSend, Primitives.BlockHeightOffset32 finalCLTV,
+            uint256? paymentSecret = null)
+        {
+            if (graph == null) throw new ArgumentNullException(nameof(graph));
+            GetRouteAndSendPayment(graph.ToBytes(), theirNodeId, paymentHash, lastHops, valueToSend, finalCLTV, paymentSecret);
+        }
+
+        internal void GetRouteAndSendPayment(byte[] graphBytes, PubKey theirNodeId, Primitives.PaymentHash paymentHash, IList<RouteHint> lastHops, LNMoney valueToSend, Primitives.BlockHeightOffset32 finalCLTV, uint256? paymentSecret = null)
+        {
+            if (theirNodeId == null) throw new ArgumentNullException(nameof(theirNodeId));
+            if (lastHops == null) throw new ArgumentNullException(nameof(lastHops));
+            if (valueToSend.Value <= 0) throw new ArgumentException("value must be positive");
+            if (finalCLTV.Value <= 0) throw new ArgumentException("value must be positive");
+            var pkBytes = theirNodeId.ToBytes();
+            var paymentHashBytes = paymentHash.ToBytes(false);
+            var lastHopsBytes = lastHops.ToBytes();
+            unsafe
+            {
+                fixed (byte* graphPtr = graphBytes)
+                fixed (byte* pkPtr = pkBytes)
+                fixed (byte* paymentHashPtr = paymentHashBytes)
+                fixed (byte* lastHopsPtr = lastHopsBytes)
+                {
+                    var ffiLastHops = new FFIBytes((IntPtr) lastHopsPtr, (UIntPtr) lastHopsBytes.Length);
+                    if (paymentSecret is null)
+                    {
+                        Interop.get_route_and_send_payment(graphPtr, (UIntPtr) graphBytes.Length, pkPtr,
+                            ref ffiLastHops, (ulong)valueToSend.MilliSatoshi, finalCLTV.Value, paymentHashPtr, Handle, null, true);
+                    }
+                    else
+                    {
+                        fixed (byte* paymentSecretPtr = paymentSecret.ToBytes(false))
+                        {
+                            Interop.get_route_and_send_payment(graphPtr, (UIntPtr) graphBytes.Length, pkPtr,
+                                ref ffiLastHops, (ulong)valueToSend.MilliSatoshi, finalCLTV.Value, paymentHashPtr, Handle, (IntPtr)paymentSecretPtr, true);
+                        }
+                    }
                 }
             }
         }
@@ -307,14 +347,14 @@ namespace NRustLightning
 
         public unsafe byte[] Serialize(MemoryPool<byte> pool)
         {
-            Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
-                (bufOut, bufLength, handle) =>
+            FFIOperationWithVariableLengthReturnBuffer func =
+                (bufOut, bufLength) =>
                 {
-                    var ffiResult = Interop.serialize_channel_manager(bufOut, bufLength, out var actualLength, Handle);
+                    var ffiResult = Interop.serialize_channel_manager(bufOut, bufLength, out var actualLength, Handle, false);
                     return (ffiResult, actualLength);
                 };
 
-            return WithVariableLengthReturnBuffer(pool, func, Handle);
+            return WithVariableLengthReturnBuffer(pool, func);
         }
 
         public static ChannelManager Deserialize(ReadOnlySpan<byte> bytes, ChannelManagerReadArgs readArgs)
@@ -324,13 +364,13 @@ namespace NRustLightning
         
         public Event[] GetAndClearPendingEvents(MemoryPool<byte> pool)
         {
-            Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
-                (bufOut, bufLength, handle) =>
+            FFIOperationWithVariableLengthReturnBuffer func =
+                (bufOut, bufLength) =>
                 {
-                    var ffiResult = Interop.get_and_clear_pending_events(handle, bufOut, bufLength, out var actualLength);
+                    var ffiResult = Interop.get_and_clear_pending_events(Handle, bufOut, bufLength, out var actualLength ,false);
                     return (ffiResult, actualLength);
                 };
-            var arr = WithVariableLengthReturnBuffer(pool, func, Handle);
+            var arr = WithVariableLengthReturnBuffer(pool, func);
             return Event.ParseManyUnsafe(arr);
         }
 
