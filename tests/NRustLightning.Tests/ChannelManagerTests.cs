@@ -11,6 +11,7 @@ using Xunit;
 using NRustLightning;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
+using NRustLightning.RustLightningTypes;
 using NRustLightning.Tests.Utils;
 using NRustLightning.Utils;
 using Network = NRustLightning.Adaptors.Network;
@@ -104,8 +105,14 @@ namespace NRustLightning.Tests
             var logger = new TestLogger();
             var broadcaster = new TestBroadcaster();
             var feeEstiamtor = new TestFeeEstimator();
-            var args = new ChannelManagerReadArgs(keysInterface, broadcaster, feeEstiamtor, logger);
-            using var channelManager2 = ChannelManager.Deserialize(b, args);
+            var n = NBitcoin.Network.TestNet;
+            var chainWatchInterface = new ChainWatchInterfaceUtil(n);
+            var args = new ChannelManagerReadArgs(keysInterface, broadcaster, feeEstiamtor, logger, chainWatchInterface, n);
+            var manyChannelMonitor =
+                ManyChannelMonitor.Create(n, chainWatchInterface, broadcaster, logger, feeEstiamtor);
+            using var channelManager2 = ChannelManager.Deserialize(b, args, in TestUserConfig.Default, manyChannelMonitor);
+
+            Assert.True(channelManager2.Serialize(_pool).SequenceEqual(b));
         }
     }
 }

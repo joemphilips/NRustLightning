@@ -362,11 +362,42 @@ namespace NRustLightning
             return WithVariableLengthReturnBuffer(pool, func);
         }
 
-        public static ChannelManager Deserialize(ReadOnlySpan<byte> bytes, ChannelManagerReadArgs readArgs)
+        public static unsafe ChannelManager Deserialize(ReadOnlySpan<byte> bytes, ChannelManagerReadArgs readArgs, in UserConfig defaultConfig, ManyChannelMonitor manyChannelMonitor)
         {
-            throw new NotImplementedException();
+            fixed(byte* b = bytes)
+            {
+                Interop.deserialize_channel_manager(
+                    (IntPtr)b,
+                    (UIntPtr)bytes.Length,
+                    in defaultConfig,
+                    readArgs.ChainWatchInterface.InstallWatchTx,
+                    readArgs.ChainWatchInterface.InstallWatchOutPoint,
+                    readArgs.ChainWatchInterface.WatchAllTxn,
+                    readArgs.ChainWatchInterface.GetChainUtxo,
+                    readArgs.ChainWatchInterface.FilterBlock,
+                    readArgs.ChainWatchInterface.ReEntered,
+                    readArgs.KeysInterface.GetNodeSecret,
+                    readArgs.KeysInterface.GetDestinationScript,
+                    readArgs.KeysInterface.GetShutdownKey,
+                    readArgs.KeysInterface.GetChannelKeys,
+                    readArgs.KeysInterface.GetOnionRand,
+                    readArgs.KeysInterface.GetChannelId,
+                    readArgs.BroadCaster.BroadcastTransaction,
+                    readArgs.LoggerDelegatesHolder.Log,
+                    readArgs.FeeEstimator.getEstSatPer1000Weight,
+                    manyChannelMonitor.Handle,
+                    out var handle
+                    );
+                return new ChannelManager(handle, new [] {readArgs});
+            }
         }
-        
+
+        public static ChannelManager Deserialize(ReadOnlySpan<byte> bytes, ChannelManagerReadArgs readArgs, IUserConfigProvider defaultConfig, ManyChannelMonitor manyChannelMonitor)
+        {
+            var c = defaultConfig.GetUserConfig();
+            return Deserialize(bytes, readArgs, in c, manyChannelMonitor);
+        }
+
         public Event[] GetAndClearPendingEvents(MemoryPool<byte> pool)
         {
             FFIOperationWithVariableLengthReturnBuffer func =
