@@ -12,7 +12,7 @@ using static NRustLightning.Utils.Utils;
 
 namespace NRustLightning
 {
-    public class ManyChannelMonitor : IDisposable
+    public class ManyChannelMonitor : IDisposable, IChainListener
     {
         internal readonly ManyChannelMonitorHandle Handle;
         private readonly object[] _deps;
@@ -71,27 +71,9 @@ namespace NRustLightning
             return WithVariableLengthReturnBuffer(pool, func);
         }
 
-        public static (ManyChannelMonitor, Dictionary<Primitives.LNOutPoint, uint256>) Deserialize(
-            NBitcoin.Network network,
-            IChainWatchInterface chainWatchInterface,
-            IBroadcaster broadcaster,
-            ILogger logger,
-            IFeeEstimator feeEstimator,
-            Memory<byte> buffer,
-            MemoryPool<byte> pool
-        )
-        {
-            return Deserialize(new ChainWatchInterfaceConverter(chainWatchInterface),
-                new BroadcasterDelegatesHolder(broadcaster, network), new LoggerDelegatesHolder(logger),
-                new FeeEstimatorDelegatesHolder(feeEstimator), buffer, pool);
-        }
-
-        private static unsafe (ManyChannelMonitor, Dictionary<Primitives.LNOutPoint, uint256>) Deserialize(
-            IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
-            IBroadcasterDelegatesHolder broadcasterDelegatesHolder,
-            ILoggerDelegatesHolder loggerDelegatesHolder,
-            IFeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder,
-            Memory<byte> buffer,
+        public static unsafe (ManyChannelMonitor, Dictionary<Primitives.LNOutPoint, uint256>) Deserialize(
+            ManyChannelMonitorReadArgs readArgs,
+            ReadOnlyMemory<byte> buffer,
             MemoryPool<byte> pool
         )
         {
@@ -104,15 +86,15 @@ namespace NRustLightning
                         var result = Interop.deserialize_many_channel_monitor(
                             (IntPtr) b,
                             (UIntPtr) buffer.Length,
-                            chainWatchInterfaceDelegatesHolder.InstallWatchTx,
-                            chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
-                            chainWatchInterfaceDelegatesHolder.WatchAllTxn,
-                            chainWatchInterfaceDelegatesHolder.GetChainUtxo,
-                            chainWatchInterfaceDelegatesHolder.FilterBlock,
-                            chainWatchInterfaceDelegatesHolder.ReEntered,
-                            broadcasterDelegatesHolder.BroadcastTransaction,
-                            loggerDelegatesHolder.Log,
-                            feeEstimatorDelegatesHolder.getEstSatPer1000Weight,
+                            readArgs.ChainWatchInterface.InstallWatchTx,
+                            readArgs.ChainWatchInterface.InstallWatchOutPoint,
+                            readArgs.ChainWatchInterface.WatchAllTxn,
+                            readArgs.ChainWatchInterface.GetChainUtxo,
+                            readArgs.ChainWatchInterface.FilterBlock,
+                            readArgs.ChainWatchInterface.ReEntered,
+                            readArgs.Broadcaster.BroadcastTransaction,
+                            readArgs.Logger.Log,
+                            readArgs.FeeEstimator.getEstSatPer1000Weight,
                             outputBufPtr, outputBufLen,
                             out var actualBufLen,
                             out newHandle
@@ -121,19 +103,48 @@ namespace NRustLightning
                     }
                 };
             var buf = WithVariableLengthReturnBuffer(pool, func);
-            Console.WriteLine($"buffered key to blockhash is {Hex.Encode(buf)}");
             var keyToBlockHash = ParseChannelMonitorKeyToItsLatestBlockHash(buf);
             return (
-                new ManyChannelMonitor(newHandle, new object[] {chainWatchInterfaceDelegatesHolder, broadcasterDelegatesHolder, loggerDelegatesHolder, feeEstimatorDelegatesHolder}),
+                new ManyChannelMonitor(newHandle, new object[] {readArgs}),
                 keyToBlockHash
                 );
+        }
+
+        public void TellBlockConnectedAfterResume(Block block, uint height, OutPoint key)
+        {
+            if (block == null) throw new ArgumentNullException(nameof(block));
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            var b = block.ToBytes();
+            unsafe
+            {
+                fixed (byte* blockPtr = b)
+                {
+                    var outpoint = new FFIOutPoint(key);
+                    Interop.tell_block_connected_after_resume((IntPtr)blockPtr, (UIntPtr)b.Length, height, ref outpoint, Handle);
+                }
+            }
+        }
+
+        public void TellBlockDisconnectedAfterResume(uint256 blockHeaderHash, uint height, OutPoint key)
+        {
+            if (blockHeaderHash == null) throw new ArgumentNullException(nameof(blockHeaderHash));
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            var b = blockHeaderHash.ToBytes();
+            unsafe
+            {
+                fixed (byte* bPtr = b)
+                {
+                    var outpoint = new FFIOutPoint(key);
+                    Interop.tell_block_disconnected_after_resume((IntPtr) bPtr, height, ref outpoint, Handle);
+                }
+            }
         }
 
         private static Dictionary<Primitives.LNOutPoint, uint256> ParseChannelMonitorKeyToItsLatestBlockHash(byte[] b)
         {
             return Parsers.ParseOutPointToBlockHashMap(b);
         }
-
+        
         private bool _disposed = false;
         public void Dispose()
         {
@@ -142,6 +153,16 @@ namespace NRustLightning
                 Handle.Dispose();
                 _disposed = true;
             }
+        }
+
+        public void BlockConnected(Block block, uint height, Primitives.LNOutPoint key)
+        {
+            TellBlockConnectedAfterResume(block, height, key.Item);
+        }
+
+        public void BlockDisconnected(BlockHeader header, uint height, Primitives.LNOutPoint key)
+        {
+            TellBlockDisconnectedAfterResume(header.GetHash(), height, key.Item);
         }
     }
 }

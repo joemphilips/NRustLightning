@@ -42,7 +42,21 @@ namespace NRustLightning
 
         public static PeerManager Create(
             Span<byte> seed,
-            NBitcoin.Network nbitcoinNetwork,
+            IUserConfigProvider configProvider,
+            IChainWatchInterface chainWatchInterface,
+            ILogger logger,
+            byte[] ourNodeSecret,
+            ChannelManager channelManager,
+            BlockNotifier blockNotifier,
+            int tickIntervalMSec = 30000
+        )
+        {
+            if (configProvider == null) throw new ArgumentNullException(nameof(configProvider));
+            var c = configProvider.GetUserConfig();
+            return Create(seed, in c, chainWatchInterface, logger, ourNodeSecret, channelManager, blockNotifier, tickIntervalMSec);
+        }
+        public static PeerManager Create(
+            Span<byte> seed,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
             ILogger logger,
@@ -52,6 +66,12 @@ namespace NRustLightning
             int tickIntervalMSec = 30000
         )
         {
+            if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+            if (ourNodeSecret == null) throw new ArgumentNullException(nameof(ourNodeSecret));
+            if (channelManager == null) throw new ArgumentNullException(nameof(channelManager));
+            if (blockNotifier == null) throw new ArgumentNullException(nameof(blockNotifier));
+            
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
             var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
             blockNotifier.RegisterChannelManager(channelManager);

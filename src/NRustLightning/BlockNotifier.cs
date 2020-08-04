@@ -1,4 +1,5 @@
 using System;
+using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
 using NRustLightning.Handles;
@@ -7,7 +8,7 @@ using Extensions = NRustLightning.Adaptors.Extensions;
 
 namespace NRustLightning
 {
-    public class BlockNotifier : IDisposable
+    public class BlockNotifier : IDisposable, IChainListener
     {
         private readonly BlockNotifierHandle _handle;
         private ManyChannelMonitor? _manyChannelMonitor;
@@ -98,6 +99,16 @@ namespace NRustLightning
                 _manyChannelMonitor?.Dispose();
                 _handle.Dispose();
             }
+        }
+
+        public void BlockConnected(Block block, uint height, Primitives.LNOutPoint key = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void BlockDisconnected(BlockHeader header, uint height, Primitives.LNOutPoint key = null)
+        {
+            throw new NotImplementedException();
         }
     }
 }

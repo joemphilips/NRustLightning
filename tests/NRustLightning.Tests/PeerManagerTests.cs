@@ -60,7 +60,7 @@ namespace NRustLightning.Tests
             blockNotifier.RegisterManyChannelMonitor(manyChannelMonitor);
             var peerManager =
                 PeerManager.Create(
-                    seed, n, in TestUserConfig.Default, chainWatchInterface, logger, keysInterface.GetNodeSecret().ToBytes(), channelManager, blockNotifier, 10000
+                    seed, in TestUserConfig.Default, chainWatchInterface, logger, keysInterface.GetNodeSecret().ToBytes(), channelManager, blockNotifier, 10000
                     );
             return peerManager;
         }

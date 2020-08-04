@@ -1,7 +1,6 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using DotNetLightning.Utils;
 using NBitcoin;
@@ -12,9 +11,7 @@ using NRustLightning.Interfaces;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Utils;
 using RustLightningTypes;
-using Network = NRustLightning.Adaptors.Network;
 using static NRustLightning.Utils.Utils;
-using Array = DotNetLightning.Utils.Array;
 
 namespace NRustLightning
 {
@@ -22,9 +19,10 @@ namespace NRustLightning
     public sealed class ChannelManager : IDisposable
     {
         internal readonly ChannelManagerHandle Handle;
-        private bool _disposed = false;
+        private bool _disposed;
+        // ReSharper disable once NotAccessedField.Local
         private readonly object[] _deps;
-        internal ChannelManager(ChannelManagerHandle handle, object[]? deps = null)
+        private ChannelManager(ChannelManagerHandle handle, object[]? deps = null)
         {
             _deps = deps ?? new object[] {};
             Handle = handle ?? throw new ArgumentNullException(nameof(handle));
@@ -147,7 +145,7 @@ namespace NRustLightning
             if (!theirNetworkKey.IsCompressed) Errors.PubKeyNotCompressed(nameof(theirNetworkKey), theirNetworkKey);
             var pk = theirNetworkKey.ToBytes();
             fixed (byte* b = pk)
-            fixed (UserConfig* _u = &overrideConfig)
+            fixed (UserConfig* _ = &overrideConfig)
             {
                 Interop.create_channel((IntPtr) b, channelValueSatoshis, pushMSat, userId, Handle,
                     in overrideConfig);
@@ -258,14 +256,14 @@ namespace NRustLightning
                     if (paymentSecret is null)
                     {
                         Interop.get_route_and_send_payment(graphPtr, (UIntPtr) graphBytes.Length, pkPtr,
-                            ref ffiLastHops, (ulong)valueToSend.MilliSatoshi, finalCLTV.Value, paymentHashPtr, Handle, null, true);
+                            ref ffiLastHops, (ulong)valueToSend.MilliSatoshi, finalCLTV.Value, paymentHashPtr, Handle, null);
                     }
                     else
                     {
                         fixed (byte* paymentSecretPtr = paymentSecret.ToBytes(false))
                         {
                             Interop.get_route_and_send_payment(graphPtr, (UIntPtr) graphBytes.Length, pkPtr,
-                                ref ffiLastHops, (ulong)valueToSend.MilliSatoshi, finalCLTV.Value, paymentHashPtr, Handle, (IntPtr)paymentSecretPtr, true);
+                                ref ffiLastHops, (ulong)valueToSend.MilliSatoshi, finalCLTV.Value, paymentHashPtr, Handle, (IntPtr)paymentSecretPtr);
                         }
                     }
                 }
@@ -346,11 +344,11 @@ namespace NRustLightning
             var b = channelId.ToBytes(false);
             fixed (byte* c = b)
             {
-                Interop.update_fee((IntPtr)c, feeRatePerKw, Handle, true);
+                Interop.update_fee((IntPtr)c, feeRatePerKw, Handle);
             }
         }
 
-        public unsafe byte[] Serialize(MemoryPool<byte> pool)
+        public byte[] Serialize(MemoryPool<byte> pool)
         {
             FFIOperationWithVariableLengthReturnBuffer func =
                 (bufOut, bufLength) =>
@@ -362,40 +360,47 @@ namespace NRustLightning
             return WithVariableLengthReturnBuffer(pool, func);
         }
 
-        public static unsafe ChannelManager Deserialize(ReadOnlySpan<byte> bytes, ChannelManagerReadArgs readArgs, in UserConfig defaultConfig, ManyChannelMonitor manyChannelMonitor)
+        public static unsafe (uint256, ChannelManager) Deserialize(ReadOnlyMemory<byte> bytes, ChannelManagerReadArgs readArgs, IUserConfigProvider defaultConfigProvider, MemoryPool<byte> pool)
         {
-            fixed(byte* b = bytes)
+            ChannelManagerHandle handle = null;
+            FFIOperationWithVariableLengthReturnBuffer func = (outputBufPtr, outputBufLen) =>
             {
-                Interop.deserialize_channel_manager(
-                    (IntPtr)b,
-                    (UIntPtr)bytes.Length,
-                    in defaultConfig,
-                    readArgs.ChainWatchInterface.InstallWatchTx,
-                    readArgs.ChainWatchInterface.InstallWatchOutPoint,
-                    readArgs.ChainWatchInterface.WatchAllTxn,
-                    readArgs.ChainWatchInterface.GetChainUtxo,
-                    readArgs.ChainWatchInterface.FilterBlock,
-                    readArgs.ChainWatchInterface.ReEntered,
-                    readArgs.KeysInterface.GetNodeSecret,
-                    readArgs.KeysInterface.GetDestinationScript,
-                    readArgs.KeysInterface.GetShutdownKey,
-                    readArgs.KeysInterface.GetChannelKeys,
-                    readArgs.KeysInterface.GetOnionRand,
-                    readArgs.KeysInterface.GetChannelId,
-                    readArgs.BroadCaster.BroadcastTransaction,
-                    readArgs.LoggerDelegatesHolder.Log,
-                    readArgs.FeeEstimator.getEstSatPer1000Weight,
-                    manyChannelMonitor.Handle,
-                    out var handle
+                fixed (byte* b = bytes.Span)
+                {
+                    var defaultConfig = defaultConfigProvider.GetUserConfig();
+                    var result = Interop.deserialize_channel_manager(
+                        (IntPtr) b,
+                        (UIntPtr) bytes.Length,
+                        in defaultConfig,
+                        readArgs.ChainWatchInterface.InstallWatchTx,
+                        readArgs.ChainWatchInterface.InstallWatchOutPoint,
+                        readArgs.ChainWatchInterface.WatchAllTxn,
+                        readArgs.ChainWatchInterface.GetChainUtxo,
+                        readArgs.ChainWatchInterface.FilterBlock,
+                        readArgs.ChainWatchInterface.ReEntered,
+                        readArgs.KeysInterface.GetNodeSecret,
+                        readArgs.KeysInterface.GetDestinationScript,
+                        readArgs.KeysInterface.GetShutdownKey,
+                        readArgs.KeysInterface.GetChannelKeys,
+                        readArgs.KeysInterface.GetOnionRand,
+                        readArgs.KeysInterface.GetChannelId,
+                        readArgs.BroadCaster.BroadcastTransaction,
+                        readArgs.LoggerDelegatesHolder.Log,
+                        readArgs.FeeEstimator.getEstSatPer1000Weight,
+                        readArgs.ManyChannelMonitor.Handle,
+                        outputBufPtr,
+                        outputBufLen,
+                        out var actualLen,
+                        out handle,
+                        false
                     );
-                return new ChannelManager(handle, new [] {readArgs});
-            }
-        }
+                    return (result, actualLen);
+                }
+            };
 
-        public static ChannelManager Deserialize(ReadOnlySpan<byte> bytes, ChannelManagerReadArgs readArgs, IUserConfigProvider defaultConfig, ManyChannelMonitor manyChannelMonitor)
-        {
-            var c = defaultConfig.GetUserConfig();
-            return Deserialize(bytes, readArgs, in c, manyChannelMonitor);
+            var buf = WithVariableLengthReturnBuffer(pool, func);
+            var latestBlockHash = new uint256(buf, true);
+            return (latestBlockHash, new ChannelManager(handle, new object[] {readArgs}));
         }
 
         public Event[] GetAndClearPendingEvents(MemoryPool<byte> pool)

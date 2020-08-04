@@ -135,6 +135,24 @@ namespace NRustLightning
                 ),
                 check);
         
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "tell_block_connected_after_resume",
+            ExactSpelling = true)]
+        private static extern FFIResult _tell_block_connected_after_resume(IntPtr blockRef, UIntPtr blockLen, uint height, ref FFIOutPoint keyRef, ManyChannelMonitorHandle handle);
+
+        internal static FFIResult tell_block_connected_after_resume(IntPtr blockRef, UIntPtr blockLen, uint height, ref FFIOutPoint keyRef, ManyChannelMonitorHandle handle, bool check = true) =>
+            MaybeCheck(_tell_block_connected_after_resume(blockRef, blockLen, height, ref keyRef, handle), check);
+        
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "tell_block_disconnected_after_resume",
+            ExactSpelling = true)]
+        private static extern FFIResult _tell_block_disconnected_after_resume(IntPtr blockHashRef, uint height, ref FFIOutPoint keyRef, ManyChannelMonitorHandle handle);
+
+        internal static FFIResult tell_block_disconnected_after_resume(IntPtr blockHashRef, uint height, ref FFIOutPoint keyRef, ManyChannelMonitorHandle handle, bool check = true) =>
+            MaybeCheck(_tell_block_disconnected_after_resume(blockHashRef, height, ref keyRef, handle), check);
+        
         
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,

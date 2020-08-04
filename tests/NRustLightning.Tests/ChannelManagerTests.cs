@@ -107,10 +107,11 @@ namespace NRustLightning.Tests
             var feeEstiamtor = new TestFeeEstimator();
             var n = NBitcoin.Network.TestNet;
             var chainWatchInterface = new ChainWatchInterfaceUtil(n);
-            var args = new ChannelManagerReadArgs(keysInterface, broadcaster, feeEstiamtor, logger, chainWatchInterface, n);
             var manyChannelMonitor =
                 ManyChannelMonitor.Create(n, chainWatchInterface, broadcaster, logger, feeEstiamtor);
-            using var channelManager2 = ChannelManager.Deserialize(b, args, in TestUserConfig.Default, manyChannelMonitor);
+            var args = new ChannelManagerReadArgs(keysInterface, broadcaster, feeEstiamtor, logger, chainWatchInterface, n, manyChannelMonitor);
+            var items = ChannelManager.Deserialize(b, args, new TestUserConfigProvider(), _pool);
+            var (latestBlockhash, channelManager2) = items;
 
             Assert.True(channelManager2.Serialize(_pool).SequenceEqual(b));
         }

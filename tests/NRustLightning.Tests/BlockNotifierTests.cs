@@ -44,7 +44,7 @@ namespace NRustLightning.Tests
             blockNotifier.BlockConnected(block, 1);
 
             var b = manyChannelMonitor.Serialize(_pool);
-            var (manyChannelMonitor2, keyToHeaderHash) = ManyChannelMonitor.Deserialize(n, chainWatchInterface, broadcaster, logger, feeEstiamtor, b.AsMemory(), _pool);
+            var (manyChannelMonitor2, keyToHeaderHash) = ManyChannelMonitor.Deserialize(new ManyChannelMonitorReadArgs( chainWatchInterface, broadcaster, logger, feeEstiamtor,n), b.AsMemory(), _pool);
             using (manyChannelMonitor2)
             {
                 Assert.True(NBitcoin.Utils.ArrayEqual(b, manyChannelMonitor2.Serialize(_pool)));

@@ -397,6 +397,9 @@ namespace NRustLightning
             ref Log log,
             ref GetEstSatPer1000Weight getEstSatPer1000Weight,
             ManyChannelMonitorHandle manyChannelMonitorHandle,
+            IntPtr outputBufPtr,
+            UIntPtr outputBufLen,
+            out UIntPtr outputActualLen,
             out ChannelManagerHandle handle);
 
         internal static FFIResult deserialize_channel_manager(
@@ -423,6 +426,10 @@ namespace NRustLightning
             GetEstSatPer1000Weight getEstSatPer1000Weight,
             
             ManyChannelMonitorHandle manyChannelMonitorHandle,
+            
+            IntPtr outputBufPtr,
+            UIntPtr outputBufLen,
+            out UIntPtr outputActualLen,
             out ChannelManagerHandle handle,
             bool check = true)
             => MaybeCheck(_deserialize_channel_manager(
@@ -445,6 +452,9 @@ namespace NRustLightning
                 ref log,
                 ref getEstSatPer1000Weight,
                 manyChannelMonitorHandle,
+                outputBufPtr,
+                outputBufLen,
+                out outputActualLen,
                 out handle), check);
         
 
