@@ -23,6 +23,7 @@ namespace NRustLightning.Server.Tests
         private readonly DockerFixture _dockerFixture;
         private readonly ITestOutputHelper _output;
 
+        private readonly ILoggerFactory _loggerFactory;
         private class DummyChainListener : IChainListener
         {
             private readonly ITestOutputHelper? _helper;
@@ -61,20 +62,22 @@ namespace NRustLightning.Server.Tests
         {
             _dockerFixture = dockerFixture;
             _output = output;
+            _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         }
+        
 
         [Fact]
-        [Trait("UnitTest", "UnitTest")]
-        public async Task ForkStepTests()
+        [Trait("IntegrationTest", "ExplorerFixture")]
+        public async Task ResumeChainListenerFromLowerFork()
         {
             // root -> A(invalidated)
             //      \
             //       B -> C
             // resume from A to C
-            var cli = await _dockerFixture.StartExplorerFixtureAsync(_output, nameof(ForkStepTests));
+            var cli = await _dockerFixture.StartExplorerFixtureAsync(_output, nameof(ResumeChainListenerFromLowerFork));
             var c = cli.RPCClient;
             var blockSource = new BitcoinRPCBlockSource(c);
-            var rootBlock = await c.GetBlockAsync(await c.GetBestBlockHashAsync(), GetBlockVerbosity.WithFullTx);
+            var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
             var listener = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
             
             var addr = await c.GetNewAddressAsync();
@@ -88,8 +91,93 @@ namespace NRustLightning.Server.Tests
             var newTipHash = await c.GetBestBlockHashAsync();
             var newTip = await c.GetBlockAsync(newTipHash, GetBlockVerbosity.WithFullTx);
             Assert.True(oldTip.Height < newTip.Height);
-            var lf = LoggerFactory.Create(builder => builder.AddConsole());
-            await listener.SyncChainListener(oldTipHash, newTip.Header, (uint)newTip.Height, new List<BlockHeaderData>(), blockSource, Network.RegTest, lf.CreateLogger(nameof(ForkStepTests)));
+            await listener.SyncChainListener(oldTipHash, newTip.Header, (uint)newTip.Height, new List<BlockHeaderData>(), blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLowerFork)));
+            Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+        }
+
+        [Fact]
+        [Trait("IntegrationTest", "ExplorerFixture")]
+        public async Task ResumeChainListenerFromHigherFork()
+        {
+            // root -> A(invalidated) -> B -> C
+            //      \
+            //       D -> E
+            // resume from C to E
+            var cli = await _dockerFixture.StartExplorerFixtureAsync(_output,
+                nameof(ResumeChainListenerFromHigherFork));
+
+            var c = cli.RPCClient;
+            var blockSource = new BitcoinRPCBlockSource(c);
+            var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            var listener = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
+
+            GetBlockRPCResponse? oldTip = null;
+            for (int i = 0; i < 3; i++)
+            {
+                await c.GenerateToOwnAddressAsync(1);
+                oldTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+                listener.BlockConnected(oldTip.Block, (uint) oldTip.Height);
+            }
+
+            var nextBlockOfRoot = await c.GetBlockHeaderAsync(rootBlock.Height + 1);
+            await c.InvalidateBlockAsync(nextBlockOfRoot.GetHash());
+            await c.GenerateToOwnAddressAsync(2);
+            var newTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            await listener.SyncChainListener(oldTip?.Header.GetHash(), newTip.Header, (uint)newTip.Height, new List<BlockHeaderData>(), blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigherFork)));
+            Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+        }
+
+        [Fact]
+        [Trait("IntegrationTest", "ExplorerFixture")]
+        public async Task ResumeChainListenerFromLower()
+        {
+            // root -> A -> B -> C
+            // resume from A to C
+
+            var cli = await _dockerFixture.StartExplorerFixtureAsync(_output, nameof(ResumeChainListenerFromLower));
+            var c = cli.RPCClient;
+            var blockSource = new BitcoinRPCBlockSource(c);
+
+            var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            var listener = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
+            GetBlockRPCResponse? oldTip = null;
+
+            await c.GenerateToOwnAddressAsync(1);
+            oldTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            listener.BlockConnected(oldTip.Block, (uint)oldTip.Height);
+
+            await c.GenerateToOwnAddressAsync(2);
+
+            var newTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            await listener.SyncChainListener(oldTip.Header.GetHash(), newTip.Header, (uint)newTip.Height, new List<BlockHeaderData>(), blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigherFork)));
+            Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+        }
+
+        [Fact]
+        [Trait("IntegrationTest", "ExplorerFixture")]
+        public async Task ResumeChainListenerFromHigher()
+        {
+            // root -> A -> B(invalidated) -> C
+            // resume from C to A
+            var cli = await _dockerFixture.StartExplorerFixtureAsync(_output, nameof(ResumeChainListenerFromLower));
+            var c = cli.RPCClient;
+            var blockSource = new BitcoinRPCBlockSource(c);
+
+            var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            var listener = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
+            GetBlockRPCResponse? oldTip = null;
+
+            for (int i = 0; i < 3; i++)
+            {
+                await c.GenerateToOwnAddressAsync(1);
+                oldTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+                listener.BlockConnected(oldTip.Block, (uint) oldTip.Height);
+            }
+            var blockB = await c.GetBlockHeaderAsync(rootBlock.Height + 2);
+            await c.InvalidateBlockAsync(blockB.GetHash());
+            
+            var newTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            await listener.SyncChainListener(oldTip?.Header.GetHash(), newTip.Header, (uint)newTip.Height, new List<BlockHeaderData>(), blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigherFork)));
             Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
         }
     }

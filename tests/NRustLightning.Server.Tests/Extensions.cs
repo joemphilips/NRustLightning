@@ -36,6 +36,17 @@ namespace NRustLightning.Server.Tests
 {
     public static class Extensions
     {
+
+        public static async Task<GetBlockRPCResponse> GetBestBlockAsync(this RPCClient c, GetBlockVerbosity v)
+        {
+            return await c.GetBlockAsync(await c.GetBestBlockHashAsync(), v);
+        }
+
+        public static async Task<uint256[]> GenerateToOwnAddressAsync(this RPCClient c, int num)
+        {
+            var addr = await c.GetNewAddressAsync();
+            return await c.GenerateToAddressAsync(num, addr);
+        }
         private static byte[] GetCertificateFingerPrint(string filePath)
         {
             X509Certificate2 cert = new X509Certificate2(filePath);

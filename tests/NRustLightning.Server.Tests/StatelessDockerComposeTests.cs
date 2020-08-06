@@ -32,6 +32,7 @@ namespace NRustLightning.Server.Tests
         }
 
         [Fact]
+        [Trait("IntegrationTest", "LNFixture")]
         public async Task CanConnectNodes()
         {
             var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanConnectNodes));
@@ -215,6 +216,7 @@ namespace NRustLightning.Server.Tests
         }
         
         [Fact]
+        [Trait("IntegrationTest", "LNFixture")]
         public async Task CanOpenCloseChannelsWithLND()
         {
             var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanOpenCloseChannelsWithLND));
@@ -232,6 +234,7 @@ namespace NRustLightning.Server.Tests
         }
         
         [Fact]
+        [Trait("IntegrationTest", "LNFixture")]
         public async Task CanSendInboundPaymentFromLnd()
         {
             var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanSendInboundPaymentFromLnd));
@@ -246,6 +249,7 @@ namespace NRustLightning.Server.Tests
         }
         
         [Fact]
+        [Trait("IntegrationTest", "LNFixture")]
         public async Task CanSendOutboundPaymentToLnd()
         {
             var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanSendOutboundPaymentToLnd));
@@ -259,6 +263,7 @@ namespace NRustLightning.Server.Tests
         
         
         [Fact]
+        [Trait("IntegrationTest", "LNFixture")]
         public async Task CanOpenCloseChannelsWithLightningD()
         {
             var clients = await dockerFixture.StartLNTestFixtureAsync(output, nameof(CanOpenCloseChannelsWithLightningD));
