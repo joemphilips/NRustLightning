@@ -71,12 +71,32 @@ namespace NRustLightning.Infrastructure.Repository
             await tx.Commit();
         }
 
-        public async Task<ChannelManager?> GetChannelManager(ChannelManagerReadArgs readArgs, CancellationToken ct = default)
+        public async Task<(uint256, ChannelManager)?> GetChannelManager(ChannelManagerReadArgs readArgs, CancellationToken ct = default)
         {
+            if (readArgs == null) throw new ArgumentNullException(nameof(readArgs));
             using var tx = await _engine.OpenTransaction(ct);
             using var chanManRow = await tx.GetTable(DBKeys.ChannelManager).Get(DBKeys.ChannelManagerVersion);
             var val = await chanManRow.ReadValue();
-            return val.IsEmpty ? null : ChannelManager.Deserialize(val.Span, readArgs);
+            return val.IsEmpty ? default : ChannelManager.Deserialize(val, readArgs, _conf.Value.RustLightningConfig, _pool);
+        }
+
+        public async Task<(ManyChannelMonitor, Dictionary<Primitives.LNOutPoint, uint256>)?> GetManyChannelMonitor(ManyChannelMonitorReadArgs readArgs, CancellationToken ct = default)
+        {
+            using var tx = await _engine.OpenTransaction(ct);
+            using var manyChannelMonitorRow =
+                await tx.GetTable(DBKeys.ManyChannelMonitor).Get(DBKeys.ManyChannelMonitorVersion);
+
+            var val = await manyChannelMonitorRow.ReadValue();
+            return val.IsEmpty ? default : ManyChannelMonitor.Deserialize(readArgs, val, _pool);
+        }
+
+        public async Task SetManyChannelMonitor(ManyChannelMonitor manyChannelMonitor, CancellationToken ct = default)
+        {
+            var b = manyChannelMonitor.Serialize(_pool);
+            using var tx = await _engine.OpenTransaction(ct);
+            var table = tx.GetTable(DBKeys.ManyChannelMonitor);
+            await table.Insert(DBKeys.ManyChannelMonitorVersion, b);
+            await tx.Commit();
         }
 
         public async Task<PaymentRequest?> GetInvoice(Primitives.PaymentHash hash, CancellationToken ct = default)

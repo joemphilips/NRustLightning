@@ -1,14 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNetLightning.Utils;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NBitcoin;
 using NRustLightning.Adaptors;
+using NRustLightning.Infrastructure;
 using NRustLightning.Infrastructure.Configuration;
 using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Models;
 using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Infrastructure.Repository;
 using NRustLightning.Server.FFIProxies;
@@ -75,47 +79,71 @@ namespace NRustLightning.Server.Services
                     var chainWatchInterface =
                         new NbxChainWatchInterface(nbx, _loggerFactory.CreateLogger<NbxChainWatchInterface>(), n);
                     var conf = _config.Value.RustLightningConfig;
-                    var peerManSeed = new byte[32];
-                    RandomUtils.GetBytes(peerManSeed);
-                    
                     var logger = new NativeLogger(_loggerFactory.CreateLogger<NativeLogger>());
                     var repo = _repositoryProvider.GetRepository(n);
 
                     uint currentBlockHeight = (uint)await nbx.RPCClient.GetBlockCountAsync();
 
-                    ChannelManager? maybeChanMan = null;
+                    ManyChannelMonitor? manyChannelMonitor = null;
+                    Dictionary<Primitives.LNOutPoint, uint256> latestBlockHashes = null;
+                    
                     int tried = 0;
-                    retry:
+                    retry1:
                     try
                     {
-                        maybeChanMan = await repo.GetChannelManager(new ChannelManagerReadArgs(_keysRepository, b, feeEst, logger), cancellationToken);
+                        var items = await repo.GetManyChannelMonitor(new ManyChannelMonitorReadArgs(chainWatchInterface, b, logger, feeEst, n.NBitcoinNetwork), cancellationToken);
+                        if (items is null) throw new Exception("ManyChannelMonitor not found");
+                        (manyChannelMonitor, latestBlockHashes) = items.Value;
                     }
                     catch when (tried < 4)
                     {
                         tried++;
                         await Task.Delay(800, cancellationToken);
-                        goto retry;
+                        goto retry1;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogDebug($"failed to resume ChannelManager. ({ex})");
+                        _logger.LogDebug($"failed to resume ManyChannelMonitor. ({ex})");
                         // we tried enough. creating new one.
                     }
 
-                    PeerManager peerMan;
-                    if (maybeChanMan is null)
+                    var blockSource = new BitcoinRPCBlockSource(nbx.RPCClient);
+                    var currentBlockHeader = await nbx.RPCClient.GetBlockHeaderAsync((await nbx.RPCClient.GetBestBlockHashAsync()));
+                    if (manyChannelMonitor is null)
                     {
-                        _logger.LogInformation($"Creating fresh PeerManager... for {n.CryptoCode}");
-                        peerMan = PeerManager.Create(peerManSeed.AsSpan(), n.NBitcoinNetwork, conf, chainWatchInterface,
-                            _keysRepository, b,
-                            logger, feeEst, currentBlockHeight);
+                        manyChannelMonitor = ManyChannelMonitor.Create(n.NBitcoinNetwork, chainWatchInterface, b, logger, feeEst);
+                    }
+                    // sync channel monitor to the current state.
+                    else
+                    {
+                        await manyChannelMonitor.SyncChannelMonitor(latestBlockHashes, currentBlockHeader, currentBlockHeight, new List<BlockHeaderData>(), blockSource, n.NBitcoinNetwork, _logger);
+                    }
+                    
+                    var chanManItems = await repo.GetChannelManager(new ChannelManagerReadArgs(_keysRepository, b, feeEst, logger, chainWatchInterface, n.NBitcoinNetwork, manyChannelMonitor), cancellationToken);
+                    ChannelManager chanMan;
+                    var blockNotifier = BlockNotifier.Create(chainWatchInterface);
+                    if (chanManItems is null)
+                    {
+                    
+                        _logger.LogInformation($"Creating fresh ChannelManager... for {n.CryptoCode}");
+                        chanMan = ChannelManager.Create(n.NBitcoinNetwork, conf, chainWatchInterface, _keysRepository, logger, b, feeEst, currentBlockHeight, manyChannelMonitor);
+                        blockNotifier.RegisterChannelManager(chanMan);
                     }
                     else
                     {
-                        _logger.LogInformation($"resuming PeerManager for {n.CryptoCode}");
-                        var c = conf.GetUserConfig();
-                        peerMan = PeerManager.Create(peerManSeed.AsSpan(), n.NBitcoinNetwork, in c, chainWatchInterface, logger, _keysRepository.GetNodeSecret().ToBytes(), maybeChanMan, currentBlockHeight);
+                        uint256 latestBlockHash;
+                        (latestBlockHash, chanMan) = chanManItems.Value;
+                        blockNotifier.RegisterChannelManager(chanMan);
+                        // sync channel manager to the current state
+                        await blockNotifier.SyncChainListener(latestBlockHash, currentBlockHeader, currentBlockHeight,
+                            new List<BlockHeaderData>(), blockSource, n.NBitcoinNetwork, _logger);
                     }
+                    blockNotifier.RegisterManyChannelMonitor(manyChannelMonitor);
+
+                    var peerManSeed = new byte[32];
+                    RandomUtils.GetBytes(peerManSeed);
+                    var peerMan =
+                        PeerManager.Create(peerManSeed, conf, chainWatchInterface, logger, _keysRepository.GetNodeSecret().ToBytes(), chanMan, blockNotifier);
                     _peerManagers.Add(n.CryptoCode, peerMan);
                 }
             }

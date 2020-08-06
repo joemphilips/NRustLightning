@@ -37,7 +37,7 @@ namespace NRustLightning.Infrastructure.Configuration
         
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
 
-        public Config LoadArgs(IConfiguration config, ILogger logger)
+        public Config LoadArgs(IConfiguration config, ILogger? logger)
         {
             var networkType = config.GetNetworkType();
             logger.LogInformation($"Network type: {networkType}");

@@ -31,6 +31,7 @@ namespace NRustLightning.Server.Tests
         }
 
         [Fact]
+        [Trait("UnitTest", "UnitTest")]
         public void CanConvertJsonTypes()
         {
             var invoice =
@@ -87,6 +88,7 @@ namespace NRustLightning.Server.Tests
         }
         
         [Fact]
+        [Trait("UnitTest", "REST")]
         public async Task CanGetNewInvoice()
         {
             var hostBuilder = new HostBuilder().ConfigureTestHost();
@@ -100,6 +102,7 @@ namespace NRustLightning.Server.Tests
         }
 
         [Fact]
+        [Trait("UnitTest", "REST")]
         public async Task CanGetChannelList()
         {
             var hostBuilder = new HostBuilder().ConfigureTestHost();
@@ -111,6 +114,7 @@ namespace NRustLightning.Server.Tests
         }
 
         [Fact]
+        [Trait("UnitTest", "REST")]
         public async Task CanGetOnChainAddress()
         {
             var hostBuilder = new HostBuilder().ConfigureTestHost();
@@ -121,6 +125,7 @@ namespace NRustLightning.Server.Tests
         }
 
         [Fact]
+        [Trait("UnitTest", "REST")]
         public async Task CanGetWalletInfo()
         {
             var hostBuilder = new HostBuilder().ConfigureTestHost();
@@ -132,6 +137,7 @@ namespace NRustLightning.Server.Tests
         }
 
         [Fact]
+        [Trait("UnitTest", "REST")]
         public async Task CanGetInfo()
         {
             var hostBuilder = new HostBuilder().ConfigureTestHost();
@@ -145,6 +151,7 @@ namespace NRustLightning.Server.Tests
         }
 
         [Fact]
+        [Trait("UnitTest", "REST")]
         public async Task CanSendOpenCloseChannelRequest()
         {
             var hostBuilder = new HostBuilder().ConfigureTestHost();
@@ -169,6 +176,7 @@ namespace NRustLightning.Server.Tests
         }
 
         [Fact]
+        [Trait("UnitTest", "REST")]
         public async Task CanCallSendPayment()
         {
             var hostBuilder = new HostBuilder().ConfigureTestHost();

@@ -1,0 +1,64 @@
+version: "3"
+services:
+  bitcoind:
+    restart: unless-stopped
+    image: joemphilips/bitcoind:0.19.1
+    environment:
+      BITCOIN_NETWORK: regtest
+    user: root:root
+    command:
+      - bitcoind
+      - -regtest
+      - -datadir=/data
+      - -rpcauth=${BITCOIND_RPC_AUTH:?no_bitcoind_rpc_auth_set}
+      - -rpcport=${BITCOIND_RPC_PORT:?no_bitcoind_rpc_port_set}
+      - -rpcbind=0.0.0.0:${BITCOIND_RPC_PORT}
+      - -rpcallowip=0.0.0.0/0
+      - -port=39388
+      - -txindex=1
+      - -zmqpubrawblock=tcp://0.0.0.0:28332
+      - -zmqpubrawtx=tcp://0.0.0.0:28333
+      - -deprecatedrpc=signrawtransaction
+      - -assumevalid=00000000000000000012d0c0982d818aa909d78e54525b10563c698d89997632
+    ports:
+      - "${BITCOIND_RPC_PORT}:${BITCOIND_RPC_PORT}"
+    expose:
+      - "${BITCOIND_RPC_PORT}" # RPC
+      - "39388" # P2P
+      - "28332" # ZMQ
+      - "28333" # ZMQ
+    networks:
+      main:
+        aliases:
+          - bitcoind
+    volumes:
+      - "${DATA_PATH:?datapath_not_set}/.bitcoin:/data"
+ 
+  nbxplorer:
+    image: nicolasdorier/nbxplorer:2.1.31
+    restart: unless-stopped
+    ports:
+      - "${NBXPLORER_PORT}:${NBXPLORER_PORT:?no_nbxplorer_port}"
+    expose: 
+      - "${NBXPLORER_PORT}"
+    environment:
+      NBXPLORER_NETWORK: regtest
+      NBXPLORER_CHAINS: "btc"
+      NBXPLORER_BTCRPCURL: http://bitcoind:${BITCOIND_RPC_PORT}/
+      NBXPLORER_BTCNODEENDPOINT: bitcoind:39388
+      NBXPLORER_BTCRPCUSER: johndoe
+      NBXPLORER_BTCRPCPASSWORD: HmcwPBb0KRWFWlSXkSY_DI70JekYyAr5CPx2N2i8RjA=
+      NBXPLORER_BIND: 0.0.0.0:${NBXPLORER_PORT}
+      NBXPLORER_MINGAPSIZE: 5
+      NBXPLORER_MAXGAPSIZE: 10
+      NBXPLORER_VERBOSE: 1
+      NBXPLORER_NOAUTH: 1
+      NBXPLORER_EXPOSERPC: 1
+    networks:
+      main:
+        aliases:
+          - nbxplorer
+    volumes:
+      - "${DATA_PATH}/.nbxplorer:/datadir"
+networks:
+  main:

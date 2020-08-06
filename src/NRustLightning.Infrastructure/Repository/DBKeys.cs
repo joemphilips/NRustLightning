@@ -6,5 +6,7 @@ namespace NRustLightning.Infrastructure.Repository
         public const string HashToInvoice = "hi";
         public const string ChannelManager = "cm";
         public const string ChannelManagerVersion = "v1";
+        public const string ManyChannelMonitor = "mc";
+        public const string ManyChannelMonitorVersion = "v1";
     }
 }

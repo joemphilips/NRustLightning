@@ -103,12 +103,12 @@ namespace NRustLightning
 
         public void BlockConnected(Block block, uint height, Primitives.LNOutPoint key = null)
         {
-            throw new NotImplementedException();
+            BlockConnected(block, height);
         }
 
         public void BlockDisconnected(BlockHeader header, uint height, Primitives.LNOutPoint key = null)
         {
-            throw new NotImplementedException();
+            BlockDisconnected(header, height);
         }
     }
 }
