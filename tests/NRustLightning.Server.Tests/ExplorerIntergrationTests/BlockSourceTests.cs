@@ -1,29 +1,26 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DockerComposeFixture;
 using DotNetLightning.Utils;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using NBitcoin;
 using NBitcoin.RPC;
+using NBXplorer;
 using NRustLightning.Infrastructure;
 using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Models;
 using NRustLightning.Interfaces;
+using NRustLightning.Server.Tests.Support;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 using Network = NBitcoin.Network;
 
-namespace NRustLightning.Server.Tests
+namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
 {
     public class BlockSourceTests : IClassFixture<DockerFixture>
     {
-        private readonly DockerFixture _dockerFixture;
-        private readonly ITestOutputHelper _output;
-
-        private readonly ILoggerFactory _loggerFactory;
         private class DummyChainListener : IChainListener
         {
             private readonly ITestOutputHelper? _helper;
@@ -58,11 +55,17 @@ namespace NRustLightning.Server.Tests
             }
         }
 
+        private readonly DockerFixture _dockerFixture;
+        private readonly ITestOutputHelper _output;
+
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ExplorerClient _cli; 
         public BlockSourceTests(DockerFixture dockerFixture, ITestOutputHelper output)
         {
             _dockerFixture = dockerFixture;
             _output = output;
             _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+            _cli = _dockerFixture.StartExplorerFixtureAsync(_output, nameof(BlockSourceTests)).GetAwaiter().GetResult();
         }
         
 
@@ -74,8 +77,7 @@ namespace NRustLightning.Server.Tests
             //      \
             //       B -> C
             // resume from A to C
-            var cli = await _dockerFixture.StartExplorerFixtureAsync(_output, nameof(ResumeChainListenerFromLowerFork));
-            var c = cli.RPCClient;
+            var c = _cli.RPCClient;
             var blockSource = new BitcoinRPCBlockSource(c);
             var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
             var listener = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
@@ -103,10 +105,8 @@ namespace NRustLightning.Server.Tests
             //      \
             //       D -> E
             // resume from C to E
-            var cli = await _dockerFixture.StartExplorerFixtureAsync(_output,
-                nameof(ResumeChainListenerFromHigherFork));
 
-            var c = cli.RPCClient;
+            var c = _cli.RPCClient;
             var blockSource = new BitcoinRPCBlockSource(c);
             var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
             var listener = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
@@ -134,8 +134,7 @@ namespace NRustLightning.Server.Tests
             // root -> A -> B -> C
             // resume from A to C
 
-            var cli = await _dockerFixture.StartExplorerFixtureAsync(_output, nameof(ResumeChainListenerFromLower));
-            var c = cli.RPCClient;
+            var c = _cli.RPCClient;
             var blockSource = new BitcoinRPCBlockSource(c);
 
             var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
@@ -159,8 +158,7 @@ namespace NRustLightning.Server.Tests
         {
             // root -> A -> B(invalidated) -> C
             // resume from C to A
-            var cli = await _dockerFixture.StartExplorerFixtureAsync(_output, nameof(ResumeChainListenerFromLower));
-            var c = cli.RPCClient;
+            var c = _cli.RPCClient;
             var blockSource = new BitcoinRPCBlockSource(c);
 
             var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);

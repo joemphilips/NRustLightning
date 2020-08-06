@@ -81,7 +81,7 @@ namespace NRustLightning.Server.Tests
             // And then we can disconnect from inside.
         }
 
-        async Task OutBoundChannelOpenRoundtrip(Clients clients, ILightningClient remoteClient)
+        static async internal Task OutBoundChannelOpenRoundtrip(Clients clients, ILightningClient remoteClient)
         {
             var walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
             var info = await remoteClient.GetInfo();
@@ -120,7 +120,7 @@ namespace NRustLightning.Server.Tests
                 }
             });
         }
-        async Task OutboundChannelCloseRoundtrip(Clients clients, ILightningClient remoteClient)
+        static internal async Task OutboundChannelCloseRoundtrip(Clients clients, ILightningClient remoteClient)
         {
             var info = await remoteClient.GetInfo();
             var localInfo = (await clients.NRustLightningHttpClient.GetInfoAsync());
@@ -138,7 +138,7 @@ namespace NRustLightning.Server.Tests
                 return (maybeRemoteChannel is null || !maybeRemoteChannel.IsActive);
             });
         }
-        async Task InboundChannelOpenRoundtrip(Clients clients, ILightningClient remoteClient)
+        static internal async Task InboundChannelOpenRoundtrip(Clients clients, ILightningClient remoteClient)
         {
             var localInfo = await clients.NRustLightningHttpClient.GetInfoAsync();
             var feeRate = (await clients.NBXClient.GetFeeRateAsync(3)).FeeRate;
@@ -179,7 +179,7 @@ namespace NRustLightning.Server.Tests
             });
         }
 
-        private async Task InboundPaymentRoundTrip(Clients clients, ILightningClient lnClient)
+        static async Task InboundPaymentRoundTrip(Clients clients, ILightningClient lnClient)
         {
             
             var resp = await clients.NRustLightningHttpClient.GetInvoiceAsync(new InvoiceCreationOption { Amount = LNMoney.MilliSatoshis(100L), Description = "foo bar" });
@@ -187,15 +187,11 @@ namespace NRustLightning.Server.Tests
             await Support.Utils.Retry(3, TimeSpan.FromSeconds(ts), async () =>
             {
                 var payResp = await lnClient.Pay(resp.Invoice.ToString());
-                if (payResp.Result != PayResult.Ok)
-                {
-                    output.WriteLine($"Failed inbound payment {payResp.Result}... retrying in {ts} seconds.");
-                }
                 return payResp.Result == PayResult.Ok;
             });
         }
 
-        private async Task OutboundPaymentRoundTrip(Clients clients, ILightningClient lnClient)
+        static async Task OutboundPaymentRoundTrip(Clients clients, ILightningClient lnClient)
         {
             await Task.Delay(10000); // not sure why we need this.
             await Support.Utils.Retry(3, TimeSpan.FromSeconds(12), async () =>
@@ -205,9 +201,8 @@ namespace NRustLightning.Server.Tests
                 {
                     await clients.NRustLightningHttpClient.PayToInvoiceAsync(invoice.BOLT11);
                 }
-                catch (HttpRequestException ex)
+                catch (HttpRequestException)
                 {
-                    output.WriteLine($"Failed outbound payment {ex.Message}. retrying....");
                     return false;
                 }
 
