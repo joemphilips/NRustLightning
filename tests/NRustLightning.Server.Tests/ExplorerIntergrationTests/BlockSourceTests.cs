@@ -162,6 +162,7 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
             var blockSource = new BitcoinRPCBlockSource(c);
 
             var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            
             var listener = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
             GetBlockRPCResponse? oldTip = null;
 

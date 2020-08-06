@@ -39,6 +39,7 @@ namespace NRustLightning.Server.Services
                     int sleepMs = 50;
                     Exception e = null;
                     int maxRetry = 6;
+                    c.WaitServerStarted();
                     for (int count = 0; count <= maxRetry; count++)
                     {
                         try
@@ -54,6 +55,7 @@ namespace NRustLightning.Server.Services
                             sleepMs *= 2;
                         }
                     }
+
 
                     if (e != null)
                     {

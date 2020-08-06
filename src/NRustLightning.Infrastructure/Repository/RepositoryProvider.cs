@@ -16,7 +16,7 @@ namespace NRustLightning.Infrastructure.Repository
         public Config Config { get; }
         
         Dictionary<string, IKeysRepository> _keysRepositories = new Dictionary<string, IKeysRepository>();
-        Dictionary<string, IRepository> _invoiceRepositories = new Dictionary<string, IRepository>();
+        Dictionary<string, IRepository> _repos = new Dictionary<string, IRepository>();
         Dictionary<string, RepositorySerializer> _repositorySerializers = new Dictionary<string, RepositorySerializer>();
 
         public RepositoryProvider(NRustLightningNetworkProvider networks, IOptions<Config> config, IServiceProvider serviceProvider)
@@ -38,7 +38,7 @@ namespace NRustLightning.Infrastructure.Repository
                     _repositorySerializers.Add(n.CryptoCode, serializer);
                     
                     var invoiceRepository = serviceProvider.GetRequiredService<IRepository>();
-                    _invoiceRepositories.Add(n.CryptoCode, invoiceRepository);
+                    _repos.Add(n.CryptoCode, invoiceRepository);
                 }
             }
         }
@@ -50,7 +50,7 @@ namespace NRustLightning.Infrastructure.Repository
 
         public IEnumerable<IRepository> GetAllRepositories()
         {
-            return _invoiceRepositories.Values;
+            return _repos.Values;
         }
 
         public IEnumerable<IKeysRepository> GetAllKeysRepositories()
@@ -58,11 +58,14 @@ namespace NRustLightning.Infrastructure.Repository
             return _keysRepositories.Values;
         }
 
-        public IRepository? GetRepository(NRustLightningNetwork network)
+        public IRepository? TryGetRepository(NRustLightningNetwork network)
         {
-            _invoiceRepositories.TryGetValue(network.CryptoCode, out var repo);
+            _repos.TryGetValue(network.CryptoCode, out var repo);
             return repo;
         }
+
+        public IRepository GetRepository(NRustLightningNetwork network) =>
+            TryGetRepository(network) ?? Utils.Utils.Fail<IRepository>($"repository for network {network.CryptoCode} not found");
 
         public IKeysRepository? GetKeysRepository(NRustLightningNetwork network)
         {

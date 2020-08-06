@@ -45,6 +45,7 @@ WORKDIR /src
 
 COPY ["src/NRustLightning.RustLightningTypes/NRustLightning.RustLightningTypes.fsproj", "src/NRustLightning.RustLightningTypes/"]
 COPY ["src/NRustLightning/NRustLightning.csproj", "src/NRustLightning/"]
+COPY ["src/NRustLightning.Net/NRustLightning.Net.csproj", "src/NRustLightning.Net/"]
 COPY ["src/FSharp.SystemTextJson", "src/FSharp.SystemTextJson/"]
 COPY ["src/NRustLightning.Infrastructure/NRustLightning.Infrastructure.csproj", "src/NRustLightning.Infrastructure/"]
 COPY ["src/NRustLightning.Server/NRustLightning.Server.csproj", "src/NRustLightning.Server/"]

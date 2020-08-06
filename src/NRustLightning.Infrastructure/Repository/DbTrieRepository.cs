@@ -59,11 +59,12 @@ namespace NRustLightning.Infrastructure.Repository
         {
             using var tx = await _engine.OpenTransaction(ct);
             using var preimageRow = await tx.GetTable(DBKeys.HashToPreimage).Get(hash.ToBytes(false));
-            return Primitives.PaymentPreimage.Create((await preimageRow.ReadValue()).ToArray());
+            return preimageRow is null ? null : Primitives.PaymentPreimage.Create((await preimageRow.ReadValue()).ToArray());
         }
 
         public async Task SetChannelManager(ChannelManager channelManager, CancellationToken ct = default)
         {
+            if (channelManager == null) throw new ArgumentNullException(nameof(channelManager));
             var b = channelManager.Serialize(_pool);
             using var tx = await _engine.OpenTransaction(ct);
             var table = tx.GetTable(DBKeys.ChannelManager);
@@ -76,22 +77,25 @@ namespace NRustLightning.Infrastructure.Repository
             if (readArgs == null) throw new ArgumentNullException(nameof(readArgs));
             using var tx = await _engine.OpenTransaction(ct);
             using var chanManRow = await tx.GetTable(DBKeys.ChannelManager).Get(DBKeys.ChannelManagerVersion);
+            if (chanManRow is null) return null;
             var val = await chanManRow.ReadValue();
             return val.IsEmpty ? default : ChannelManager.Deserialize(val, readArgs, _conf.Value.RustLightningConfig, _pool);
         }
 
         public async Task<(ManyChannelMonitor, Dictionary<Primitives.LNOutPoint, uint256>)?> GetManyChannelMonitor(ManyChannelMonitorReadArgs readArgs, CancellationToken ct = default)
         {
+            if (readArgs == null) throw new ArgumentNullException(nameof(readArgs));
             using var tx = await _engine.OpenTransaction(ct);
             using var manyChannelMonitorRow =
                 await tx.GetTable(DBKeys.ManyChannelMonitor).Get(DBKeys.ManyChannelMonitorVersion);
-
+            if (manyChannelMonitorRow is null) return null;
             var val = await manyChannelMonitorRow.ReadValue();
             return val.IsEmpty ? default : ManyChannelMonitor.Deserialize(readArgs, val, _pool);
         }
 
         public async Task SetManyChannelMonitor(ManyChannelMonitor manyChannelMonitor, CancellationToken ct = default)
         {
+            if (manyChannelMonitor == null) throw new ArgumentNullException(nameof(manyChannelMonitor));
             var b = manyChannelMonitor.Serialize(_pool);
             using var tx = await _engine.OpenTransaction(ct);
             var table = tx.GetTable(DBKeys.ManyChannelMonitor);
@@ -102,8 +106,9 @@ namespace NRustLightning.Infrastructure.Repository
         public async Task<PaymentRequest?> GetInvoice(Primitives.PaymentHash hash, CancellationToken ct = default)
         {
             using var tx = await _engine.OpenTransaction(ct);
-            using var chanManRow = await tx.GetTable(DBKeys.ChannelManager).Get(hash.ToBytes(false));
-            var r = PaymentRequest.Parse((await chanManRow.ReadValueString()));
+            using var row = await tx.GetTable(DBKeys.ChannelManager).Get(hash.ToBytes(false));
+            if (row is null) return null;
+            var r = PaymentRequest.Parse((await row.ReadValueString()));
             if (r.IsError)
             {
                 _logger.LogError($"Failed to get invoice for hash {hash}. {r.ErrorValue}");
@@ -126,17 +131,13 @@ namespace NRustLightning.Infrastructure.Repository
             retry:
             try
             {
-                return await DBTrie.DBTrieEngine.OpenFromFolder(_dbPath);
+                return await DBTrieEngine.OpenFromFolder(_dbPath);
             }
             catch when (tried < 10)
             {
                 tried++;
                 await Task.Delay(500, ct);
                 goto retry;
-            }
-            catch
-            {
-                throw;
             }
         }
     }

@@ -82,7 +82,24 @@ namespace NRustLightning.Server.Services
                     var logger = new NativeLogger(_loggerFactory.CreateLogger<NativeLogger>());
                     var repo = _repositoryProvider.GetRepository(n);
 
-                    uint currentBlockHeight = (uint)await nbx.RPCClient.GetBlockCountAsync();
+                    uint currentBlockHeight;
+                    int tried0 = 0;
+                    retry0:
+                    try
+                    {
+                        currentBlockHeight = (uint) await nbx.RPCClient.GetBlockCountAsync();
+                    }
+                    catch when (tried0 < 4)
+                    {
+                        tried0++;
+                        await Task.Delay(1000, cancellationToken);
+                        goto retry0;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogCritical("Failed to get current height through nbx.");
+                        throw;
+                    }
 
                     ManyChannelMonitor? manyChannelMonitor = null;
                     Dictionary<Primitives.LNOutPoint, uint256> latestBlockHashes = null;
@@ -91,7 +108,8 @@ namespace NRustLightning.Server.Services
                     retry1:
                     try
                     {
-                        var items = await repo.GetManyChannelMonitor(new ManyChannelMonitorReadArgs(chainWatchInterface, b, logger, feeEst, n.NBitcoinNetwork), cancellationToken);
+                        var items =
+                            await repo.GetManyChannelMonitor(new ManyChannelMonitorReadArgs(chainWatchInterface, b, logger, feeEst, n.NBitcoinNetwork), cancellationToken);
                         if (items is null) throw new Exception("ManyChannelMonitor not found");
                         (manyChannelMonitor, latestBlockHashes) = items.Value;
                     }
@@ -146,6 +164,7 @@ namespace NRustLightning.Server.Services
                         PeerManager.Create(peerManSeed, conf, chainWatchInterface, logger, _keysRepository.GetNodeSecret().ToBytes(), chanMan, blockNotifier);
                     _peerManagers.Add(n.CryptoCode, peerMan);
                 }
+                _logger.LogInformation("PeerManagerProvider started");
             }
         }
 
@@ -154,7 +173,7 @@ namespace NRustLightning.Server.Services
 
             foreach (var n in _networkProvider.GetAll())
             {
-                var repo = _repositoryProvider.GetRepository(n);
+                var repo = _repositoryProvider.TryGetRepository(n);
                 if (repo != null)
                 {
                     await repo.SetChannelManager(_peerManagers[n.CryptoCode].ChannelManager, cancellationToken);

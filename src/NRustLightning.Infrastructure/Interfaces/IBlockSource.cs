@@ -225,7 +225,7 @@ namespace NRustLightning.Infrastructure.Interfaces
             }
         }
 
-        internal static async Task<List<ForkStep>> FindFork(this IBlockSource blockSource, BlockHeaderData currentHeader, BlockHeaderData prevHeader, List<BlockHeaderData> headBlocks, Network n)
+        private static async Task<List<ForkStep>> FindFork(this IBlockSource blockSource, BlockHeaderData currentHeader, BlockHeaderData prevHeader, List<BlockHeaderData> headBlocks, Network n)
         {
             var stepsTx = new List<ForkStep>();
             if (currentHeader.Header == prevHeader.Header)
@@ -333,7 +333,7 @@ namespace NRustLightning.Infrastructure.Interfaces
             List<BlockHeaderData> headBlocks,
             IBlockSource blockSource, Network n, ILogger? logger = null)
         {
-            /// TODO: use cache
+            // TODO: use cache
             foreach (var kvp in oldBlockHashes)
             {
                 await chainListener.SyncOneChannelListener(kvp.Key, kvp.Value, newBlockHeader, currentHeight, headBlocks, blockSource, n, logger);
