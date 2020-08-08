@@ -29,7 +29,7 @@ namespace NRustLightning.Infrastructure.Configuration
 
         public Func<Task<byte[]>>? GetSeed;
         
-        public string InvoiceDBFilePath { get; set; }
+        public string DBFilePath { get; set; }
 
         public int PaymentTimeoutSec { get; set; } = Constants.DefaultPaymentTimeoutSec;
 
@@ -143,9 +143,9 @@ namespace NRustLightning.Infrastructure.Configuration
                 seed = RandomUtils.GetUInt256().ToString();
             }
 
-            InvoiceDBFilePath = Path.Combine(DataDir, "InvoiceDb");
-            if (!Directory.Exists(InvoiceDBFilePath))
-                Directory.CreateDirectory(InvoiceDBFilePath);
+            DBFilePath = Path.Combine(DataDir, "Db.dat");
+            if (!Directory.Exists(DBFilePath))
+                Directory.CreateDirectory(DBFilePath);
             
             var h = new HexEncoder();
             if (!(h.IsValid(seed) && seed.Length == 64))

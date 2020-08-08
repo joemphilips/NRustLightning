@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetLightning.Payment;
@@ -18,6 +20,8 @@ namespace NRustLightning.Server.Tests.Stubs
         private ConcurrentDictionary<Primitives.PaymentHash, Primitives.PaymentPreimage> _hashToPreimage = new ConcurrentDictionary<Primitives.PaymentHash, Primitives.PaymentPreimage>();
         private ChannelManager? latestChannelManager = null;
         private ManyChannelMonitor? latestManyChannelMonitor = null;
+        
+        private List<EndPoint> EndPoints = new List<EndPoint>();
         public Task<Primitives.PaymentPreimage?> GetPreimage(Primitives.PaymentHash hash, CancellationToken ct = default)
         {
             _hashToPreimage.TryGetValue(hash, out var preimage);
@@ -39,6 +43,20 @@ namespace NRustLightning.Server.Tests.Stubs
         public Task SetInvoice(PaymentRequest paymentRequest, CancellationToken ct = default)
         {
             _hashToInvoice.TryAdd(paymentRequest.PaymentHash, paymentRequest);
+            return Task.CompletedTask;
+        }
+
+        public async IAsyncEnumerable<EndPoint> GetAllRemoteEndPoint(CancellationToken ct = default)
+        {
+            foreach (var e in EndPoints)
+            {
+                yield return e;
+            }
+        }
+
+        public Task SetRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default)
+        {
+            EndPoints.Add(remoteEndPoint);
             return Task.CompletedTask;
         }
 

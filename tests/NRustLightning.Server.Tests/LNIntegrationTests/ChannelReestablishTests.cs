@@ -1,11 +1,12 @@
+using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using DockerComposeFixture;
-using NRustLightning.Server.Tests.LNIntegrationTests;
-using NRustLightning.Server.Tests.Support;
+using NRustLightning.Infrastructure.Models.Response;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace NRustLightning.Server.Tests
+namespace NRustLightning.Server.Tests.LNIntegrationTests
 {
     public class ChannelReestablishTests : LNIntegrationTestsBase
     {
@@ -22,6 +23,21 @@ namespace NRustLightning.Server.Tests
             await _clients.CreateEnoughTxToEstimateFee();
             await OutBoundChannelOpenRoundtrip(_clients, _clients.CLightningClient);
             await OutBoundChannelOpenRoundtrip(_clients, _clients.LndClient);
+            await _dockerFixture.Restart("nrustlightning");
+            await Support.Utils.Retry(15, TimeSpan.FromSeconds(2.5), async () =>
+            {
+                ChannelInfoResponse resp;
+                try
+                {
+                    resp = await _clients.NRustLightningHttpClient.GetChannelDetailsAsync();
+                }
+                catch(HttpRequestException)
+                {
+                    return false;
+                }
+
+                return resp.Details.Length == 2;
+            });
         }
     }
 }

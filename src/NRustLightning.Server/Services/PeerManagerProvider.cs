@@ -31,6 +31,7 @@ namespace NRustLightning.Server.Services
         private readonly IOptions<Config> _config;
         private readonly RepositoryProvider _repositoryProvider;
         private Dictionary<string, PeerManager> _peerManagers = new Dictionary<string, PeerManager>();
+        private Dictionary<string, ManyChannelMonitor> _manyChannelMonitors = new Dictionary<string, ManyChannelMonitor>();
 
         public PeerManagerProvider(
             INBXplorerClientProvider nbXplorerClientProvider,
@@ -61,7 +62,7 @@ namespace NRustLightning.Server.Services
         public PeerManager? TryGetPeerManager(NRustLightningNetwork n) => TryGetPeerManager(n.CryptoCode);
 
         public PeerManager GetPeerManager(string cryptoCode) =>
-            TryGetPeerManager(cryptoCode) ?? NRustLightning.Infrastructure.Utils.Utils.Fail<PeerManager>($"Failed to get peer manager for cryptocode: {cryptoCode}");
+            TryGetPeerManager(cryptoCode) ?? Infrastructure.Utils.Utils.Fail<PeerManager>($"Failed to get peer manager for cryptocode: {cryptoCode}");
 
         public PeerManager GetPeerManager(NRustLightningNetwork n) => GetPeerManager(n.CryptoCode);
 
@@ -125,7 +126,7 @@ namespace NRustLightning.Server.Services
                         // we tried enough. creating new one.
                     }
 
-                    var blockSource = new BitcoinRPCBlockSource(nbx.RPCClient);
+                    using var blockSource = new BitcoinRPCBlockSource(nbx.RPCClient);
                     var currentBlockHeader = await nbx.RPCClient.GetBlockHeaderAsync((await nbx.RPCClient.GetBestBlockHashAsync()));
                     if (manyChannelMonitor is null)
                     {
@@ -162,6 +163,7 @@ namespace NRustLightning.Server.Services
                     RandomUtils.GetBytes(peerManSeed);
                     var peerMan =
                         PeerManager.Create(peerManSeed, conf, chainWatchInterface, logger, _keysRepository.GetNodeSecret().ToBytes(), chanMan, blockNotifier);
+                    _manyChannelMonitors.Add(n.CryptoCode, manyChannelMonitor);
                     _peerManagers.Add(n.CryptoCode, peerMan);
                 }
                 _logger.LogInformation("PeerManagerProvider started");
@@ -176,6 +178,7 @@ namespace NRustLightning.Server.Services
                 var repo = _repositoryProvider.TryGetRepository(n);
                 if (repo != null)
                 {
+                    await repo.SetManyChannelMonitor(_manyChannelMonitors[n.CryptoCode], cancellationToken);
                     await repo.SetChannelManager(_peerManagers[n.CryptoCode].ChannelManager, cancellationToken);
                 }
             }

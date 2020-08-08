@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetLightning.Payment;
@@ -17,6 +18,10 @@ namespace NRustLightning.Infrastructure.Interfaces
 
         Task<PaymentRequest?> GetInvoice(Primitives.PaymentHash hash, CancellationToken ct = default);
         Task SetInvoice(PaymentRequest paymentRequest, CancellationToken ct = default);
+
+        IAsyncEnumerable<EndPoint> GetAllRemoteEndPoint(CancellationToken ct = default);
+
+        Task SetRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default);
 
         /// <summary>
         /// Returns ChannelManager with its latest block hash when it is serialized.

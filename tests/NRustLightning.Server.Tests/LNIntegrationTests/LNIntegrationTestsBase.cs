@@ -12,14 +12,13 @@ using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Server.Tests.Support;
 using Xunit;
 using Xunit.Abstractions;
-using OpenChannelRequest = BTCPayServer.Lightning.OpenChannelRequest;
 
 namespace NRustLightning.Server.Tests.LNIntegrationTests
 {
     public abstract class LNIntegrationTestsBase : IClassFixture<DockerFixture>
     {
-        private readonly DockerFixture _dockerFixture;
-        private readonly ITestOutputHelper _output;
+        protected readonly DockerFixture _dockerFixture;
+        protected readonly ITestOutputHelper _output;
         protected Clients _clients;
         
         protected LNIntegrationTestsBase (DockerFixture dockerFixture, ITestOutputHelper output)

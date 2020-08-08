@@ -132,18 +132,17 @@ namespace NRustLightning.Server.Tests
             return new ExplorerClient(btcNetwork.NbXplorerNetwork, new Uri($"http://localhost:{ports[1]}"));
         }
         
-        public static async Task<Clients> StartLNTestFixtureAsync(this DockerFixture dockerFixture, ITestOutputHelper output, string caller)
+        public static async Task<Clients> StartLNTestFixtureAsync(this DockerFixture dockerFixture, ITestOutputHelper output, string caller, bool useCachedData = false)
         {
             var ports = new int[5];
             Support.Utils.FindEmptyPort(ports);
             var dataPath = Path.GetFullPath(caller);
-            if (!Directory.Exists(dataPath))
-                Directory.CreateDirectory(dataPath);
-            else
+            if (Directory.Exists(dataPath) && !useCachedData)
             {
                 Directory.Delete(dataPath, true);
-                Directory.CreateDirectory(dataPath);
             }
+            Directory.CreateDirectory(dataPath);
+            
             var env = new Dictionary<string, object>()
             {
                 {
