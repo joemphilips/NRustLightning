@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using NRustLightning.Interfaces;
 
-namespace NRustLightning.Tests.Utils
+namespace NRustLightning.Tests.Common.Utils
 {
     public interface ISocketDescriptorFactory
     {

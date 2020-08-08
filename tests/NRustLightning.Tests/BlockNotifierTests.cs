@@ -1,12 +1,9 @@
 using System;
 using System.Buffers;
-using System.IO;
-using System.Linq;
 using NBitcoin;
 using NRustLightning.Adaptors;
-using NRustLightning.Tests.Utils;
+using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
-using Org.BouncyCastle.Utilities.Encoders;
 using Xunit;
 
 namespace NRustLightning.Tests

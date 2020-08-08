@@ -30,6 +30,7 @@ using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Services;
 using NRustLightning.Server.Tests.Support;
 using NRustLightning.Server.Tests.Stubs;
+using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
 using Xunit.Abstractions;
 
@@ -232,7 +233,7 @@ namespace NRustLightning.Server.Tests
                     
                     services.AddSingleton<IFeeEstimator, TestFeeEstimator>();
                     services.AddSingleton<IBroadcaster, TestBroadcaster>();
-                    services.AddSingleton<IChainWatchInterface, TestChainWatchInterface>();
+                    services.AddSingleton<IChainWatchInterface, ChainWatchInterfaceUtil>();
                     services.AddSingleton<IWalletService, StubWalletService>();
                     services.AddSingleton<IRepository, InMemoryRepository>();
                     services.AddSingleton<INBXplorerClientProvider, StubNBXplorerClientProvider>();

@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Concurrent;
-using Microsoft.VisualBasic;
 using NRustLightning.Adaptors;
-using NRustLightning.Handles;
 using NRustLightning.Interfaces;
 
-namespace NRustLightning.Tests.Utils
+namespace NRustLightning.Tests.Common.Utils
 {
 
-    internal class TestLogger : ILogger
+    public class TestLogger : ILogger
     {
         public ConcurrentBag<string> Msgs = new ConcurrentBag<string>();
 

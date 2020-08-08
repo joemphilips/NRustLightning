@@ -24,6 +24,7 @@ using NRustLightning.Interfaces;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Tests.Stubs;
 using NRustLightning.Server.Tests.Support;
+using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
 using Xunit;
 using Network = NBitcoin.Network;

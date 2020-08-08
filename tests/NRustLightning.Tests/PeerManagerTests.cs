@@ -10,7 +10,7 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
-using NRustLightning.Tests.Utils;
+using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
 using RustLightningTypes;
 using Xunit;

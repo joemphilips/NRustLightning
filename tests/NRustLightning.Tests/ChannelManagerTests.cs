@@ -12,7 +12,7 @@ using NRustLightning;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
 using NRustLightning.RustLightningTypes;
-using NRustLightning.Tests.Utils;
+using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
 using Network = NRustLightning.Adaptors.Network;
 
