@@ -11,7 +11,8 @@ using NBitcoin;
 
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
-
+using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Net;
 using NRustLightning.Server.Services;
@@ -25,6 +26,7 @@ namespace NRustLightning.Server.P2P
         private readonly ISocketDescriptorFactory descriptorFactory;
         private readonly ILoggerFactory _loggerFactory;
         private readonly IConnectionFactory _connectionFactory;
+        private readonly IRepository _repository;
         private readonly ILogger<P2PConnectionHandler> _logger;
         private readonly ConcurrentDictionary<EndPoint, ConnectionLoop> _connectionLoops = new ConcurrentDictionary<EndPoint, ConnectionLoop>();
         private readonly MemoryPool<byte> _pool;
@@ -35,12 +37,13 @@ namespace NRustLightning.Server.P2P
         public Channel<byte> EventNotify { get; }
  
         public P2PConnectionHandler(ISocketDescriptorFactory descriptorFactory, PeerManagerProvider peerManagerProvider,
-            ILoggerFactory loggerFactory, IConnectionFactory connectionFactory)
+            ILoggerFactory loggerFactory, IConnectionFactory connectionFactory, IRepository repository)
         {
             // TODO: Support other chains
             this.descriptorFactory = descriptorFactory ?? throw new ArgumentNullException(nameof(descriptorFactory));
             _loggerFactory = loggerFactory;
             _connectionFactory = connectionFactory;
+            _repository = repository;
             _logger = _loggerFactory.CreateLogger<P2PConnectionHandler>();
             PeerManagerProvider = peerManagerProvider;
             _logger.LogWarning("WARNING: it only supports BTC");
@@ -61,7 +64,12 @@ namespace NRustLightning.Server.P2P
             // TODO: using "BTC" here is not clean.
             var peerMan = PeerManagerProvider.GetPeerManager("BTC");
             peerMan.NewInboundConnection(descriptor);
-            Action cleanup = () => { _connectionLoops.TryRemove(connection.RemoteEndPoint, out _); };
+            Func<Task> cleanup = async () =>
+            {
+                _connectionLoops.TryRemove(connection.RemoteEndPoint, out _);
+                await _repository.RemoveRemoteEndPoint(connection.RemoteEndPoint);
+            };
+            await _repository.SetRemoteEndPoint(connection.RemoteEndPoint);
             var conn = new ConnectionLoop(connection.Transport, descriptor, peerMan, _loggerFactory.CreateLogger<ConnectionLoop>(), writeReceiver, EventNotify.Writer, cleanup);
             _connectionLoops.TryAdd(connection.RemoteEndPoint, conn);
             conn.Start(connection.ConnectionClosed);
@@ -98,7 +106,12 @@ namespace NRustLightning.Server.P2P
                     await flushResult.ConfigureAwait(false);
                 }
                 
-                Action cleanup = () => { _connectionLoops.TryRemove(connectionContext.RemoteEndPoint, out _); };
+                Func<Task> cleanup = async () =>
+                {
+                    _connectionLoops.TryRemove(connectionContext.RemoteEndPoint, out _);
+                    await _repository.RemoveRemoteEndPoint(connectionContext.RemoteEndPoint, ct);
+                };
+                await _repository.SetRemoteEndPoint(remoteEndPoint, ct);
                 var conn = new ConnectionLoop(connectionContext.Transport, descriptor, peerMan,
                     _loggerFactory.CreateLogger<ConnectionLoop>(), writeReceiver, EventNotify.Writer, cleanup);
                 _connectionLoops.TryAdd(remoteEndPoint, conn);

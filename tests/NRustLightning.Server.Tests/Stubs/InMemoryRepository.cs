@@ -60,6 +60,12 @@ namespace NRustLightning.Server.Tests.Stubs
             return Task.CompletedTask;
         }
 
+        public Task RemoveRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default)
+        {
+            EndPoints.Remove(remoteEndPoint);
+            return Task.CompletedTask;
+        }
+
         public Task SetChannelManager(ChannelManager channelManager, CancellationToken ct = default)
         {
             latestChannelManager = channelManager;

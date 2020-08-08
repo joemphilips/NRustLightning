@@ -22,6 +22,7 @@ namespace NRustLightning.Infrastructure.Interfaces
         IAsyncEnumerable<EndPoint> GetAllRemoteEndPoint(CancellationToken ct = default);
 
         Task SetRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default);
+        Task RemoveRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default);
 
         /// <summary>
         /// Returns ChannelManager with its latest block hash when it is serialized.

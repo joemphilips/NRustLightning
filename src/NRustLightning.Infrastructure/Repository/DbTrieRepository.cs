@@ -150,6 +150,16 @@ namespace NRustLightning.Infrastructure.Repository
             await tx.Commit();
         }
 
+        public async Task RemoveRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default)
+        {
+            if (remoteEndPoint == null) throw new ArgumentNullException(nameof(remoteEndPoint));
+            var s = remoteEndPoint.ToEndpointString();
+
+            using var tx = await _engine.OpenTransaction(ct);
+            var t = tx.GetTable(DBKeys.RemoteEndPoints);
+            await t.Delete(s);
+            await tx.Commit();
+        }
 
         private async ValueTask<DBTrieEngine> OpenEngine(CancellationToken ct)
         {
