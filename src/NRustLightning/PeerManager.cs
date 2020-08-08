@@ -48,7 +48,8 @@ namespace NRustLightning
             byte[] ourNodeSecret,
             ChannelManager channelManager,
             BlockNotifier blockNotifier,
-            int tickIntervalMSec = 30000
+            int tickIntervalMSec = 30000,
+            NetworkGraph? networkGraph = null
         )
         {
             if (configProvider == null) throw new ArgumentNullException(nameof(configProvider));
@@ -63,7 +64,8 @@ namespace NRustLightning
             byte[] ourNodeSecret,
             ChannelManager channelManager,
             BlockNotifier blockNotifier,
-            int tickIntervalMSec = 30000
+            int tickIntervalMSec = 30000,
+            NetworkGraph? networkGraph = null
         )
         {
             if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
@@ -81,20 +83,47 @@ namespace NRustLightning
                 fixed (UserConfig* configPtr = &config)
                 fixed (byte* secretPtr = ourNodeSecret)
                 {
-                    Interop.create_peer_manager(
-                        (IntPtr)seedPtr,
-                        configPtr,
-                        channelManager.Handle,
-                        chainWatchInterfaceDelegatesHolder.InstallWatchTx,
-                        chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
-                        chainWatchInterfaceDelegatesHolder.WatchAllTxn,
-                        chainWatchInterfaceDelegatesHolder.GetChainUtxo,
-                        chainWatchInterfaceDelegatesHolder.FilterBlock,
-                        chainWatchInterfaceDelegatesHolder.ReEntered,
-                        loggerDelegatesHolder.Log,
-                        (IntPtr)secretPtr,
-                        out var handle
+                    PeerManagerHandle handle;
+                    if (networkGraph is null)
+                    {
+                        Interop.create_peer_manager(
+                            (IntPtr) seedPtr,
+                            configPtr,
+                            channelManager.Handle,
+                            chainWatchInterfaceDelegatesHolder.InstallWatchTx,
+                            chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
+                            chainWatchInterfaceDelegatesHolder.WatchAllTxn,
+                            chainWatchInterfaceDelegatesHolder.GetChainUtxo,
+                            chainWatchInterfaceDelegatesHolder.FilterBlock,
+                            chainWatchInterfaceDelegatesHolder.ReEntered,
+                            loggerDelegatesHolder.Log,
+                            (IntPtr) secretPtr,
+                            out handle
                         );
+                    }
+                    else
+                    {
+                        var networkGraphB = networkGraph.ToBytes();
+                        fixed (byte* b = networkGraphB)
+                        {
+                            Interop.create_peer_manager_from_net_graph(
+                                (IntPtr) seedPtr,
+                                configPtr,
+                                channelManager.Handle,
+                                chainWatchInterfaceDelegatesHolder.InstallWatchTx,
+                                chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
+                                chainWatchInterfaceDelegatesHolder.WatchAllTxn,
+                                chainWatchInterfaceDelegatesHolder.GetChainUtxo,
+                                chainWatchInterfaceDelegatesHolder.FilterBlock,
+                                chainWatchInterfaceDelegatesHolder.ReEntered,
+                                loggerDelegatesHolder.Log,
+                                (IntPtr) secretPtr,
+                                (IntPtr)b,
+                                (UIntPtr)networkGraphB.Length,
+                                out handle
+                            );
+                        }
+                    }
                     var objectsToKeepAlive = new object[]{chainWatchInterfaceDelegatesHolder, loggerDelegatesHolder};
                     return new PeerManager(handle, channelManager, blockNotifier, tickIntervalMSec, objectsToKeepAlive);
                 }

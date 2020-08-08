@@ -126,7 +126,7 @@ namespace NRustLightning.Server.Services
                         // we tried enough. creating new one.
                     }
 
-                    using var blockSource = new BitcoinRPCBlockSource(nbx.RPCClient);
+                    var blockSource = new BitcoinRPCBlockSource(nbx.RPCClient);
                     var currentBlockHeader = await nbx.RPCClient.GetBlockHeaderAsync((await nbx.RPCClient.GetBestBlockHashAsync()));
                     if (manyChannelMonitor is null)
                     {

@@ -62,6 +62,66 @@ namespace NRustLightning
                 out handle),
                 check);
         
+        [DllImport(RustLightning, EntryPoint = "create_peer_manager_from_net_graph", ExactSpelling = true,
+            CallingConvention = CallingConvention.Cdecl)]
+        private static extern unsafe FFIResult _create_peer_manager_from_net_graph(
+            IntPtr seedPtr,
+            UserConfig* userConfig,
+            
+            ChannelManagerHandle channelManagerHandle,
+            ref InstallWatchTx installWatchTx,
+            ref InstallWatchOutPoint installWatchOutPoint,
+            ref WatchAllTxn watchAllTxn,
+            ref GetChainUtxo getChainUtxo,
+            ref FilterBlock filterBlock,
+            ref ReEntered reEntered,
+            
+            ref Log log,
+            
+            IntPtr ourNodeSecret,
+            IntPtr networkGraphBufPtr,
+            UIntPtr networkGraphBufLen,
+            out PeerManagerHandle handle
+            );
+
+        internal static unsafe FFIResult create_peer_manager_from_net_graph(
+            IntPtr seed,
+            UserConfig* userConfig,
+            
+            ChannelManagerHandle channelManagerHandle,
+            InstallWatchTx installWatchTx,
+            InstallWatchOutPoint installWatchOutPoint,
+            WatchAllTxn watchAllTxn,
+            GetChainUtxo getChainUtxo,
+            FilterBlock filterBlock,
+            ReEntered reEntered,
+            
+            Log log,
+            
+            IntPtr ourNodeSecret,
+            IntPtr networkGraphBufPtr,
+            UIntPtr networkGraphBufLen,
+            out PeerManagerHandle handle,
+            bool check = true
+            ) =>
+            MaybeCheck(_create_peer_manager_from_net_graph(
+                seed,
+                userConfig,
+                channelManagerHandle,
+                ref installWatchTx,
+                ref installWatchOutPoint,
+                ref watchAllTxn,
+                ref getChainUtxo,
+                ref filterBlock,
+                ref reEntered,
+                
+                ref log,
+                ourNodeSecret,
+                networkGraphBufPtr,
+                networkGraphBufLen,
+                out handle),
+                check);
+        
         
         [DllImport(RustLightning, EntryPoint = "new_inbound_connection", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _new_inbound_connection(
