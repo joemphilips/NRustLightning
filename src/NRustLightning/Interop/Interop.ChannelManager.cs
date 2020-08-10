@@ -273,6 +273,19 @@ namespace NRustLightning
         
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "broadcast_node_announcement",
+            ExactSpelling = true)]
+        static extern unsafe FFIResult _broadcast_node_announcement(byte* rgb, IntPtr alias, ref FFIBytes addressesBytes,
+            ChannelManagerHandle handle);
+
+        internal static unsafe FFIResult broadcast_node_announcement(byte* rgb, IntPtr alias, ref FFIBytes addressesBytes,
+            ChannelManagerHandle handle, bool check = true)
+        {
+            return MaybeCheck(_broadcast_node_announcement(rgb, alias, ref addressesBytes, handle), check);
+        }
+        
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "process_pending_htlc_forwards",
             ExactSpelling = true)]
         static extern FFIResult _process_pending_htlc_forwards(ChannelManagerHandle handle);

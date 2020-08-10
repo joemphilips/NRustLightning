@@ -3,12 +3,14 @@ namespace NRustLightning.RustLightningTypes
 open System
 open System.Collections.Generic
 open System.IO
+open System.Net
 open System.Runtime.CompilerServices
 open NBitcoin
 open DotNetLightning.Utils.Primitives
 open DotNetLightning.Utils
 open DotNetLightning.Serialize
 open DotNetLightning.Core.Utils.Extensions
+open DotNetLightning.Serialize.Msgs
 
 [<AutoOpen>]
 module PrimitiveStaticExtensions =
@@ -165,6 +167,17 @@ type PrimitiveExtensions() =
     static member GetBytesBigEndian(this: uint16) =
         let d = BitConverter.GetBytes(this)
         if BitConverter.IsLittleEndian then (d |> Array.rev) else d
+        
+    static member ToSystemAddress(this: NetAddress) =
+        match this with
+        | IPv4 n ->
+            IPEndPoint(IPAddress(n.Addr), (int)n.Port)
+        | IPv6 n ->
+            IPEndPoint(IPAddress(n.Addr), (int)n.Port)
+        | OnionV2 n ->
+            raise <| NotSupportedException()
+        | OnionV3 n ->
+            raise <| NotSupportedException()
         
 
 type Parsers =

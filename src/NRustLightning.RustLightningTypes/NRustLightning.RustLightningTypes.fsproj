@@ -13,6 +13,7 @@
         <Compile Include="RouteHint.fs" />
         <Compile Include="NetworkGraph.fs" />
         <Compile Include="ChannelKeys.fs" />
+        <Compile Include="NetAddresses.fs" />
     </ItemGroup>
 
     <ItemGroup>

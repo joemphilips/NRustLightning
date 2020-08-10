@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using DotNetLightning.Serialize.Msgs;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
@@ -280,6 +281,28 @@ namespace NRustLightning
             {
                 var ffiOutPoint = new FFIOutPoint(fundingTxo);
                 Interop.funding_transaction_generated((IntPtr)temporaryChannelIdPtr, ffiOutPoint, Handle);
+            }
+        }
+
+        public unsafe void BroadcastNodeAnnouncement(Primitives.RGB rgb, uint256 alias,
+            IList<NetAddress> addresses)
+        {
+            if (rgb == null) throw new ArgumentNullException(nameof(rgb));
+            if (alias == null) throw new ArgumentNullException(nameof(alias));
+            if (addresses == null) throw new ArgumentNullException(nameof(addresses));
+            if (addresses.Count == 0) throw new ArgumentException($"{nameof(addresses)} was empty");
+
+            var rgbBytes = stackalloc byte[3];
+            rgbBytes[0] = rgb.Red;
+            rgbBytes[1] = rgb.Green;
+            rgbBytes[2] = rgb.Blue;
+            var aliasBytes = alias.ToBytes(false);
+            var addressesBytes = addresses.ToBytes();
+            fixed (byte* aliasPtr = aliasBytes)
+            fixed (byte* addressesPtr = addressesBytes)
+            {
+                var a = new FFIBytes((IntPtr)addressesPtr, (UIntPtr)addressesBytes.Length);
+                Interop.broadcast_node_announcement(rgbBytes, (IntPtr)aliasPtr, ref a, Handle);
             }
         }
 
