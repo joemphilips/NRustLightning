@@ -11,10 +11,8 @@ using NRustLightning.Infrastructure;
 using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Models;
 using NRustLightning.Interfaces;
-using NRustLightning.Server.Tests.Support;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Sdk;
 using Network = NBitcoin.Network;
 
 namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
@@ -38,7 +36,7 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
             }
 
             public Stack<Block> Blocks;
-            public void BlockConnected(Block block, uint height, Primitives.LNOutPoint key = null)
+            public void BlockConnected(Block block, uint height, Primitives.LNOutPoint? key = null)
             {
                 _helper?.WriteLine($"Connecting block {block.Header.GetHash()} in height {height}");
                 Assert.Equal(Blocks.Count, (int)height);
@@ -46,7 +44,7 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
                 Blocks.Push(block);
             }
 
-            public void BlockDisconnected(BlockHeader header, uint height, Primitives.LNOutPoint key = null)
+            public void BlockDisconnected(BlockHeader header, uint height, Primitives.LNOutPoint? key = null)
             {
                 _helper?.WriteLine($"Disconnecting block {header.GetHash()} from {header.HashPrevBlock} in height {height}");
                 Assert.Equal(Blocks.Count - 1, (int)height);
@@ -57,7 +55,6 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
 
         private readonly DockerFixture _dockerFixture;
         private readonly ITestOutputHelper _output;
-
         private readonly ILoggerFactory _loggerFactory;
         private readonly ExplorerClient _cli; 
         public BlockSourceTests(DockerFixture dockerFixture, ITestOutputHelper output)
@@ -93,8 +90,14 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
             var newTipHash = await c.GetBestBlockHashAsync();
             var newTip = await c.GetBlockAsync(newTipHash, GetBlockVerbosity.WithFullTx);
             Assert.True(oldTip.Height < newTip.Height);
-            await listener.SyncChainListener(oldTipHash, newTip.Header, (uint)newTip.Height, new List<BlockHeaderData>(), blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLowerFork)));
+            var cache = new List<BlockHeaderData>();
+            await listener.SyncChainListener(oldTipHash, newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLowerFork)));
             Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+            
+            // do it again with cache
+            var listener2 = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
+            await listener2.SyncChainListener(oldTip.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLowerFork)));
+            Assert.True(listener2.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
         }
 
         [Fact]
@@ -123,8 +126,14 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
             await c.InvalidateBlockAsync(nextBlockOfRoot.GetHash());
             await c.GenerateToOwnAddressAsync(2);
             var newTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
-            await listener.SyncChainListener(oldTip?.Header.GetHash(), newTip.Header, (uint)newTip.Height, new List<BlockHeaderData>(), blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigherFork)));
+            var cache = new List<BlockHeaderData>();
+            await listener.SyncChainListener(oldTip?.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigherFork)));
             Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+            
+            // do it again with cache
+            var listener2 = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
+            await listener2.SyncChainListener(oldTip?.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigherFork)));
+            Assert.True(listener2.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
         }
 
         [Fact]
@@ -139,17 +148,26 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
 
             var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
             var listener = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
-            GetBlockRPCResponse? oldTip = null;
 
             await c.GenerateToOwnAddressAsync(1);
-            oldTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            var oldTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
             listener.BlockConnected(oldTip.Block, (uint)oldTip.Height);
 
             await c.GenerateToOwnAddressAsync(2);
 
             var newTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
-            await listener.SyncChainListener(oldTip.Header.GetHash(), newTip.Header, (uint)newTip.Height, new List<BlockHeaderData>(), blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigherFork)));
+            var cache = new List<BlockHeaderData>();
+            await listener.SyncChainListener(oldTip.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLower)));
             Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+            
+            // do it again with cache
+            var blockB = await c.GetBlockAsync(newTip.Block.Header.HashPrevBlock, GetBlockVerbosity.WithFullTx);
+            Assert.Equal(2, cache.Count);
+            Assert.True(blockB.Block.Header.ToBytes().SequenceEqual(cache[0].Header.ToBytes()));
+            Assert.True(newTip.Block.Header.ToBytes().SequenceEqual(cache[1].Header.ToBytes()));
+            var listener2 = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
+            await listener2.SyncChainListener(oldTip.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLower)));
+            Assert.True(listener2.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
         }
 
         [Fact]
@@ -176,8 +194,15 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
             await c.InvalidateBlockAsync(blockB.GetHash());
             
             var newTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
-            await listener.SyncChainListener(oldTip?.Header.GetHash(), newTip.Header, (uint)newTip.Height, new List<BlockHeaderData>(), blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigherFork)));
+            var cache = new List<BlockHeaderData>();
+            await listener.SyncChainListener(oldTip?.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigher)));
             Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+            
+            // do it again with cache
+            var listener2 = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
+            await listener2.SyncChainListener(oldTip?.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigher)));
+            Assert.True(listener2.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
         }
+        
     }
 }
