@@ -46,6 +46,10 @@ jobs:
         run: |
           dotnet build --configuration Debug src/NRustLightning
 
-      - name: Run test in ${{ matrix.os }}
+      - name: Run unit test in ${{ matrix.os }}
         if: startsWith(matrix.dotnet, '3.1')
         run: dotnet test tests/NRustLightning.Tests -- RunConfiguration.TestSessionTimeout=30000
+
+      - name: Run p2p network test in ${{ matrix.os }}
+        if: startsWith(matrix.dotnet, '3.1')
+        run: dotnet test tests/NRustLightning.Net.Tests -- RunConfiguration.TestSessionTimeout=30000
