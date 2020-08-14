@@ -70,7 +70,7 @@ namespace NRustLightning.Server
                 {
                     Version = "v1",
                     Title = "NRustLightning API",
-                    Description = "API endpoint for NRustlightning.Server",
+                    Description = "API endpoint for NRustLightning.Server",
                     TermsOfService = new Uri("https://example.com/terms"),
                     License = new OpenApiLicense
                     {
