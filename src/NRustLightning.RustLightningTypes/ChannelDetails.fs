@@ -44,7 +44,6 @@ type ChannelDetails = {
         ls.Write(this.UserId, false)
         ls.Write(this.OutboundCapacityMSat, false)
         ls.Write(this.InboundCapacityMSat, false)
-        ls.Write(this.InboundCapacityMSat, false)
         ls.Write(if this.IsLive then 1uy else 0uy)
         
     member this.ToBytes() =

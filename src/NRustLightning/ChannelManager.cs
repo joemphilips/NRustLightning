@@ -152,7 +152,9 @@ namespace NRustLightning
                     in overrideConfig);
             }
         }
-        
+
+        public void CreateChannel(PubKey theirNetworkKey, Money channelValue, LNMoney pushMSat, ulong userId) =>
+            CreateChannel(theirNetworkKey, (ulong)channelValue.Satoshi, (ulong)pushMSat.MilliSatoshi, userId);
         public unsafe void CreateChannel(PubKey theirNetworkKey, ulong channelValueSatoshis, ulong pushMSat, ulong userId)
         {
             if (theirNetworkKey == null) throw new ArgumentNullException(nameof(theirNetworkKey));

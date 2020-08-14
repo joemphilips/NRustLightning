@@ -78,14 +78,13 @@ namespace NRustLightning.Tests
         {
             using var channelManager = PeerManagerTests.getTestPeerManager().ChannelManager;
             var pk = _pubKeys[0];
-            channelManager.CreateChannel(pk, 100000, 1000, UInt64.MaxValue);
+            channelManager.CreateChannel(pk, Money.Satoshis(100000), LNMoney.MilliSatoshis(1000L), UInt64.MaxValue);
             var c = channelManager.ListChannels(_pool);
             Assert.Single(c);
             Assert.Equal(c[0].RemoteNetworkId, pk);
             Assert.Equal(100000U, c[0].ChannelValueSatoshis);
-            // Before fully open, It must be 0.
-            Assert.Equal(0U, c[0].InboundCapacityMSat);
-            Assert.Equal(0U, c[0].OutboundCapacityMSat);
+            Assert.Equal(1000U, c[0].InboundCapacityMSat);
+            Assert.Equal(100000UL * 1000UL - 1000UL, c[0].OutboundCapacityMSat);
             
             Assert.False(c[0].IsLive);
             channelManager.CloseChannel(c[0].ChannelId);
