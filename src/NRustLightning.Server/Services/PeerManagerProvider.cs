@@ -132,7 +132,7 @@ namespace NRustLightning.Server.Services
                         // we tried enough. creating new one.
                     }
 
-                    var blockSource = new BitcoinRPCBlockSource(nbx.RPCClient);
+                    using var blockSource = new BitcoinRPCBlockSource(nbx.RPCClient);
                     var currentBlockHeader = await nbx.RPCClient.GetBlockHeaderAsync((await nbx.RPCClient.GetBestBlockHashAsync()));
                     if (manyChannelMonitor is null)
                     {
@@ -145,7 +145,6 @@ namespace NRustLightning.Server.Services
                             latestBlockHashes,
                             currentBlockHeader,
                             currentBlockHeight, 
-                           new List<BlockHeaderData>(),
                             blockSource,
                             n.NBitcoinNetwork,
                             _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(ManyChannelMonitor)}"));
@@ -168,7 +167,7 @@ namespace NRustLightning.Server.Services
                         blockNotifier.RegisterChannelManager(chanMan);
                         // sync channel manager to the current state
                         await blockNotifier.SyncChainListener(latestBlockHash, currentBlockHeader, currentBlockHeight,
-                            new List<BlockHeaderData>(), blockSource, n.NBitcoinNetwork,
+                            blockSource, n.NBitcoinNetwork,
                             _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(BlockNotifier)}"));
                     }
                     blockNotifier.RegisterManyChannelMonitor(manyChannelMonitor);

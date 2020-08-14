@@ -133,7 +133,7 @@ namespace NRustLightning.Infrastructure.Interfaces
         }
         
         internal static async Task FindForkStep(this IBlockSource blockSource, IList<ForkStep> stepsTx,
-            BlockHeaderData currentHeader, BlockHeaderData prevHeader, List<BlockHeaderData> headBlocks, Network n,
+            BlockHeaderData currentHeader, BlockHeaderData prevHeader, Network n,
             CancellationToken ct = default)
         {
             while (true)
@@ -144,15 +144,8 @@ namespace NRustLightning.Infrastructure.Interfaces
                     stepsTx.Add(new ForkStep(ForkStepKind.DisconnectBlock, prevHeader));
                     stepsTx.Add(new ForkStep(ForkStepKind.ConnectBlock, currentHeader));
                     BlockHeaderData newPrevHeader;
-                    if (headBlocks.Count > 0)
-                    {
-                        newPrevHeader = headBlocks.Last();
-                    }
-                    else
-                    {
-                        newPrevHeader = await blockSource.GetHeader(prevHeader.Header.HashPrevBlock, prevHeader.Height - 1, ct);
-                        CheckBuildsOn(prevHeader, newPrevHeader, n);
-                    }
+                    newPrevHeader = await blockSource.GetHeader(prevHeader.Header.HashPrevBlock, prevHeader.Height - 1, ct);
+                    CheckBuildsOn(prevHeader, newPrevHeader, n);
 
                     stepsTx.Add(new ForkStep(ForkStepKind.ForkPoint, newPrevHeader.Clone()));
                     break;
@@ -187,18 +180,10 @@ namespace NRustLightning.Infrastructure.Interfaces
                 else if (prevHeader.Height > currentHeader.Height)
                 {
                     stepsTx.Add(new ForkStep(ForkStepKind.DisconnectBlock, prevHeader.Clone()));
-                    if (headBlocks.Count != 0)
-                    {
-                        prevHeader = headBlocks.Last().Clone();
-                        headBlocks.RemoveAt(headBlocks.Count - 1);
-                    }
-                    else
-                    {
-                        var newPrevHeader =
-                            await blockSource.GetHeader(prevHeader.Header.HashPrevBlock, (prevHeader.Height - 1), ct);
-                        CheckBuildsOn(prevHeader, newPrevHeader, n);
-                        prevHeader = newPrevHeader;
-                    }
+                    var newPrevHeader =
+                        await blockSource.GetHeader(prevHeader.Header.HashPrevBlock, (prevHeader.Height - 1), ct);
+                    CheckBuildsOn(prevHeader, newPrevHeader, n);
+                    prevHeader = newPrevHeader;
                 }
                 else
                 {
@@ -209,23 +194,15 @@ namespace NRustLightning.Infrastructure.Interfaces
                     stepsTx.Add(new ForkStep(ForkStepKind.DisconnectBlock, prevHeader.Clone()));
                     currentHeader = newCurrentHeader;
 
-                    if (headBlocks.Count != 0)
-                    {
-                        prevHeader = headBlocks.Last().Clone();
-                        headBlocks.RemoveAt(headBlocks.Count - 1);
-                    }
-                    else
-                    {
-                        var newPrevHeader =
-                            await blockSource.GetHeader(prevHeader.Header.HashPrevBlock, prevHeader.Height - 1, ct);
-                        CheckBuildsOn(prevHeader, newPrevHeader, n);
-                        prevHeader = newPrevHeader;
-                    }
+                    var newPrevHeader =
+                        await blockSource.GetHeader(prevHeader.Header.HashPrevBlock, prevHeader.Height - 1, ct);
+                    CheckBuildsOn(prevHeader, newPrevHeader, n);
+                    prevHeader = newPrevHeader;
                 }
             }
         }
 
-        private static async Task<List<ForkStep>> FindFork(this IBlockSource blockSource, BlockHeaderData currentHeader, BlockHeaderData prevHeader, List<BlockHeaderData> headBlocks, Network n)
+        private static async Task<List<ForkStep>> FindFork(this IBlockSource blockSource, BlockHeaderData currentHeader, BlockHeaderData prevHeader, Network n)
         {
             var stepsTx = new List<ForkStep>();
             if (currentHeader.Equals(prevHeader))
@@ -233,32 +210,18 @@ namespace NRustLightning.Infrastructure.Interfaces
                 return stepsTx;
             }
 
-            if (headBlocks.Count != 0)
-            {
-                if (!headBlocks.Last().Equals(currentHeader))
-                {
-                    throw new Exception($"Bogus cache data actual height: {headBlocks.Last().Height}. expected height: {currentHeader.Height}");
-                }
-                headBlocks = headBlocks.SkipLast(1).ToList();
-            }
-
-            await blockSource.FindForkStep(stepsTx, currentHeader, prevHeader, headBlocks, n);
+            await blockSource.FindForkStep(stepsTx, currentHeader, prevHeader, n);
             return stepsTx;
         }
 
         private static async Task SyncOneChannelListener(this IChainListener chainListener, Primitives.LNOutPoint? maybeKey,
-            uint256 oldBlockHash, BlockHeader newBlockHeader, uint currentHeight, List<BlockHeaderData> headBlocks,
+            uint256 oldBlockHash, BlockHeader newBlockHeader, uint currentHeight,
             IBlockSource blockSource, Network n, ILogger? logger = null
         )
         {
             var oldHeaderData = await blockSource.GetHeader(oldBlockHash);
             var newHeaderData = new BlockHeaderData(currentHeight, newBlockHeader);
-            var events = await blockSource.FindFork(newHeaderData, oldHeaderData, headBlocks, n);
-            Console.WriteLine($"Result for FindFork is");
-            foreach (var e in events)
-            {
-                Console.WriteLine($"event type is {e.Kind}. header hash is {e.HeaderData.Header.GetHash()}");
-            }
+            var events = await blockSource.FindFork(newHeaderData, oldHeaderData, n);
                 
             uint256? lastDisconnectTip = null;
             BlockHeaderData? newTip = null;
@@ -268,16 +231,6 @@ namespace NRustLightning.Infrastructure.Interfaces
                 {
                     case ForkStepKind.DisconnectBlock:
                         logger?.LogDebug($"DisConnecting block_header {e.HeaderData.Header.GetHash()} in height: {e.HeaderData.Height}");
-                        var t = headBlocks.LastOrDefault();
-                        if (t != null)
-                        {
-                            if (!t.Equals(e.HeaderData))
-                            {
-                                logger?.LogDebug($"Did not match the t.Header: {t.Header.GetHash()}. height: {t.Height}");
-                                throw new InvalidDataException("Cached headBlocks does not match to the one expected");
-                            }
-                            headBlocks.RemoveAt(headBlocks.Count -  1);
-                        }
                         chainListener.BlockDisconnected(e.HeaderData.Header, e.HeaderData.Height, maybeKey);
                         lastDisconnectTip = e.HeaderData.Header.HashPrevBlock;
                         break;
@@ -298,22 +251,6 @@ namespace NRustLightning.Infrastructure.Interfaces
             // as there is no fork.
             Debug.Assert(isBothNull || isBothHaveValue);
 
-            if (isBothHaveValue)
-            {
-                if (headBlocks.Count > 0)
-                {
-                    if (!headBlocks.Last().Equals(newTip))
-                    {
-                        throw new InvalidDataException("Cached headBlocks does not match to the one expected");
-                    }
-                    Debug.Assert(newTip.Header.GetHash().Equals(lastDisconnectTip));
-                }
-            }
-            else
-            {
-                newTip = oldHeaderData;
-            }
-
             events.Reverse();
             foreach (var headerData in from e in events where e.Kind == ForkStepKind.ConnectBlock select e.HeaderData)
             {
@@ -323,25 +260,24 @@ namespace NRustLightning.Infrastructure.Interfaces
                 
                 logger?.LogDebug($"Connecting block {headerData.Header.GetHash()}");
                 chainListener.BlockConnected(block, headerData.Height, maybeKey);
-                headBlocks.Add(headerData.Clone());
                 newTip = headerData;
             }
         }
 
         public static Task SyncChainListener(this IChainListener chainListener, uint256 oldLatestBlockHash,
-            BlockHeader newBlockHeader, uint currentHeight, List<BlockHeaderData> headBlocks, IBlockSource blockSource,
+            BlockHeader newBlockHeader, uint currentHeight, IBlockSource blockSource,
             Network n, ILogger? logger = null)
         {
-            return SyncOneChannelListener(chainListener, null, oldLatestBlockHash, newBlockHeader, currentHeight, headBlocks,
+            return SyncOneChannelListener(chainListener, null, oldLatestBlockHash, newBlockHeader, currentHeight,
                 blockSource, n, logger);
         }
         public static async Task SyncChannelMonitor(this ManyChannelMonitor chainListener,
             IDictionary<Primitives.LNOutPoint, uint256> oldBlockHashes, BlockHeader newBlockHeader, uint currentHeight,
-            List<BlockHeaderData> headBlocks, IBlockSource blockSource, Network n, ILogger? logger = null)
+            IBlockSource blockSource, Network n, ILogger? logger = null)
         {
             foreach (var kvp in oldBlockHashes)
             {
-                await chainListener.SyncOneChannelListener(kvp.Key, kvp.Value, newBlockHeader, currentHeight, headBlocks, blockSource, n, logger);
+                await chainListener.SyncOneChannelListener(kvp.Key, kvp.Value, newBlockHeader, currentHeight, blockSource, n, logger);
             }
         }
     }
