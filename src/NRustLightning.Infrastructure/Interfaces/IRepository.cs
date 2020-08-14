@@ -6,12 +6,12 @@ using DotNetLightning.Payment;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
+using NRustLightning.RustLightningTypes;
 
 namespace NRustLightning.Infrastructure.Interfaces
 {
     public interface IRepository
     {
-        
         
         Task<Primitives.PaymentPreimage?> GetPreimage(Primitives.PaymentHash hash, CancellationToken ct = default);
         Task SetPreimage(Primitives.PaymentPreimage paymentPreimage, CancellationToken ct = default);
@@ -23,6 +23,9 @@ namespace NRustLightning.Infrastructure.Interfaces
 
         Task SetRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default);
         Task RemoveRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default);
+
+        Task<NetworkGraph?> GetNetworkGraph(CancellationToken ct = default);
+        Task SetNetworkGraph(NetworkGraph g, CancellationToken ct = default);
 
         /// <summary>
         /// Returns ChannelManager with its latest block hash when it is serialized.

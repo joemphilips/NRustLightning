@@ -18,7 +18,7 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
         [Trait("IntegrationTest", "LNFixture")]
         public async Task CanResumeOutboundChannelsBy_channel_reestablish()
         {
-            await _clients.ConnectAll();
+            await _clients.OutBoundConnectAll();
             await _clients.PrepareFunds();
             await _clients.CreateEnoughTxToEstimateFee();
             await OutBoundChannelOpenRoundtrip(_clients, _clients.CLightningClient);

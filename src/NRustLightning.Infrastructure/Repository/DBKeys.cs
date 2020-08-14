@@ -9,5 +9,8 @@ namespace NRustLightning.Infrastructure.Repository
         public const string ManyChannelMonitor = "mc";
         public const string ManyChannelMonitorVersion = "v1";
         public const string RemoteEndPoints = "re";
+
+        public const string NetworkGraph = "n";
+        public const string NetworkGraphVersion = "v1";
     }
 }

@@ -3,14 +3,8 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Channels;
-using Microsoft.Extensions.Logging;
-using NRustLightning.Interfaces;
-using NRustLightning.Net;
-using NRustLightning.Net.Sockets;
-using NRustLightning.Server.Interfaces;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-namespace NRustLightning.Server.Services
+namespace NRustLightning.Net
 {
     public class SocketDescriptorFactory : ISocketDescriptorFactory
     {

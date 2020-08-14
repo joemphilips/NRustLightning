@@ -30,7 +30,7 @@ namespace NRustLightning.Server.Controllers
         private readonly RepositoryProvider _repositoryProvider;
         private readonly InvoiceService _invoiceService;
 
-        public PaymentController(IRepository repository,
+        public PaymentController(
             NRustLightningNetworkProvider networkProvider, RepositoryProvider repositoryProvider, InvoiceService invoiceService)
         {
             _networkProvider = networkProvider;

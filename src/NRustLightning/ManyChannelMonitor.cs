@@ -64,7 +64,7 @@ namespace NRustLightning
             FFIOperationWithVariableLengthReturnBuffer func =
                 (bufOut, bufLength) =>
                 {
-                    var ffiResult = Interop.serialize_many_channel_monitor(bufOut, bufLength, out var actualLength, Handle);
+                    var ffiResult = Interop.serialize_many_channel_monitor(bufOut, bufLength, out var actualLength, Handle, false);
                     return (ffiResult, actualLength);
                 };
 
@@ -155,12 +155,12 @@ namespace NRustLightning
             }
         }
 
-        public void BlockConnected(Block block, uint height, Primitives.LNOutPoint key)
+        public void BlockConnected(Block block, uint height, Primitives.LNOutPoint? key)
         {
             TellBlockConnectedAfterResume(block, height, key.Item);
         }
 
-        public void BlockDisconnected(BlockHeader header, uint height, Primitives.LNOutPoint key)
+        public void BlockDisconnected(BlockHeader header, uint height, Primitives.LNOutPoint? key)
         {
             TellBlockDisconnectedAfterResume(header.GetHash(), height, key.Item);
         }

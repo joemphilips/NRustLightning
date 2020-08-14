@@ -70,7 +70,7 @@ namespace NRustLightning.Server.P2P
                 await _repository.RemoveRemoteEndPoint(connection.RemoteEndPoint);
             };
             await _repository.SetRemoteEndPoint(connection.RemoteEndPoint);
-            var conn = new ConnectionLoop(connection.Transport, descriptor, peerMan, _loggerFactory.CreateLogger<ConnectionLoop>(), writeReceiver, EventNotify.Writer, cleanup);
+            var conn = new ConnectionLoop(connection.Transport, descriptor, peerMan, writeReceiver, EventNotify.Writer, _loggerFactory.CreateLogger<ConnectionLoop>(), cleanup);
             _connectionLoops.TryAdd(connection.RemoteEndPoint, conn);
             conn.Start(connection.ConnectionClosed);
             await conn.ExecutionTask;
@@ -113,7 +113,7 @@ namespace NRustLightning.Server.P2P
                 };
                 await _repository.SetRemoteEndPoint(remoteEndPoint, ct);
                 var conn = new ConnectionLoop(connectionContext.Transport, descriptor, peerMan,
-                    _loggerFactory.CreateLogger<ConnectionLoop>(), writeReceiver, EventNotify.Writer, cleanup);
+                    writeReceiver, EventNotify.Writer,_loggerFactory.CreateLogger<ConnectionLoop>(), cleanup);
                 _connectionLoops.TryAdd(remoteEndPoint, conn);
                 Task.Run(() => conn.Start(ct));
             }

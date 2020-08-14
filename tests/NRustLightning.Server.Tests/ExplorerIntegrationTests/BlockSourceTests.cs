@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Network = NBitcoin.Network;
 
-namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
+namespace NRustLightning.Server.Tests.ExplorerIntegrationTests
 {
     public class BlockSourceTests : IClassFixture<DockerFixture>
     {
@@ -38,7 +39,7 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
             public Stack<Block> Blocks;
             public void BlockConnected(Block block, uint height, Primitives.LNOutPoint? key = null)
             {
-                _helper?.WriteLine($"Connecting block {block.Header.GetHash()} in height {height}");
+                _helper?.WriteLine($"Connecting block {block.Header.GetHash()} in height {height}: Block.Count is {Blocks.Count}");
                 Assert.Equal(Blocks.Count, (int)height);
                 Assert.Equal(block.Header.HashPrevBlock, Blocks.Peek().GetHash());
                 Blocks.Push(block);
@@ -56,15 +57,65 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
         private readonly DockerFixture _dockerFixture;
         private readonly ITestOutputHelper _output;
         private readonly ILoggerFactory _loggerFactory;
-        private readonly ExplorerClient _cli; 
+        private readonly ExplorerClient _cli;
+
         public BlockSourceTests(DockerFixture dockerFixture, ITestOutputHelper output)
         {
             _dockerFixture = dockerFixture;
             _output = output;
-            _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+            _loggerFactory = LoggerFactory.Create(builder =>
+            {
+                 builder.AddConsole();
+                 builder.AddDebug();
+            });
             _cli = _dockerFixture.StartExplorerFixtureAsync(_output, nameof(BlockSourceTests)).GetAwaiter().GetResult();
         }
         
+        [Fact]
+        [Trait("IntegrationTest", "ExplorerFixture")]
+        public async Task ResumeChainListenerFromLower()
+        {
+            // root -> A -> B -> C
+            // resume from A to C
+
+            var c = _cli.RPCClient;
+            var blockSource = new BitcoinRPCBlockSource(c);
+
+            var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            var listener = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
+
+            await c.GenerateToOwnAddressAsync(1);
+            var oldTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            listener.BlockConnected(oldTip.Block, (uint)oldTip.Height);
+
+            await c.GenerateToOwnAddressAsync(2);
+
+            var newTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
+            var cache = new List<BlockHeaderData>();
+            await listener.SyncChainListener(oldTip.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLower)));
+            Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+            Assert.Equal(listener.Blocks.Count - 1, newTip.Height);
+            
+            var blockB = await c.GetBlockAsync(newTip.Block.Header.HashPrevBlock, GetBlockVerbosity.WithFullTx);
+            Assert.Equal(listener.Blocks.Count - 2, blockB.Height);
+            Assert.Equal(listener.Blocks.ElementAt(1).Header.GetHash(), blockB.Block.Header.GetHash());
+            Assert.True(listener.Blocks.ElementAt(1).ToBytes().SequenceEqual(blockB.Block.ToBytes()));
+            
+            // do it again with cache
+            Assert.Equal(2, cache.Count);
+            Assert.True(blockB.Block.Header.ToBytes().SequenceEqual(cache[0].Header.ToBytes()));
+            Assert.True(newTip.Block.Header.ToBytes().SequenceEqual(cache[1].Header.ToBytes()));
+            Assert.Equal(blockB.Height, (int)cache[0].Height);
+            Assert.Equal(newTip.Height, (int)cache[1].Height);
+            var listener2 = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
+            listener2.BlockConnected(oldTip.Block, (uint)oldTip.Height);
+            await listener2.SyncChainListener(oldTip.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLower)));
+            Assert.True(listener2.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+            Assert.Equal(listener2.Blocks.Count - 2, blockB.Height);
+            Assert.Equal(listener2.Blocks.ElementAt(1).Header.GetHash(), blockB.Block.Header.GetHash());
+            Assert.True(listener2.Blocks.ElementAt(1).ToBytes().SequenceEqual(blockB.Block.ToBytes()));
+        }
+
 
         [Fact]
         [Trait("IntegrationTest", "ExplorerFixture")]
@@ -94,10 +145,23 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
             await listener.SyncChainListener(oldTipHash, newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLowerFork)));
             Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
             
+            // check cache
+            var blockB = await c.GetBlockAsync(newTip.Block.Header.HashPrevBlock, GetBlockVerbosity.WithFullTx);
+            Assert.Equal(2, cache.Count);
+            Assert.Equal(blockB.Block.Header.GetHash(), cache[0].Header.GetHash());
+            Assert.Equal(newTip.Block.Header.GetHash(), cache[1].Header.GetHash());
+            Assert.Equal(blockB.Height, (int)cache[0].Height);
+            Assert.Equal(newTip.Height, (int)cache[1].Height);
+            
             // do it again with cache
             var listener2 = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
+            listener2.BlockConnected(oldTip.Block, (uint)oldTip.Height);
             await listener2.SyncChainListener(oldTip.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLowerFork)));
             Assert.True(listener2.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+            Assert.True(listener2.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
+            Assert.Equal(listener2.Blocks.Count - 2, blockB.Height);
+            Assert.Equal(listener2.Blocks.ElementAt(1).Header.GetHash(), blockB.Block.Header.GetHash());
+            Assert.True(listener2.Blocks.ElementAt(1).ToBytes().SequenceEqual(blockB.Block.ToBytes()));
         }
 
         [Fact]
@@ -133,40 +197,6 @@ namespace NRustLightning.Server.Tests.ExplorerIntergrationTests
             // do it again with cache
             var listener2 = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
             await listener2.SyncChainListener(oldTip?.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromHigherFork)));
-            Assert.True(listener2.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
-        }
-
-        [Fact]
-        [Trait("IntegrationTest", "ExplorerFixture")]
-        public async Task ResumeChainListenerFromLower()
-        {
-            // root -> A -> B -> C
-            // resume from A to C
-
-            var c = _cli.RPCClient;
-            var blockSource = new BitcoinRPCBlockSource(c);
-
-            var rootBlock = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
-            var listener = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
-
-            await c.GenerateToOwnAddressAsync(1);
-            var oldTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
-            listener.BlockConnected(oldTip.Block, (uint)oldTip.Height);
-
-            await c.GenerateToOwnAddressAsync(2);
-
-            var newTip = await c.GetBestBlockAsync(GetBlockVerbosity.WithFullTx);
-            var cache = new List<BlockHeaderData>();
-            await listener.SyncChainListener(oldTip.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLower)));
-            Assert.True(listener.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
-            
-            // do it again with cache
-            var blockB = await c.GetBlockAsync(newTip.Block.Header.HashPrevBlock, GetBlockVerbosity.WithFullTx);
-            Assert.Equal(2, cache.Count);
-            Assert.True(blockB.Block.Header.ToBytes().SequenceEqual(cache[0].Header.ToBytes()));
-            Assert.True(newTip.Block.Header.ToBytes().SequenceEqual(cache[1].Header.ToBytes()));
-            var listener2 = new DummyChainListener(rootBlock.Block, (uint)rootBlock.Height, _output);
-            await listener2.SyncChainListener(oldTip.Header.GetHash(), newTip.Header, (uint)newTip.Height, cache, blockSource, Network.RegTest, _loggerFactory.CreateLogger(nameof(ResumeChainListenerFromLower)));
             Assert.True(listener2.Blocks.Peek().ToBytes().SequenceEqual(newTip.Block.ToBytes()));
         }
 

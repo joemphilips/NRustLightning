@@ -187,8 +187,8 @@ type Parsers =
         use ls = new LightningReaderStream(ms)
         let ret = Dictionary()
         for i in 0..(int32 len - 1) do
-            let txid = ls.ReadUInt256(false)
+            let txid = ls.ReadUInt256(true)
             let index = ls.ReadUInt16(false)
             let outpoint = OutPoint(txid, uint32 index) |> LNOutPoint
-            ret.Add(outpoint, ls.ReadUInt256(false))
+            ret.Add(outpoint, ls.ReadUInt256(true))
         ret

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using NBitcoin;
 
 namespace NRustLightning.Infrastructure.Models
@@ -36,7 +37,7 @@ namespace NRustLightning.Infrastructure.Models
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return _height == other._height && _header.Equals(other._header);
+            return _height == other._height && _header.ToBytes().SequenceEqual(other._header.ToBytes());
         }
 
         public override bool Equals(object? obj)

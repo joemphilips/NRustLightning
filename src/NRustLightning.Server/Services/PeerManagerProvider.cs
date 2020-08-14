@@ -1,6 +1,8 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetLightning.Utils;
@@ -8,15 +10,18 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NBitcoin;
+using static NRustLightning.RustLightningTypes.PrimitiveExtensions;
 using NRustLightning.Adaptors;
 using NRustLightning.Infrastructure;
 using NRustLightning.Infrastructure.Configuration;
 using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Models;
+using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Infrastructure.Repository;
 using NRustLightning.Server.FFIProxies;
 using NRustLightning.Server.Interfaces;
+using NRustLightning.Server.P2P;
 
 namespace NRustLightning.Server.Services
 {
@@ -32,6 +37,7 @@ namespace NRustLightning.Server.Services
         private readonly RepositoryProvider _repositoryProvider;
         private Dictionary<string, PeerManager> _peerManagers = new Dictionary<string, PeerManager>();
         private Dictionary<string, ManyChannelMonitor> _manyChannelMonitors = new Dictionary<string, ManyChannelMonitor>();
+        private readonly MemoryPool<byte> _pool = MemoryPool<byte>.Shared;
 
         public PeerManagerProvider(
             INBXplorerClientProvider nbXplorerClientProvider,
@@ -135,7 +141,14 @@ namespace NRustLightning.Server.Services
                     // sync channel monitor to the current state.
                     else
                     {
-                        await manyChannelMonitor.SyncChannelMonitor(latestBlockHashes, currentBlockHeader, currentBlockHeight, new List<BlockHeaderData>(), blockSource, n.NBitcoinNetwork, _logger);
+                        await manyChannelMonitor.SyncChannelMonitor(
+                            latestBlockHashes,
+                            currentBlockHeader,
+                            currentBlockHeight, 
+                           new List<BlockHeaderData>(),
+                            blockSource,
+                            n.NBitcoinNetwork,
+                            _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(ManyChannelMonitor)}"));
                     }
                     
                     var chanManItems = await repo.GetChannelManager(new ChannelManagerReadArgs(_keysRepository, b, feeEst, logger, chainWatchInterface, n.NBitcoinNetwork, manyChannelMonitor), cancellationToken);
@@ -155,16 +168,47 @@ namespace NRustLightning.Server.Services
                         blockNotifier.RegisterChannelManager(chanMan);
                         // sync channel manager to the current state
                         await blockNotifier.SyncChainListener(latestBlockHash, currentBlockHeader, currentBlockHeight,
-                            new List<BlockHeaderData>(), blockSource, n.NBitcoinNetwork, _logger);
+                            new List<BlockHeaderData>(), blockSource, n.NBitcoinNetwork,
+                            _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(BlockNotifier)}"));
                     }
                     blockNotifier.RegisterManyChannelMonitor(manyChannelMonitor);
 
                     var peerManSeed = new byte[32];
                     RandomUtils.GetBytes(peerManSeed);
-                    var peerMan =
-                        PeerManager.Create(peerManSeed, conf, chainWatchInterface, logger, _keysRepository.GetNodeSecret().ToBytes(), chanMan, blockNotifier);
+                    var graph = await repo.GetNetworkGraph(cancellationToken);
+                    PeerManager peerMan;
+                    if (graph is null)
+                    {
+                        peerMan =
+                            PeerManager.Create(peerManSeed, conf, chainWatchInterface, logger,
+                                _keysRepository.GetNodeSecret().ToBytes(), chanMan, blockNotifier);
+                    }
+                    else
+                    {
+                        peerMan =
+                            PeerManager.Create(peerManSeed, conf, chainWatchInterface, logger,
+                                _keysRepository.GetNodeSecret().ToBytes(), chanMan, blockNotifier, 30000, graph);
+                        // Resume all previous connection. but only for public channels.
+                        var knownChannels = chanMan.ListChannels(_pool);
+                        var nodesToConnect =
+                            graph.Nodes
+                                .Where(node => node.Value.AnnouncementInfo != null)
+                                .Where(node => knownChannels.Any(c => c.RemoteNetworkId.Equals(node.Key.Value)))
+                                .Select(node => (node.Key.Value, node.Value.AnnouncementInfo.Value.Addresses));
+
+                        foreach (var (pk, addresses) in nodesToConnect)
+                        {
+                            // We don't want to refer to P2PConnectionHandler here. It will cause circular deps.
+                            // Thus instead of creating new outbound connection. Put params into work queue and delegate
+                            // The actual processing to another class.
+                            var chan = _channelProvider.GetOutboundConnectionRequestQueue(n);
+                            chan.Writer.TryWrite(new PeerConnectionString(pk, ToSystemAddress(addresses[0])));
+                        }
+                    }
+
                     _manyChannelMonitors.Add(n.CryptoCode, manyChannelMonitor);
                     _peerManagers.Add(n.CryptoCode, peerMan);
+
                 }
                 _logger.LogInformation("PeerManagerProvider started");
             }
@@ -176,10 +220,13 @@ namespace NRustLightning.Server.Services
             foreach (var n in _networkProvider.GetAll())
             {
                 var repo = _repositoryProvider.TryGetRepository(n);
+                if (n.CryptoCode.ToLowerInvariant() == "btc")
+                    Debug.Assert(repo != null);
                 if (repo != null)
                 {
                     await repo.SetManyChannelMonitor(_manyChannelMonitors[n.CryptoCode], cancellationToken);
                     await repo.SetChannelManager(_peerManagers[n.CryptoCode].ChannelManager, cancellationToken);
+                    await repo.SetNetworkGraph(_peerManagers[n.CryptoCode].GetNetworkGraph(_pool), cancellationToken);
                 }
             }
         }

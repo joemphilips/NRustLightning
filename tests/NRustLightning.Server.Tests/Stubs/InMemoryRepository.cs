@@ -11,6 +11,7 @@ using NRustLightning.Adaptors;
 using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Infrastructure.Networks;
+using NRustLightning.RustLightningTypes;
 
 namespace NRustLightning.Server.Tests.Stubs
 {
@@ -20,6 +21,7 @@ namespace NRustLightning.Server.Tests.Stubs
         private ConcurrentDictionary<Primitives.PaymentHash, Primitives.PaymentPreimage> _hashToPreimage = new ConcurrentDictionary<Primitives.PaymentHash, Primitives.PaymentPreimage>();
         private ChannelManager? latestChannelManager = null;
         private ManyChannelMonitor? latestManyChannelMonitor = null;
+        private NetworkGraph? latestNetworkGraph = null;
         
         private List<EndPoint> EndPoints = new List<EndPoint>();
         public Task<Primitives.PaymentPreimage?> GetPreimage(Primitives.PaymentHash hash, CancellationToken ct = default)
@@ -63,6 +65,17 @@ namespace NRustLightning.Server.Tests.Stubs
         public Task RemoveRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default)
         {
             EndPoints.Remove(remoteEndPoint);
+            return Task.CompletedTask;
+        }
+
+        public Task<NetworkGraph?> GetNetworkGraph(CancellationToken ct = default)
+        {
+            return Task.FromResult(this.latestNetworkGraph);
+        }
+
+        public Task SetNetworkGraph(NetworkGraph g, CancellationToken ct = default)
+        {
+            latestNetworkGraph = g;
             return Task.CompletedTask;
         }
 

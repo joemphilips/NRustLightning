@@ -30,7 +30,7 @@ namespace NRustLightning.Server.Tests.Support
 
         public readonly NBXplorer.ExplorerClient NBXClient;
 
-        public async Task ConnectAll()
+        public async Task OutBoundConnectAll()
         {
             var clightningInfo = await ClightningLNClient.GetInfo();
             await NRustLightningHttpClient.ConnectAsync(clightningInfo.NodeInfoList.FirstOrDefault().ToConnectionString());

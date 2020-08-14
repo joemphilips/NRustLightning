@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DotNetLightning.Peer;
 using Microsoft.AspNetCore.Mvc;
 using NRustLightning.Infrastructure.Models.Request;
+using NRustLightning.Net;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.P2P;
 using NRustLightning.Server.Services;

@@ -11,8 +11,8 @@ namespace NRustLightning.Interfaces
         ///
         /// The last argument is used only in ManyChannelMonitor.
         /// </summary>
-        public void BlockConnected(Block block, uint height, Primitives.LNOutPoint key = null);
+        public void BlockConnected(Block block, uint height, Primitives.LNOutPoint? key = null);
         
-        public void BlockDisconnected(BlockHeader header, uint height, Primitives.LNOutPoint key = null);
+        public void BlockDisconnected(BlockHeader header, uint height, Primitives.LNOutPoint? key = null);
     }
 }

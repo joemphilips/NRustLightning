@@ -24,6 +24,7 @@ using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Extensions;
 using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Infrastructure.Networks;
+using NRustLightning.RustLightningTypes;
 using NRustLightning.Utils;
 
 namespace NRustLightning.Infrastructure.Repository
@@ -160,6 +161,24 @@ namespace NRustLightning.Infrastructure.Repository
             var t = tx.GetTable(DBKeys.RemoteEndPoints);
             await t.Delete(s);
             await tx.Commit();
+        }
+
+        public async Task<NetworkGraph?> GetNetworkGraph(CancellationToken ct = default)
+        {
+            using var tx = await _engine.OpenTransaction(ct);
+            var t = tx.GetTable(DBKeys.NetworkGraph);
+            var row = await t.Get(DBKeys.NetworkGraphVersion);
+            if (row is null) return null;
+            var b = await row.ReadValue();
+            return NetworkGraph.FromBytes(b.ToArray());
+        }
+
+        public async Task SetNetworkGraph(NetworkGraph g, CancellationToken ct = default)
+        {
+            if (g == null) throw new ArgumentNullException(nameof(g));
+            using var tx = await _engine.OpenTransaction(ct);
+            var table = tx.GetTable(DBKeys.NetworkGraph);
+            await table.Insert(DBKeys.NetworkGraphVersion, g.ToBytes());
         }
 
         private async ValueTask<DBTrieEngine> OpenEngine(CancellationToken ct)

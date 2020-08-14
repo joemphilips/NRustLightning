@@ -30,10 +30,6 @@ namespace NRustLightning.Utils
         /// </summary>
         /// <param name="pool"></param>
         /// <param name="func"> actual ffi function, first argument is a pointer to a allocated buffer, second is the length of it, and third is a parent SafeHandle class</param>
-        /// <param name="handle"></param>
-        /// <param name="postProcess"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="THandle"></typeparam>
         /// <returns></returns>
         /// <exception cref="FFIException"></exception>
         internal static byte[] WithVariableLengthReturnBuffer(

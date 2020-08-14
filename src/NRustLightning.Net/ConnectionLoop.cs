@@ -13,7 +13,7 @@ namespace NRustLightning.Net
         public PeerManager PeerManager { get; }
         private readonly IDuplexPipe _transport;
         private readonly SocketDescriptor _socketDescriptor;
-        private readonly ILogger<ConnectionLoop> _logger;
+        private readonly ILogger<ConnectionLoop>? _logger;
         private readonly ChannelReader<byte> _writeAvailReceiver;
         private readonly ChannelWriter<byte> _eventNotify;
         private readonly Func<Task>? _cleanup;
@@ -23,7 +23,7 @@ namespace NRustLightning.Net
         private CancellationTokenSource? _cts;
 
         public ConnectionLoop(IDuplexPipe transport, SocketDescriptor socketDescriptor, PeerManager peerManager,
-            ILogger<ConnectionLoop> logger, ChannelReader<byte> writeAvailReceiver, ChannelWriter<byte> eventNotify, Func<Task>? cleanup = null)
+            ChannelReader<byte> writeAvailReceiver, ChannelWriter<byte> eventNotify, ILogger<ConnectionLoop>? logger = null , Func<Task>? cleanup = null)
         {
             PeerManager = peerManager;
             _transport = transport;
@@ -38,7 +38,7 @@ namespace NRustLightning.Net
         public ConnectionLoop Start(CancellationToken ct = default)
         {
             _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            _logger.LogTrace($"Starting connection loop: {_id}");
+            _logger?.LogTrace($"Starting connection loop: {_id}");
             ExecutionTask = StartLoop(_cts.Token);
             return this;
         }
@@ -48,7 +48,7 @@ namespace NRustLightning.Net
             if (_cleanup != null)
                 await _cleanup.Invoke();
             _cts?.Cancel();
-            _logger.LogTrace($"Disposing connection loop: {_id}");
+            _logger?.LogTrace($"Disposing connection loop: {_id}");
             if (ExecutionTask != null)
                 await ExecutionTask;
         }
@@ -65,9 +65,9 @@ namespace NRustLightning.Net
             }
             catch (FFIException ex)
             {
-                _logger.LogInformation(
+                _logger?.LogInformation(
                     $"rust-lightning returned error. disconnecting");
-                _logger.LogError($"{ex.Message}: {ex.StackTrace}");
+                _logger?.LogError($"{ex.Message}: {ex.StackTrace}");
                 // we don't have to call `PeerManager.SocketDisconnected` here Since rust-lightning already knows the peer
                 // is disconnected.
             }
@@ -76,13 +76,13 @@ namespace NRustLightning.Net
             }
             catch (OperationCanceledException)
             {
-                _logger.LogWarning($"Disconnecting peer since the socket is disconnected");
+                _logger?.LogWarning($"Disconnecting peer since the socket is disconnected");
                 PeerManager.SocketDisconnected(_socketDescriptor);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"error while processing connection {_id}. Closing");
-                _logger.LogError($"{ex.Message}: {ex.StackTrace}");
+                _logger?.LogWarning($"error while processing connection {_id}. Closing");
+                _logger?.LogError($"{ex.Message}: {ex.StackTrace}");
                 PeerManager.SocketDisconnected(_socketDescriptor);
             }
             finally
@@ -123,7 +123,7 @@ namespace NRustLightning.Net
                     }
                     else
                     {
-                        _logger.LogError($"read_event call to rust-lightning failed. closing connection. {ffiResult}");
+                        _logger?.LogError($"read_event call to rust-lightning failed. closing connection. {ffiResult}");
                         throw new RLDisconnectedException();
                     }
                     _socketDescriptor.BlockDisconnectSocket = false;
@@ -165,7 +165,7 @@ namespace NRustLightning.Net
         {
             if (_socketDescriptor.Disconnected)
             {
-                _logger.LogInformation("Disconnecting peer since rust-lightning has requested");
+                _logger?.LogInformation("Disconnecting peer since rust-lightning has requested");
                 throw new RLDisconnectedException();
             }
             _socketDescriptor.BlockDisconnectSocket = true;

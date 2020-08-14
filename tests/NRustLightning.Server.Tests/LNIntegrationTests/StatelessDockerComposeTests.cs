@@ -81,7 +81,7 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
             Assert.NotNull(walletInfo.DerivationStrategy);
             Assert.Equal(0, walletInfo.OnChainBalanceSatoshis);
             Assert.DoesNotContain("legacy", walletInfo.DerivationStrategy.ToString());
-            await clients.ConnectAll();
+            await clients.OutBoundConnectAll();
             await clients.PrepareFunds();
             await clients.CreateEnoughTxToEstimateFee();
             
@@ -96,7 +96,7 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
         {
             var clients = _clients;
             
-            await clients.ConnectAll();
+            await clients.OutBoundConnectAll();
             await clients.PrepareFunds();
             await clients.CreateEnoughTxToEstimateFee();
             
@@ -110,7 +110,7 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
         public async Task CanSendOutboundPaymentToLnd()
         {
             var clients = _clients;
-            await clients.ConnectAll();
+            await clients.OutBoundConnectAll();
             await clients.PrepareFunds();
             await clients.CreateEnoughTxToEstimateFee();
             
@@ -124,7 +124,7 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
         public async Task CanOpenCloseChannelsWithLightningD()
         {
             var clients = _clients;
-            await clients.ConnectAll();
+            await clients.OutBoundConnectAll();
             await clients.PrepareFunds();
             await clients.CreateEnoughTxToEstimateFee();
             
