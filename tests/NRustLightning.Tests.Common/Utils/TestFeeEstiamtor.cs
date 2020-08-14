@@ -1,10 +1,9 @@
-using System.Diagnostics;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
 
-namespace NRustLightning.Tests.Utils
+namespace NRustLightning.Tests.Common.Utils
 {
-    internal class TestFeeEstimator : IFeeEstimator
+    public class TestFeeEstimator : IFeeEstimator
     {
         public uint GetEstSatPer1000Weight(FFIConfirmationTarget confirmationTarget)
         {

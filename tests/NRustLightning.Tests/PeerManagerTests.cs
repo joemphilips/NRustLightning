@@ -3,13 +3,14 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using DotNetLightning.Serialize;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
-using NRustLightning.Tests.Utils;
+using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
 using RustLightningTypes;
 using Xunit;
@@ -52,9 +53,14 @@ namespace NRustLightning.Tests
             var chainWatchInterface = new ChainWatchInterfaceUtil(n);
             var seed = new byte[]{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 };
             var keysInterface = new KeysManager(seed, DateTime.UnixEpoch);
+            var blockNotifier = BlockNotifier.Create(chainWatchInterface);
+            var manyChannelMonitor = ManyChannelMonitor.Create(n, chainWatchInterface, broadcaster, logger, feeEstiamtor);
+            var channelManager = ChannelManager.Create(n, TestUserConfig.Default, chainWatchInterface, keysInterface, logger, broadcaster, feeEstiamtor, 400000, manyChannelMonitor);
+            blockNotifier.RegisterChannelManager(channelManager);
+            blockNotifier.RegisterManyChannelMonitor(manyChannelMonitor);
             var peerManager =
                 PeerManager.Create(
-                    seed, n, in TestUserConfig.Default, chainWatchInterface, keysInterface, broadcaster, logger, feeEstiamtor, 400000
+                    seed, in TestUserConfig.Default, chainWatchInterface, logger, keysInterface.GetNodeSecret().ToBytes(), channelManager, blockNotifier, 10000
                     );
             return peerManager;
         }
@@ -124,15 +130,16 @@ namespace NRustLightning.Tests
         [Fact]
         public void CanCallSendPayment()
         {
-            var peerMan = getTestPeerManager();
+            using var peerMan = getTestPeerManager();
             var paymentHash = Primitives.PaymentHash.NewPaymentHash(uint256.Parse("4141414141414141414141414141414141414141414141414141414141414142"));
             var lastHops = new List<RouteHint>();
-            var e = Assert.Throws<FFIException>(()  => peerMan.SendPayment(_keys[0].PubKey, paymentHash, lastHops, LNMoney.MilliSatoshis(100L), TEST_FINAL_CTLV));
+            var e = Assert.Throws<FFIException>(()  => peerMan.SendPayment(_keys[0].PubKey, paymentHash, lastHops, LNMoney.MilliSatoshis(100L), TEST_FINAL_CTLV, _pool));
             Assert.Contains( "Cannot route when there are no outbound routes away from us",e.Message);
             
             var secret = uint256.Parse("4141414141414141414141414141414141414141414141414141414141414143");
-            e = Assert.Throws<FFIException>(() => peerMan.SendPayment(_keys[0].PubKey, paymentHash, lastHops, LNMoney.MilliSatoshis(100L), TEST_FINAL_CTLV, secret));
+            e = Assert.Throws<FFIException>(() => peerMan.SendPayment(_keys[0].PubKey, paymentHash, lastHops, LNMoney.MilliSatoshis(100L), TEST_FINAL_CTLV, _pool, secret));
             Assert.Contains( "Cannot route when there are no outbound routes away from us",e.Message);
         }
+
     }
 }

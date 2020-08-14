@@ -7,6 +7,7 @@ using NRustLightning.Infrastructure.Configuration;
 using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Infrastructure.Repository;
+using NRustLightning.Net;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Middlewares;
 using NRustLightning.Server.P2P;
@@ -33,6 +34,7 @@ namespace NRustLightning.Server
             services.AddTransient<RequestResponseLoggingMiddleware>();
             services.AddSingleton<ChannelProvider>();
             services.AddSingleton<EventAggregator>();
+            services.AddSingleton<WorkQueueProcessors>();
             
             services.AddHostedService(sp => sp.GetRequiredService<PeerManagerProvider>());
             services.AddHostedService<NBXplorerListeners>();

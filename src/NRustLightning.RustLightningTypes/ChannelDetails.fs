@@ -2,15 +2,12 @@ namespace NRustLightning.RustLightningTypes
 
 open System.IO
 
-open DotNetLightning.Core.Utils.Extensions
 open DotNetLightning.Serialize
-
-open System
-
 open DotNetLightning.Utils
 
 open NBitcoin
 open ResultUtils
+
 type ChannelDetails = {
     ChannelId: uint256
     ShortChannelId: Option<ShortChannelId>
@@ -46,7 +43,6 @@ type ChannelDetails = {
         ls.Write(this.ChannelValueSatoshis, false)
         ls.Write(this.UserId, false)
         ls.Write(this.OutboundCapacityMSat, false)
-        ls.Write(this.InboundCapacityMSat, false)
         ls.Write(this.InboundCapacityMSat, false)
         ls.Write(if this.IsLive then 1uy else 0uy)
         

@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BTCPayServer.Lightning;
 using BTCPayServer.Lightning.CLightning;
+using BTCPayServer.Lightning.Eclair;
 using BTCPayServer.Lightning.LND;
 using DockerComposeFixture;
 using DockerComposeFixture.Exceptions;
@@ -29,6 +30,7 @@ using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Services;
 using NRustLightning.Server.Tests.Support;
 using NRustLightning.Server.Tests.Stubs;
+using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
 using Xunit.Abstractions;
 
@@ -36,6 +38,17 @@ namespace NRustLightning.Server.Tests
 {
     public static class Extensions
     {
+
+        public static async Task<GetBlockRPCResponse> GetBestBlockAsync(this RPCClient c, GetBlockVerbosity v)
+        {
+            return await c.GetBlockAsync(await c.GetBestBlockHashAsync(), v);
+        }
+
+        public static async Task<uint256[]> GenerateToOwnAddressAsync(this RPCClient c, int num)
+        {
+            var addr = await c.GetNewAddressAsync();
+            return await c.GenerateToAddressAsync(num, addr);
+        }
         private static byte[] GetCertificateFingerPrint(string filePath)
         {
             X509Certificate2 cert = new X509Certificate2(filePath);
@@ -47,10 +60,17 @@ namespace NRustLightning.Server.Tests
         {
             return Hex.Encode(GetCertificateFingerPrint(filepath));
         }
-        
-        public static async Task<Clients> StartLNTestFixtureAsync(this DockerFixture dockerFixture, ITestOutputHelper output, string caller)
+
+        /// <summary>
+        ///  Start bitcoind and nbxplorer in the backgroud.
+        /// </summary>
+        /// <param name="dockerFixture"></param>
+        /// <param name="output"></param>
+        /// <param name="caller"></param>
+        /// <returns></returns>
+        public static async Task<ExplorerClient> StartExplorerFixtureAsync(this DockerFixture dockerFixture, ITestOutputHelper output, string caller)
         {
-            var ports = new int[5];
+            var ports = new int[2];
             Support.Utils.FindEmptyPort(ports);
             var dataPath = Path.GetFullPath(caller);
             if (!Directory.Exists(dataPath))
@@ -60,6 +80,70 @@ namespace NRustLightning.Server.Tests
                 Directory.Delete(dataPath, true);
                 Directory.CreateDirectory(dataPath);
             }
+            var env = new Dictionary<string, object>()
+            {
+                {
+                    "BITCOIND_RPC_AUTH",
+                    Constants.BitcoindRPCAuth
+                },
+                {"BITCOIND_RPC_USER", Constants.BitcoindRPCUser},
+                {"BITCOIND_RPC_PASS", Constants.BitcoindRPCPass},
+                {"BITCOIND_RPC_PORT", ports[0]},
+                {"NBXPLORER_PORT", ports[1]},
+                {"DATA_PATH", dataPath }
+            };
+            var envFile = Path.Join(dataPath, "env.sh");
+            using (TextWriter w = File.AppendText(envFile))
+            {
+                foreach (var kv in env)
+                {
+                    w.WriteLine($"export {kv.Key}='{kv.Value}'");
+                }
+            }
+            try
+            {
+                await dockerFixture.InitAsync(() => new DockerFixtureOptions
+                {
+                    DockerComposeFiles = new[] {"docker-compose.base.yml"},
+                    EnvironmentVariables = env,
+                    DockerComposeDownArgs = "--remove-orphans --volumes",
+                    // we need this because c-lightning is not working well with bind mount.
+                    // If we use volume mount instead, this is the only way to recreate the volume at runtime.
+                    DockerComposeUpArgs = "--renew-anon-volumes",
+                    StartupTimeoutSecs = 400,
+                    LogFilePath = Path.Join(dataPath, "docker-compose.log"),
+                    CustomUpTest = o =>
+                    {
+                        return
+                            o.Any(x => x.Contains("BTC: Node state changed: NBXplorerSynching => Ready")); // nbx is up
+                    }
+                });
+            }
+            catch (DockerComposeException ex)
+            {
+                foreach (var m in ex.DockerComposeOutput)
+                {
+                    output.WriteLine(m);
+                    throw;
+                }
+            }
+            
+            var networkProvider = new NRustLightningNetworkProvider(NetworkType.Regtest);
+            var btcNetwork = networkProvider.GetByCryptoCode("BTC");
+            return new ExplorerClient(btcNetwork.NbXplorerNetwork, new Uri($"http://localhost:{ports[1]}"));
+        }
+        
+        public static async Task<Clients> StartLNTestFixtureAsync(this DockerFixture dockerFixture, ITestOutputHelper output, string caller, bool useCachedData = false)
+        {
+            var ports = new int[5];
+            Support.Utils.FindEmptyPort(ports);
+            var dataPath = Path.GetFullPath(caller);
+            if (Directory.Exists(dataPath) && !useCachedData)
+            {
+                Directory.Delete(dataPath, true);
+            }
+            Directory.CreateDirectory(dataPath);
+            
             var env = new Dictionary<string, object>()
             {
                 {
@@ -98,7 +182,8 @@ namespace NRustLightning.Server.Tests
                     CustomUpTest = o =>
                     {
                         return
-                            o.Any(x => x.Contains("Content root path: /app")) // nrustlightning is up
+                            o.Any(x => x.Contains("Listening for P2P message from any IP on port")) // nrustlightning is up
+                            && o.Any(x => x.Contains("PeerManagerProvider started")) // ditto
                             && o.Any(x => x.Contains("Server started with public key")) // lightningd is up
                             && o.Any(x => x.Contains("BTC: Node state changed: NBXplorerSynching => Ready")) // nbx is up
                             && o.Any(x => x.Contains("BTCN: Server listening on")); // lnd is up
@@ -148,7 +233,7 @@ namespace NRustLightning.Server.Tests
                     
                     services.AddSingleton<IFeeEstimator, TestFeeEstimator>();
                     services.AddSingleton<IBroadcaster, TestBroadcaster>();
-                    services.AddSingleton<IChainWatchInterface, TestChainWatchInterface>();
+                    services.AddSingleton<IChainWatchInterface, ChainWatchInterfaceUtil>();
                     services.AddSingleton<IWalletService, StubWalletService>();
                     services.AddSingleton<IRepository, InMemoryRepository>();
                     services.AddSingleton<INBXplorerClientProvider, StubNBXplorerClientProvider>();

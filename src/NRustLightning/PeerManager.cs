@@ -2,8 +2,6 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Net.Http.Headers;
 using System.Threading;
 using DotNetLightning.Utils;
 using NBitcoin;
@@ -11,16 +9,16 @@ using NRustLightning.Adaptors;
 using NRustLightning.Handles;
 using NRustLightning.Interfaces;
 using NRustLightning.Utils;
-using RustLightningTypes;
 using static NRustLightning.Utils.Utils;
-using Network = NRustLightning.Adaptors.Network;
+using NRustLightning.RustLightningTypes;
+using RustLightningTypes;
 
 namespace NRustLightning
 {
     public class PeerManager : IDisposable
     {
         private readonly PeerManagerHandle _handle;
-        private readonly IList<object> _deps;
+        private readonly object[] _deps;
         private readonly Timer tick;
         private bool _disposed = false;
 
@@ -32,7 +30,7 @@ namespace NRustLightning
             ChannelManager channelManager,
             BlockNotifier blockNotifier,
             int tickInterval,
-            IList<object> deps
+            object[] deps
             )
         {
             _deps = deps;
@@ -44,39 +42,40 @@ namespace NRustLightning
 
         public static PeerManager Create(
             Span<byte> seed,
-            NBitcoin.Network nbitcoinNetwork,
-            IUserConfigProvider config,
+            IUserConfigProvider configProvider,
             IChainWatchInterface chainWatchInterface,
-            IKeysInterface keysInterface,
-            IBroadcaster broadcaster,
             ILogger logger,
-            IFeeEstimator feeEstimator,
-            uint currentBlockHeight,
-            int tickIntervalMSec = 30000
+            byte[] ourNodeSecret,
+            ChannelManager channelManager,
+            BlockNotifier blockNotifier,
+            int tickIntervalMSec = 30000,
+            NetworkGraph? networkGraph = null
         )
         {
-            if (config == null) throw new ArgumentNullException(nameof(config));
-            var c = config.GetUserConfig();
-            return Create(seed, nbitcoinNetwork, in c, chainWatchInterface, keysInterface, broadcaster, logger, feeEstimator, currentBlockHeight, tickIntervalMSec);
+            if (configProvider == null) throw new ArgumentNullException(nameof(configProvider));
+            var c = configProvider.GetUserConfig();
+            return Create(seed, in c, chainWatchInterface, logger, ourNodeSecret, channelManager, blockNotifier, tickIntervalMSec);
         }
-
         public static PeerManager Create(
             Span<byte> seed,
-            NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
             IChainWatchInterface chainWatchInterface,
             ILogger logger,
             byte[] ourNodeSecret,
             ChannelManager channelManager,
-            uint currentBlockHeight,
+            BlockNotifier blockNotifier,
             int tickIntervalMSec = 30000,
-            IList<object> objectsToKeepAlive = null
+            NetworkGraph? networkGraph = null
         )
         {
-            objectsToKeepAlive ??= new object[]{};
+            if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+            if (ourNodeSecret == null) throw new ArgumentNullException(nameof(ourNodeSecret));
+            if (channelManager == null) throw new ArgumentNullException(nameof(channelManager));
+            if (blockNotifier == null) throw new ArgumentNullException(nameof(blockNotifier));
+            
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
             var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
-            var blockNotifier = BlockNotifier.Create(chainWatchInterfaceDelegatesHolder);
             blockNotifier.RegisterChannelManager(channelManager);
             unsafe
             {
@@ -84,73 +83,49 @@ namespace NRustLightning
                 fixed (UserConfig* configPtr = &config)
                 fixed (byte* secretPtr = ourNodeSecret)
                 {
-                    Interop.create_peer_manager(
-                        (IntPtr)seedPtr,
-                        configPtr,
-                        channelManager.Handle,
-                        chainWatchInterfaceDelegatesHolder.InstallWatchTx,
-                        chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
-                        chainWatchInterfaceDelegatesHolder.WatchAllTxn,
-                        chainWatchInterfaceDelegatesHolder.GetChainUtxo,
-                        chainWatchInterfaceDelegatesHolder.FilterBlock,
-                        chainWatchInterfaceDelegatesHolder.ReEntered,
-                        loggerDelegatesHolder.Log,
-                        (IntPtr)secretPtr,
-                        out var handle
+                    PeerManagerHandle handle;
+                    if (networkGraph is null)
+                    {
+                        Interop.create_peer_manager(
+                            (IntPtr) seedPtr,
+                            configPtr,
+                            channelManager.Handle,
+                            chainWatchInterfaceDelegatesHolder.InstallWatchTx,
+                            chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
+                            chainWatchInterfaceDelegatesHolder.WatchAllTxn,
+                            chainWatchInterfaceDelegatesHolder.GetChainUtxo,
+                            chainWatchInterfaceDelegatesHolder.FilterBlock,
+                            chainWatchInterfaceDelegatesHolder.ReEntered,
+                            loggerDelegatesHolder.Log,
+                            (IntPtr) secretPtr,
+                            out handle
                         );
-                    objectsToKeepAlive.Add(chainWatchInterfaceDelegatesHolder);
-                    objectsToKeepAlive.Add(loggerDelegatesHolder);
+                    }
+                    else
+                    {
+                        var networkGraphB = networkGraph.ToBytes();
+                        fixed (byte* b = networkGraphB)
+                        {
+                            Interop.create_peer_manager_from_net_graph(
+                                (IntPtr) seedPtr,
+                                configPtr,
+                                channelManager.Handle,
+                                chainWatchInterfaceDelegatesHolder.InstallWatchTx,
+                                chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
+                                chainWatchInterfaceDelegatesHolder.WatchAllTxn,
+                                chainWatchInterfaceDelegatesHolder.GetChainUtxo,
+                                chainWatchInterfaceDelegatesHolder.FilterBlock,
+                                chainWatchInterfaceDelegatesHolder.ReEntered,
+                                loggerDelegatesHolder.Log,
+                                (IntPtr) secretPtr,
+                                (IntPtr)b,
+                                (UIntPtr)networkGraphB.Length,
+                                out handle
+                            );
+                        }
+                    }
+                    var objectsToKeepAlive = new object[]{chainWatchInterfaceDelegatesHolder, loggerDelegatesHolder};
                     return new PeerManager(handle, channelManager, blockNotifier, tickIntervalMSec, objectsToKeepAlive);
-                }
-            }
-        }
-        public static PeerManager Create(
-            Span<byte> seed,
-            NBitcoin.Network nbitcoinNetwork,
-            in UserConfig config,
-            IChainWatchInterface chainWatchInterface,
-            IKeysInterface keysInterface,
-            IBroadcaster broadcaster,
-            ILogger logger,
-            IFeeEstimator feeEstimator,
-            uint currentBlockHeight,
-            int tickIntervalMSec = 30000
-            )
-        {
-            if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
-            if (keysInterface == null) throw new ArgumentNullException(nameof(keysInterface));
-            if (broadcaster == null) throw new ArgumentNullException(nameof(broadcaster));
-            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
-            var keysInterfaceDelegatesHolder = new KeysInterfaceDelegatesHolder(keysInterface);
-            var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
-            var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
-            var feeEstimatorDelegatesHolder = new FeeEstimatorDelegatesHolder(feeEstimator);
-
-            var ourNodeSecret = keysInterface.GetNodeSecret().ToBytes();
-            var chanMan = ChannelManager.Create(nbitcoinNetwork, in config, chainWatchInterfaceDelegatesHolder, keysInterfaceDelegatesHolder, loggerDelegatesHolder, broadcasterDelegatesHolder, feeEstimatorDelegatesHolder, currentBlockHeight);
-            var blockNotifier = BlockNotifier.Create(chainWatchInterfaceDelegatesHolder);
-            blockNotifier.RegisterChannelManager(chanMan);
-            unsafe
-            {
-                fixed (byte* seedPtr = seed)
-                fixed (UserConfig* configPtr = &config)
-                fixed (byte* secretPtr = ourNodeSecret)
-                {
-                    Interop.create_peer_manager(
-                        (IntPtr)seedPtr,
-                        configPtr,
-                        chanMan.Handle,
-                        chainWatchInterfaceDelegatesHolder.InstallWatchTx,
-                        chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint,
-                        chainWatchInterfaceDelegatesHolder.WatchAllTxn,
-                        chainWatchInterfaceDelegatesHolder.GetChainUtxo,
-                        chainWatchInterfaceDelegatesHolder.FilterBlock,
-                        chainWatchInterfaceDelegatesHolder.ReEntered,
-                        loggerDelegatesHolder.Log,
-                        (IntPtr)secretPtr,
-                        out var handle
-                        );
-                    return new PeerManager(handle, chanMan, blockNotifier, tickIntervalMSec,new object[]{ chainWatchInterfaceDelegatesHolder, keysInterfaceDelegatesHolder, broadcasterDelegatesHolder, loggerDelegatesHolder, feeEstimatorDelegatesHolder, });
                 }
             }
         }
@@ -262,55 +237,33 @@ namespace NRustLightning
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="theirNodeId"></param>
-        /// <param name="paymentHash"></param>
-        /// <param name="lastHops"></param>
-        /// <param name="valueToSend"></param>
-        /// <param name="finalCLTV"></param>
-        /// <param name="paymentSecret"></param>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="PaymentSendException">When the payment fails for some reason. See its `Kind` property and rust-lightning's `PaymentSendFailure` type for more detail.</exception>
-        /// <exception cref="FFIException">when other unexpected error happens in rl side.</exception>
+        public NetworkGraph GetNetworkGraph(MemoryPool<byte> pool)
+        {
+            return NetworkGraph.FromBytes(GetNetworkGraphBytes(pool));
+        }
+
+        private byte[] GetNetworkGraphBytes(MemoryPool<byte> pool)
+        {
+            
+            FFIOperationWithVariableLengthReturnBuffer func = (ptr, len) =>
+                {
+                    var res = Interop.get_network_graph(ptr, len, out var actualLen, _handle, false);
+                    return (res, actualLen);
+                };
+            return WithVariableLengthReturnBuffer(pool, func);
+        }
+
         public void SendPayment(PubKey theirNodeId, Primitives.PaymentHash paymentHash, IList<RouteHint> lastHops,
-            LNMoney valueToSend, Primitives.BlockHeightOffset32 finalCLTV, uint256? paymentSecret = null)
+            LNMoney valueToSend, Primitives.BlockHeightOffset32 finalCLTV, MemoryPool<byte> pool, uint256? paymentSecret = null)
         {
             if (theirNodeId == null) throw new ArgumentNullException(nameof(theirNodeId));
             if (paymentHash == null) throw new ArgumentNullException(nameof(paymentHash));
             if (lastHops == null) throw new ArgumentNullException(nameof(lastHops));
-            if (theirNodeId == null) throw new ArgumentNullException(nameof(theirNodeId));
-            if (!theirNodeId.IsCompressed) throw new ArgumentException("pubkey not compressed");
-            var pkBytes = theirNodeId.ToBytes();
-            var paymentHashBytes = paymentHash.ToBytes(false);
-            var routeHintBytes = lastHops.ToBytes();
-            unsafe
-            {
-                fixed (byte* pkPtr = pkBytes)
-                fixed (byte* paymentHashPtr = paymentHashBytes)
-                fixed (byte* lastHopsPtr = routeHintBytes)
-                {
-                    var lastHopsFfiBytes = new FFIBytes((IntPtr) lastHopsPtr, (UIntPtr) routeHintBytes.Length);
-                    if (paymentSecret is null)
-                    {
-                        Interop.send_non_mpp_payment_with_peer_manager(pkPtr, paymentHashPtr, ref lastHopsFfiBytes,
-                            (ulong) valueToSend.MilliSatoshi, finalCLTV.Value, _handle, ChannelManager.Handle);
-                    }
-                    else
-                    {
-                        var paymentSecretBytes = paymentSecret.ToBytes(false);
-                        fixed (byte* paymentSecretPtr = paymentSecretBytes)
-                        {
-                            Interop.send_mpp_payment_with_peer_manager(pkPtr, paymentHashPtr, ref lastHopsFfiBytes,
-                                (ulong) valueToSend.MilliSatoshi, finalCLTV.Value, paymentSecretPtr, _handle, ChannelManager.Handle);
-                        }
-                    }
-                }
-            }
+            if (!theirNodeId.IsCompressed) throw new ArgumentException("nodeid not compressed!");
+            var graph = GetNetworkGraphBytes(pool);
+            ChannelManager.GetRouteAndSendPayment(graph, theirNodeId, paymentHash, lastHops, valueToSend, finalCLTV, paymentSecret);
         }
-
+        
         private static PubKey[] DecodePubKeyArray(byte[] arr)
         {
             var nPubKey = arr[0..2].ToUInt16BE();

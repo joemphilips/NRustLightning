@@ -3,12 +3,24 @@
 
 ## Code organization
 
-* `src/NRustLightning` ... library to interop with rust-lightning through abi.
-* `src/NRustLightning.Server` ... to run it as standalone asp.net core server.
-* `src/NRustLightning.Client` ... C# client library for the server.
-* `src/NRustLightning.CLI` ... command-line application  to work with the server (WIP)
+from low level to high level...
 
-## How to configure
+* `src/NRustLightning`
+  * library to interoperate with rust-lightning through abi.
+* `src/NRustLightning.Net`
+  * library to connect above to the transport layer. primarily through TCP socket.
+  * Probably this is the one you want to use if you are considering to build your own wallet.
+* `src/NRustLightning.Infrastructure`
+  * library which contains logic for both server and client.
+* `src/NRustLightning.Server`
+  * standalone LN daemon built with asp.net core server.
+* `src/NRustLightning.Client`
+  * C# client library for the server.
+* `src/NRustLightning.CLI`
+  * command-line application  to work with the server. Which wraps the client.
+  * This is still pretty much WIP
+
+## How to configure the server
 
 `NRustLightning.Server` takes configuration options by either
 
@@ -46,8 +58,21 @@ cd src/NRustLightning.Server
 dotnet run -- '[parse]' --regtest <whatever-options-you-want-to-pass>
 ```
 
+## Test organization
 
-## How to test
+From low level tests to high level tests...
+
+* `NRustLightning.Tests.Common`
+  * Common classes which used in more than two test packages.
+* `NRustLightning.Tests`
+  * basic tests for ABI.
+* `NRustLightning.Net.Tests`
+  * Tests which simulates P2P Network in memory. This cannot test the behavior with other lightning implementation.
+* `NRustLightning.Server.Tests`
+  * integration tests for the server and the client. See its own README.md for the detail.
+  
+
+## How to test the server
 
 ```
 source tests/NRustLightning.Server.Tests/env.sh

@@ -11,6 +11,8 @@ using NRustLightning.Interfaces;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Services;
 using NRustLightning.Server.Tests.Stubs;
+using NRustLightning.Tests.Common.Utils;
+using NRustLightning.Utils;
 
 namespace NRustLightning.Server.Tests
 {
@@ -32,7 +34,7 @@ namespace NRustLightning.Server.Tests
                 services.AddSingleton<IMacaroonSecretRepository, InMemoryMacaroonSecretRepository>();
                 services.AddSingleton<IFeeEstimator, TestFeeEstimator>();
                 services.AddSingleton<IBroadcaster, TestBroadcaster>();
-                services.AddSingleton<IChainWatchInterface, TestChainWatchInterface>();
+                services.AddSingleton<IChainWatchInterface, ChainWatchInterfaceUtil>();
                 services.AddSingleton<IRepository, InMemoryRepository>();
                 services.AddSingleton<IWalletService, StubWalletService>();
                 services.AddSingleton<INBXplorerClientProvider, StubNBXplorerClientProvider>();

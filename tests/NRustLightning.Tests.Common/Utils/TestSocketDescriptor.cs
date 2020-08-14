@@ -5,7 +5,7 @@ using System.IO.Pipelines;
 using NRustLightning.Adaptors;
 using NRustLightning.Interfaces;
 
-namespace NRustLightning.Tests.Utils
+namespace NRustLightning.Tests.Common.Utils
 {
     public class TestSocketDescriptor : ISocketDescriptor
     {

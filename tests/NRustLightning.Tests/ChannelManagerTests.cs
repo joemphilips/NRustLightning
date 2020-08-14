@@ -11,7 +11,8 @@ using Xunit;
 using NRustLightning;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
-using NRustLightning.Tests.Utils;
+using NRustLightning.RustLightningTypes;
+using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
 using Network = NRustLightning.Adaptors.Network;
 
@@ -50,7 +51,8 @@ namespace NRustLightning.Tests
             var chainWatchInterface = new ChainWatchInterfaceUtil(n);
             var keySeed = new byte[]{ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 };
             var keysInterface = new KeysManager(keySeed, DateTime.UnixEpoch);
-            var channelManager = ChannelManager.Create(n, in TestUserConfig.Default, chainWatchInterface, keysInterface, logger, broadcaster, feeEstiamtor, 400000);
+            var manyChannelMonitor = ManyChannelMonitor.Create(n, chainWatchInterface, broadcaster, logger, feeEstiamtor);
+            var channelManager = ChannelManager.Create(n, in TestUserConfig.Default, chainWatchInterface, keysInterface, logger, broadcaster, feeEstiamtor, 400000, manyChannelMonitor);
             return channelManager;
         }
         
@@ -76,20 +78,41 @@ namespace NRustLightning.Tests
         {
             using var channelManager = PeerManagerTests.getTestPeerManager().ChannelManager;
             var pk = _pubKeys[0];
-            channelManager.CreateChannel(pk, 100000, 1000, UInt64.MaxValue);
+            channelManager.CreateChannel(pk, Money.Satoshis(100000), LNMoney.MilliSatoshis(1000L), UInt64.MaxValue);
             var c = channelManager.ListChannels(_pool);
             Assert.Single(c);
             Assert.Equal(c[0].RemoteNetworkId, pk);
             Assert.Equal(100000U, c[0].ChannelValueSatoshis);
-            // Before fully open, It must be 0.
-            Assert.Equal(0U, c[0].InboundCapacityMSat);
-            Assert.Equal(0U, c[0].OutboundCapacityMSat);
+            Assert.Equal(1000U, c[0].InboundCapacityMSat);
+            Assert.Equal(100000UL * 1000UL - 1000UL, c[0].OutboundCapacityMSat);
             
             Assert.False(c[0].IsLive);
             channelManager.CloseChannel(c[0].ChannelId);
             var events = channelManager.GetAndClearPendingEvents(_pool);
             Assert.Empty(events);
             channelManager.Dispose();
+        }
+
+        [Fact]
+        public void ChannelManagerSerializationTests()
+        {
+            using var channelManager = GetTestChannelManager();
+            var b = channelManager.Serialize(_pool);
+            
+            var keySeed = new byte[]{ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 };
+            var keysInterface = new KeysManager(keySeed, DateTime.UnixEpoch);
+            var logger = new TestLogger();
+            var broadcaster = new TestBroadcaster();
+            var feeEstiamtor = new TestFeeEstimator();
+            var n = NBitcoin.Network.TestNet;
+            var chainWatchInterface = new ChainWatchInterfaceUtil(n);
+            var manyChannelMonitor =
+                ManyChannelMonitor.Create(n, chainWatchInterface, broadcaster, logger, feeEstiamtor);
+            var args = new ChannelManagerReadArgs(keysInterface, broadcaster, feeEstiamtor, logger, chainWatchInterface, n, manyChannelMonitor);
+            var items = ChannelManager.Deserialize(b, args, new TestUserConfigProvider(), _pool);
+            var (latestBlockhash, channelManager2) = items;
+
+            Assert.True(channelManager2.Serialize(_pool).SequenceEqual(b));
         }
     }
 }

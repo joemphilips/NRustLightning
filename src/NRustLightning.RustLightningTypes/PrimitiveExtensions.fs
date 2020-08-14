@@ -1,15 +1,27 @@
 namespace NRustLightning.RustLightningTypes
 
 open System
+open System.Collections.Generic
+open System.IO
+open System.Net
 open System.Runtime.CompilerServices
 open NBitcoin
 open DotNetLightning.Utils.Primitives
 open DotNetLightning.Utils
 open DotNetLightning.Serialize
 open DotNetLightning.Core.Utils.Extensions
+open DotNetLightning.Serialize.Msgs
 
 [<AutoOpen>]
 module PrimitiveStaticExtensions =
+    type System.UInt16 with
+        static member FromBytes(value: byte[], littleEndian) =
+            if littleEndian then
+                (uint32 value.[0]) <<< 8
+                 ||| (uint32 value.[1])
+            else
+                (uint32 value.[1])
+                ||| (uint32 value.[0] <<< 8)
     type System.UInt32 with
         static member FromBytes(value: byte[], littleEndian) =
             if littleEndian then
@@ -156,3 +168,27 @@ type PrimitiveExtensions() =
         let d = BitConverter.GetBytes(this)
         if BitConverter.IsLittleEndian then (d |> Array.rev) else d
         
+    static member ToSystemAddress(this: NetAddress) =
+        match this with
+        | IPv4 n ->
+            IPEndPoint(IPAddress(n.Addr), (int)n.Port)
+        | IPv6 n ->
+            IPEndPoint(IPAddress(n.Addr), (int)n.Port)
+        | OnionV2 n ->
+            raise <| NotSupportedException()
+        | OnionV3 n ->
+            raise <| NotSupportedException()
+        
+
+type Parsers =
+    static member ParseOutPointToBlockHashMap(b: byte[]): Dictionary<LNOutPoint, uint256> =
+        let len = UInt16.FromBytesBigEndian(b.[0..1])
+        use ms = new MemoryStream(b.[2..])
+        use ls = new LightningReaderStream(ms)
+        let ret = Dictionary()
+        for i in 0..(int32 len - 1) do
+            let txid = ls.ReadUInt256(true)
+            let index = ls.ReadUInt16(false)
+            let outpoint = OutPoint(txid, uint32 index) |> LNOutPoint
+            ret.Add(outpoint, ls.ReadUInt256(true))
+        ret

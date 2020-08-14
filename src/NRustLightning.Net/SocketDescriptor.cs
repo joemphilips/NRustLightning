@@ -24,7 +24,6 @@ namespace NRustLightning.Net
         private DisconnectSocket disconnectSocket;
 
         public PipeWriter Output;
-        private readonly ILogger<SocketDescriptor> _logger;
 
         private int _blockDisconnectSocket = 0;
         /// <summary>
@@ -56,12 +55,11 @@ namespace NRustLightning.Net
                 get => _rlRequestedDisconnect == 1;
                 set => Interlocked.Exchange(ref _rlRequestedDisconnect, (value ? 1 : 0));
             }
-        public SocketDescriptor(UIntPtr index,  PipeWriter output, ILogger<SocketDescriptor> logger, ChannelWriter<byte> writeAvail)
+        public SocketDescriptor(UIntPtr index,  PipeWriter output, ChannelWriter<byte> writeAvail)
         {
             Index = index;
             WriteAvail = writeAvail;
             Output = output ?? throw new ArgumentNullException(nameof(output));
-            _logger = logger;
             sendData = (data, resumeRead) =>
             {
                 if (resumeRead == 1 && ReadPaused)
@@ -82,7 +80,6 @@ namespace NRustLightning.Net
             };
             disconnectSocket = () =>
             {
-                logger.LogDebug($"Disconnecting socket {Index}");
                 if (Disconnected) throw new Exception("rust-lightning has called disconnect_socket more than once.");
                 Disconnected = true;
                 ReadPaused = true;
@@ -95,7 +92,7 @@ namespace NRustLightning.Net
                 }
                 while (BlockDisconnectSocket)
                 {
-                    Task.Delay(10).GetAwaiter().GetResult();
+                    Task.Yield().GetAwaiter().GetResult();
                 }
             };
         }

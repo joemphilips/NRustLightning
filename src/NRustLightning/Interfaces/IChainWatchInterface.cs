@@ -77,6 +77,7 @@ namespace NRustLightning.Interfaces
         
         public ChainWatchInterfaceConverter(IChainWatchInterface chainWatchInterface)
         {
+            if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
             _filterBlock = (ref byte blockPtr, UIntPtr blockLen, ref UIntPtr indexPtr, ref UIntPtr indexLen) =>
             {
                 unsafe

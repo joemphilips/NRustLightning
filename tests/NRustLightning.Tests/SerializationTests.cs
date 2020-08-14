@@ -12,6 +12,7 @@ using NRustLightning.Handles;
 using NRustLightning.RustLightningTypes;
 using Org.BouncyCastle.Utilities.Encoders;
 using Xunit;
+using static NRustLightning.Utils.Utils;
 
 namespace NRustLightning.Tests
 {
@@ -34,13 +35,13 @@ namespace NRustLightning.Tests
         
         public Event[] GetAndClearPendingEvents(MemoryPool<byte> pool)
         {
-            Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
-                (bufOut, bufLength, _handle) =>
+            FFIOperationWithVariableLengthReturnBuffer func =
+                (bufOut, bufLength) =>
                 {
                     var ffiResult = Interop.test_event_serialization(bufOut, bufLength, out var actualLength);
                     return (ffiResult, actualLength);
                 };
-            var arr = NRustLightning.Utils.Utils.WithVariableLengthReturnBuffer(pool, func, null);
+            var arr = WithVariableLengthReturnBuffer(pool, func);
             return Event.ParseManyUnsafe(arr);
         }
 
@@ -106,13 +107,13 @@ namespace NRustLightning.Tests
 
         private ChannelDetails[] ChannelDetailsInterop()
         {
-            Func<IntPtr, UIntPtr, ChannelManagerHandle, (FFIResult, UIntPtr)> func =
-                (bufOut, bufLength, _handle) =>
+            FFIOperationWithVariableLengthReturnBuffer func =
+                (bufOut, bufLength) =>
                 {
                     var ffiResult = Interop.test_channel_details_serialization(bufOut, bufLength, out var actualLen);
                     return (ffiResult, actualLen);
                 };
-            var arr = NRustLightning.Utils.Utils.WithVariableLengthReturnBuffer(_pool, func, null);
+            var arr = WithVariableLengthReturnBuffer(_pool, func);
             return ChannelDetails.ParseManyUnsafe(arr);
         }
 

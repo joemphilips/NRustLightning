@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\src\NRustLightning.Client\NRustLightning.Client.csproj" />
     <ProjectReference Include="..\DockerComposeFixture\DockerComposeFixture\DockerComposeFixture.csproj" />
     <ProjectReference Include="..\..\src\NRustLightning.Server\NRustLightning.Server.csproj" />
+    <ProjectReference Include="..\NRustLightning.Tests.Common\NRustLightning.Tests.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

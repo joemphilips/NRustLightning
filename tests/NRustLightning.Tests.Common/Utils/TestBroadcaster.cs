@@ -1,15 +1,10 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using NBitcoin;
-using NRustLightning.Adaptors;
-using NRustLightning.Handles;
 using NRustLightning.Interfaces;
-using NRustLightning.Utils;
 
-namespace NRustLightning.Tests.Utils
+namespace NRustLightning.Tests.Common.Utils
 {
-        internal class TestBroadcaster : IBroadcaster
+        public class TestBroadcaster : IBroadcaster
         {
             public ConcurrentBag<string> BroadcastedTxHex { get; } = new ConcurrentBag<string>();
 

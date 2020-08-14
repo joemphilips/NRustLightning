@@ -71,6 +71,42 @@ namespace NRustLightning
 
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "register_many_channel_monitor",
+            ExactSpelling = true)]
+        static extern FFIResult _register_many_channel_monitor(
+            ManyChannelMonitorHandle manyChannelMonitorHandle,
+            BlockNotifierHandle handle
+            );
+
+        internal static FFIResult register_many_channel_monitor(
+            ManyChannelMonitorHandle manyChannelMonitorHandle,
+            BlockNotifierHandle handle,
+            bool check = true
+            )
+        {
+            return MaybeCheck(_register_many_channel_monitor(manyChannelMonitorHandle, handle), check);
+        }
+
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "unregister_many_channel_monitor",
+            ExactSpelling = true)]
+        static extern FFIResult _unregister_many_channel_monitor(
+            ManyChannelMonitorHandle manyChannelMonitorHandle,
+            BlockNotifierHandle handle
+            );
+        
+        internal static FFIResult unregister_many_channel_monitor(
+            ManyChannelMonitorHandle manyChannelMonitorHandle,
+            BlockNotifierHandle handle,
+            bool check = true
+            )
+        {
+            return MaybeCheck(_unregister_many_channel_monitor(manyChannelMonitorHandle, handle), check);
+        }
+
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
             EntryPoint = "block_connected",
             ExactSpelling = true)]
         static extern unsafe FFIResult _block_connected(byte* blockPtr, UIntPtr blockLength, uint height, BlockNotifierHandle handle);

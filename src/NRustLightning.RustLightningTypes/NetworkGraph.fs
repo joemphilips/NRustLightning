@@ -1,4 +1,4 @@
-namespace RustLightningTypes
+namespace NRustLightning.RustLightningTypes
 
 open System.Collections.Generic
 open DotNetLightning.Utils
@@ -24,10 +24,14 @@ type RoutingFees = private {
         ProportionalMillionths = msg.FeeProportionalMillionths
     }
     static member Deserialize(ls: LightningReaderStream) =
-        failwith ""
+        {
+            BaseMSat = ls.ReadUInt32(false)
+            ProportionalMillionths = ls.ReadUInt32(false)
+        }
         
     member this.Serialize(ls: LightningWriterStream) =
-        failwith ""
+        ls.Write(this.BaseMSat, false)
+        ls.Write(this.ProportionalMillionths, false)
         
     member this.ToBytes() =
         use ms = new MemoryStream()
@@ -35,6 +39,10 @@ type RoutingFees = private {
         this.Serialize(ls)
         ms.ToArray()
     
+    static member FromBytes(data: byte[]) =
+        use ms = new MemoryStream(data)
+        use ls = new LightningReaderStream(ms)
+        RoutingFees.Deserialize(ls)
 
 type DirectionalChannelInfo = {
     LastUpdate: uint32
@@ -49,10 +57,24 @@ type DirectionalChannelInfo = {
         (fun this -> this.Enabled),
         (fun e this -> { this with Enabled = e })
     static member Deserialize(ls: LightningReaderStream) =
-        failwith ""
+        {
+            LastUpdate = ls.ReadUInt32(false)
+            Enabled = ls.ReadByte() = 1uy
+            CltvExpiryDelta = ls.ReadUInt16(false) |> BlockHeightOffset16
+            HTLCMinimumMSat = ls.ReadUInt64(false) |> LNMoney.MilliSatoshis
+            Fees = RoutingFees.Deserialize(ls)
+            LastUpdateMessage =
+                let converter = ILightningSerializable.fromBytes
+                ls.ReadOption() |> Option.map(converter)
+        }
         
     member this.Serialize(ls: LightningWriterStream) =
-        failwith ""
+        ls.Write(this.LastUpdate, false)
+        ls.Write(if this.Enabled then 1uy else 0uy)
+        ls.Write(this.CltvExpiryDelta.Value, false)
+        ls.Write(this.HTLCMinimumMSat.MilliSatoshi, false)
+        this.Fees.Serialize(ls)
+        ls.WriteOption(this.LastUpdateMessage |> Option.map(fun x -> x.ToBytes()))
         
     member this.ToBytes() =
         use ms = new MemoryStream()
@@ -60,6 +82,10 @@ type DirectionalChannelInfo = {
         this.Serialize(ls)
         ms.ToArray()
     
+    static member FromBytes(data: byte[]) =
+        use ms = new MemoryStream(data)
+        use ls = new LightningReaderStream(ms)
+        DirectionalChannelInfo.Deserialize(ls)
 
 type ChannelInfo = {
     Features: FeatureBit
@@ -86,16 +112,36 @@ type ChannelInfo = {
             AnnouncementMsg = None
         }
     static member Deserialize(ls: LightningReaderStream) =
-        failwith ""
+        {
+            Features = ls.ReadWithLen() |> FeatureBit.CreateUnsafe
+            NodeOne = ls.ReadPubKey() |> NodeId
+            OneToTwo = ls.ReadOption() |> Option.map(DirectionalChannelInfo.FromBytes)
+            NodeTwo = ls.ReadPubKey() |> NodeId
+            TwoToOne = ls.ReadOption() |> Option.map(DirectionalChannelInfo.FromBytes)
+            AnnouncementMsg =
+                let converter = ILightningSerializable.fromBytes
+                ls.ReadOption() |> Option.map(converter)
+        }
         
     member this.Serialize(ls: LightningWriterStream) =
-        failwith ""
+        ls.WriteWithLen(this.Features.ToByteArray())
+        ls.Write(this.NodeOne.Value)
+        this.OneToTwo |> Option.map(fun x -> x.ToBytes()) |> ls.WriteOption
+        ls.Write(this.NodeTwo.Value)
+        this.TwoToOne |> Option.map(fun x -> x.ToBytes()) |> ls.WriteOption
+        this.AnnouncementMsg |> Option.map(fun x -> x.ToBytes()) |> ls.WriteOption
         
     member this.ToBytes() =
         use ms = new MemoryStream()
         use ls = new LightningWriterStream(ms)
         this.Serialize(ls)
         ms.ToArray()
+        
+    static member FromBytes(data: byte[]) =
+        use ms = new MemoryStream(data)
+        use ls = new LightningReaderStream(ms)
+        ChannelInfo.Deserialize(ls)
+
     
 /// Information received in the latest node_announcement from this node.
 type NodeAnnouncementInfo = {
@@ -106,7 +152,7 @@ type NodeAnnouncementInfo = {
     /// Color assigned to the node.
     RGB: RGB
     Alias: uint256
-    Addresses: NetAddress seq
+    Addresses: NetAddress array
     AnnouncementMsg: NodeAnnouncementMsg option
 }
     with
@@ -120,37 +166,79 @@ type NodeAnnouncementInfo = {
             AnnouncementMsg = None
         }
     static member Deserialize(ls: LightningReaderStream) =
-        failwith ""
+        {
+            Features = ls.ReadWithLen() |> FeatureBit.CreateUnsafe
+            LastUpdate = ls.ReadUInt32(false)
+            RGB = ls.ReadRGB()
+            Alias = ls.ReadUInt256 false
+            Addresses =
+                let addrLen = ls.ReadUInt64(false)
+                let ret = ResizeArray()
+                for i in 0..(int addrLen - 1) do
+                    ret.Add(NetAddress.ReadFrom(ls) |> Result.deref)
+                ret.ToArray()
+            AnnouncementMsg =
+                let converter =
+                    ILightningSerializable.fromBytes<NodeAnnouncementMsg>
+                ls.ReadOption() |> Option.map(converter)
+        }
         
     member this.Serialize(ls: LightningWriterStream) =
-        failwith ""
+        ls.WriteWithLen(this.Features.ToByteArray())
+        ls.Write(this.LastUpdate, false)
+        ls.Write(this.RGB)
+        ls.Write(this.Alias, false)
+        let addrLen = this.Addresses |> Seq.length |> uint64
+        ls.Write(addrLen, false)
+        this.Addresses |> Seq.iter(fun a -> a.WriteTo ls)
+        this.AnnouncementMsg |> Option.map(fun m -> m.ToBytes()) |> ls.WriteOption
         
     member this.ToBytes() =
         use ms = new MemoryStream()
         use ls = new LightningWriterStream(ms)
         this.Serialize(ls)
         ms.ToArray()
+        
+    static member FromBytes(data: byte[]) =
+        use ms = new MemoryStream(data)
+        use ls = new LightningReaderStream(ms)
+        NodeAnnouncementInfo.Deserialize(ls)
     
 type NodeInfo = {
     Channels: ShortChannelId list
-    LowestInboundChannelFess: RoutingFees option
+    LowestInboundChannelFees: RoutingFees option
     AnnouncementInfo: NodeAnnouncementInfo option
 }
     with
     static member Deserialize(ls: LightningReaderStream) =
-        failwith ""
+        {
+            Channels =
+                let len = int(ls.ReadUInt64(false))
+                let mutable ret = []
+                for i in 0..(len-1) do
+                    ret <- (ls.ReadUInt64(false) |> ShortChannelId.FromUInt64) :: (ret)
+                ret
+            LowestInboundChannelFees = ls.ReadOption() |> Option.map(RoutingFees.FromBytes)
+            AnnouncementInfo = ls.ReadOption() |> Option.map(NodeAnnouncementInfo.FromBytes)
+        }
         
     member this.Serialize(ls: LightningWriterStream) =
-        failwith ""
+        ls.Write(uint64 this.Channels.Length, false)
+        this.Channels |> Seq.rev |> Seq.iter(fun c -> ls.Write(c))
+        this.LowestInboundChannelFees |> Option.map(fun f -> f.ToBytes()) |> ls.WriteOption
+        this.AnnouncementInfo |> Option.map(fun a -> a.ToBytes()) |> ls.WriteOption
         
     member this.ToBytes() =
         use ms = new MemoryStream()
         use ls = new LightningWriterStream(ms)
         this.Serialize(ls)
         ms.ToArray()
-    
+    static member FromBytes(data: byte[]) =
+        use ms = new MemoryStream(data)
+        use ls = new LightningReaderStream(ms)
+        NodeInfo.Deserialize(ls)
 
-type NetworkGraph = private {
+type NetworkGraph = internal {
     _Channels: Map<ShortChannelId, ChannelInfo>
     _Nodes: Map<ComparablePubKey, NodeInfo>
 }
@@ -167,16 +255,37 @@ type NetworkGraph = private {
         { _Channels = Map.empty
           _Nodes = Map.empty }
     static member Deserialize(ls: LightningReaderStream) =
-        failwith ""
+        {
+            _Channels =
+                let len = int(ls.ReadUInt64(false))
+                let ret = ResizeArray len
+                for i in 0..(len - 1) do
+                    ret.Add((ls.ReadUInt64(false) |> ShortChannelId.FromUInt64, ChannelInfo.Deserialize ls))
+                ret |> Map.ofSeq
+            _Nodes =
+                let len = int(ls.ReadUInt64(false))
+                let ret = ResizeArray len
+                for i in 0..(len - 1) do
+                    ret.Add((ls.ReadPubKey() |> ComparablePubKey, NodeInfo.Deserialize ls))
+                ret |> Map.ofSeq
+        }
         
     member this.Serialize(ls: LightningWriterStream) =
-        failwith ""
+        ls.Write((uint64 this._Channels.Count), false)
+        this._Channels |> Map.iter(fun k v -> ls.Write(k); ls.Write(v.ToBytes()))
+        ls.Write(uint64 this._Nodes.Count, false)
+        this._Nodes |> Map.iter(fun k v -> ls.Write(k.Value); ls.Write(v.ToBytes()))
         
     member this.ToBytes() =
         use ms = new MemoryStream()
         use ls = new LightningWriterStream(ms)
         this.Serialize(ls)
         ms.ToArray()
+        
+    static member FromBytes(data: byte[]) =
+        use ms = new MemoryStream(data)
+        use ls = new LightningReaderStream(ms)
+        NetworkGraph.Deserialize(ls)
     
     member this.GetAddress(pubkey) =
         match this.Nodes.TryGetValue(ComparablePubKey pubkey) with
@@ -185,163 +294,3 @@ type NetworkGraph = private {
         | false, _ ->
             None
             
-    member private this.UpdateNodeFromAnnouncement(msg: NodeAnnouncementMsg, ?remoteNodeId: PubKey) =
-        result {
-            do!
-                match remoteNodeId with
-                | Some k ->
-                    msg.Contents.ToBytes()
-                    |> Hashes.SHA256
-                    |> fun m -> k.VerifyMessage(m, msg.Signature.Value)
-                    |> Result.requireTrue "Failed to verify signature"
-                | None -> Ok()
-            match this.Nodes.TryGetValue(ComparablePubKey msg.Contents.NodeId.Value) with
-            | false, _ ->
-                return! Error("No existing channels for node_announcement")
-            | true, node ->
-                do!
-                    match node.AnnouncementInfo |> Option.bind(fun ann -> if ann.LastUpdate >= msg.Contents.Timestamp then Some() else None) with
-                    | Some _ -> Error "Update older than last processed update"
-                    | None _ -> Ok()
-                    
-                let shouldRelay = msg.Contents.ExcessData.Length = 0 && msg.Contents.ExcessAddressData.Length = 0
-                return Ok(shouldRelay, { node with AnnouncementInfo = Some({ NodeAnnouncementInfo.FromMsg(msg.Contents) with AnnouncementMsg = if shouldRelay then Some(msg) else None }) })
-        }
-        
-    member private this.UpdateChannelFromAnnouncement(msg: ChannelAnnouncementMsg, checkedUtxo: bool) =
-        result {
-            let msgHash = msg.Contents.ToBytes() |> Hashes.SHA256
-            do! msg.Contents.NodeId1.Value.VerifyMessage(msgHash, msg.NodeSignature1.Value) |> Result.requireTrue "Failed to verify node signature1"
-            do! msg.Contents.NodeId2.Value.VerifyMessage(msgHash, msg.NodeSignature2.Value) |> Result.requireTrue "Failed to verify node signature2"
-            do! msg.Contents.BitcoinKey1.Value.VerifyMessage(msgHash, msg.BitcoinSignature1.Value) |> Result.requireTrue "Failed to verify bitcoin signature 1"
-            do! msg.Contents.BitcoinKey2.Value.VerifyMessage(msgHash, msg.BitcoinSignature2.Value) |> Result.requireTrue "Failed to verify bitcoin signature 2"
-            
-            let shouldRelay= msg.Contents.ExcessData.Length = 0
-            let channelInfo = { ChannelInfo.FromMsg(msg.Contents) with AnnouncementMsg = if shouldRelay then Some(msg) else None }
-            
-            let! channels =
-                match this._Channels.TryGetValue(msg.Contents.ShortChannelId) with
-                | true, _ ->
-                    if checkedUtxo then
-                        this._Channels |> Map.remove msg.Contents.ShortChannelId |> Map.add msg.Contents.ShortChannelId channelInfo
-                        |> Ok
-                    else
-                        Error "Already have knowledge of channel"
-                | false, _ ->
-                    this.Channels |> Map.add(msg.Contents.ShortChannelId) (channelInfo) |> Ok
-                
-            let addChannelToNode (nodes: Map<_,_>) (NodeId nodeId) =
-                let nodeId = ComparablePubKey(nodeId)
-                match (nodes |> Map.tryFind nodeId) with
-                | Some _ ->
-                    nodes |> Map.map(fun _ nodeInfo -> { nodeInfo with Channels = (msg.Contents.ShortChannelId) :: nodeInfo.Channels })
-                | None ->
-                    nodes |> Map.add (nodeId) ({ NodeInfo.Channels = [msg.Contents.ShortChannelId]
-                                                 LowestInboundChannelFess = None
-                                                 AnnouncementInfo = None })
-            let nodes = addChannelToNode this.Nodes msg.Contents.NodeId1
-            let nodes = addChannelToNode nodes msg.Contents.NodeId2
-            return (shouldRelay, { this with _Channels = channels; _Nodes = nodes})
-        }
-
-    member private this.RemoveChannelInNodes(m: ChannelInfo, shortChannelId: ShortChannelId) =
-        failwith ""
-    /// Close a channel if a corresponding HTLC fail was sent.
-    /// If permanent, removes a channel from the local storage.
-    /// May cause the removal of nodes too, if this was their last channel.
-    /// If not permanent, makes channels unavailable for routing.
-    member this.CloseChannelFromUpdate(shortChannelId: ShortChannelId, isPermanent: bool) =
-        if isPermanent then
-            match this.Channels |> Map.tryFind shortChannelId with
-            | Some m -> this.RemoveChannelInNodes(m, shortChannelId)
-            | None -> this
-        else
-            let partialPrism = NetworkGraph.Channels_ >-> Map.value_ shortChannelId >-> Option.value_
-            let lens1 = partialPrism >?> ChannelInfo.OneToTwo_ >?> Option.value_ >?> DirectionalChannelInfo.Enabled_
-            let lens2 = partialPrism >?> ChannelInfo.TwoToOne_ >?> Option.value_ >?> DirectionalChannelInfo.Enabled_
-            Optic.set (lens1) false this
-            |> Optic.set (lens2) false
-            
-    member private this.UpdateChannel(msg: ChannelUpdateMsg) =
-        let chanEnabled = msg.Contents.ChannelFlags <> (1uy <<< 1)
-        let mutable chanWasEnabled = false
-        result {
-            let! channel =
-                match this.Channels |> Map.tryFind msg.Contents.ShortChannelId with
-                | Some c -> Ok(c)
-                | None -> Error("Couldn't find channel for update")
-                
-            let maybeUpdateChannelInfo (target: DirectionalChannelInfo option) (NodeId srcNode) =
-                result {
-                    do! 
-                        match target with
-                        | Some existingChanInfo ->
-                            if (existingChanInfo.LastUpdate >= msg.Contents.Timestamp) then
-                                Error("Update older than last processed update")
-                            else
-                                chanWasEnabled <- existingChanInfo.Enabled
-                                Ok()
-                        | None ->
-                            chanWasEnabled <- false
-                            Ok()
-                            
-                    return { DirectionalChannelInfo.Enabled = chanEnabled
-                             LastUpdate = msg.Contents.Timestamp
-                             CltvExpiryDelta = msg.Contents.CLTVExpiryDelta
-                             HTLCMinimumMSat = msg.Contents.HTLCMinimumMSat
-                             Fees = RoutingFees.FromChannelUpdate (msg.Contents)
-                             LastUpdateMessage = Some(msg) }
-                }
-                
-            let msgHash = msg.Contents.ToBytes() |> Hashes.Hash256
-            
-            let! (channel, destNodeId) =
-                if (msg.Contents.MessageFlags &&& 1uy = 1uy) then
-                    if (not <| channel.NodeTwo.Value.Verify(msgHash, msg.Signature.Value)) then
-                        Error("Failed to verify signature")
-                    else
-                        maybeUpdateChannelInfo channel.TwoToOne channel.NodeTwo
-                        |> Result.map(fun newDChannelInfo -> { channel with TwoToOne = Some newDChannelInfo })
-                        |> Result.map(fun newChannelInfo -> (newChannelInfo, channel.NodeOne.Value))
-                else
-                    if (not <| channel.NodeOne.Value.Verify(msgHash, msg.Signature.Value)) then
-                        Error("Failed to verify signature")
-                    else
-                        maybeUpdateChannelInfo channel.OneToTwo channel.NodeOne
-                        |> Result.map(fun newDChannelInfo -> { channel with OneToTwo = Some newDChannelInfo })
-                        |> Result.map(fun newChannelInfo -> (newChannelInfo, channel.NodeTwo.Value))
-                    
-            let node = this.Nodes |> Map.find (ComparablePubKey destNodeId)
-            let node =
-                if chanEnabled then
-                    let mutable baseMSat = msg.Contents.FeeBaseMSat
-                    let mutable proportionalMillionths = msg.Contents.FeeProportionalMillionths
-                    do
-                        match node.LowestInboundChannelFess with
-                        | Some fees ->
-                            baseMSat <- LNMoney.Min(baseMSat, fees.BaseMSat |> LNMoney.MilliSatoshis)
-                            proportionalMillionths <- Math.Min(proportionalMillionths, fees.ProportionalMillionths)
-                        | None -> ()
-                    { node with
-                          LowestInboundChannelFess =
-                            Some({ RoutingFees.BaseMSat = (uint32)baseMSat.MilliSatoshi
-                                   ProportionalMillionths = proportionalMillionths }) }
-                else
-                    let mutable lowestInboundChannelFees = None
-                    node.Channels
-                    |> List.iter(fun chanId ->
-                        let chan = this._Channels |> Map.find chanId
-                        if chan.NodeOne.Value = destNodeId then chan.TwoToOne else chan.OneToTwo
-                        |> Option.iter (fun chanInfo ->
-                            if chanInfo.Enabled then
-                                failwith "Not implemented"
-                            else
-                                failwith "Not implemented"
-                        )
-                        ()
-                    )
-                    failwith "Not implemented"
-            return ({ this with
-                          _Nodes = this.Nodes |> Map.add(ComparablePubKey destNodeId) node
-                          _Channels = this._Channels |> Map.add(msg.Contents.ShortChannelId) channel })
-        }

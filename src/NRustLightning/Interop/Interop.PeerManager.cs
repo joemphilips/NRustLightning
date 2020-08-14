@@ -62,6 +62,66 @@ namespace NRustLightning
                 out handle),
                 check);
         
+        [DllImport(RustLightning, EntryPoint = "create_peer_manager_from_net_graph", ExactSpelling = true,
+            CallingConvention = CallingConvention.Cdecl)]
+        private static extern unsafe FFIResult _create_peer_manager_from_net_graph(
+            IntPtr seedPtr,
+            UserConfig* userConfig,
+            
+            ChannelManagerHandle channelManagerHandle,
+            ref InstallWatchTx installWatchTx,
+            ref InstallWatchOutPoint installWatchOutPoint,
+            ref WatchAllTxn watchAllTxn,
+            ref GetChainUtxo getChainUtxo,
+            ref FilterBlock filterBlock,
+            ref ReEntered reEntered,
+            
+            ref Log log,
+            
+            IntPtr ourNodeSecret,
+            IntPtr networkGraphBufPtr,
+            UIntPtr networkGraphBufLen,
+            out PeerManagerHandle handle
+            );
+
+        internal static unsafe FFIResult create_peer_manager_from_net_graph(
+            IntPtr seed,
+            UserConfig* userConfig,
+            
+            ChannelManagerHandle channelManagerHandle,
+            InstallWatchTx installWatchTx,
+            InstallWatchOutPoint installWatchOutPoint,
+            WatchAllTxn watchAllTxn,
+            GetChainUtxo getChainUtxo,
+            FilterBlock filterBlock,
+            ReEntered reEntered,
+            
+            Log log,
+            
+            IntPtr ourNodeSecret,
+            IntPtr networkGraphBufPtr,
+            UIntPtr networkGraphBufLen,
+            out PeerManagerHandle handle,
+            bool check = true
+            ) =>
+            MaybeCheck(_create_peer_manager_from_net_graph(
+                seed,
+                userConfig,
+                channelManagerHandle,
+                ref installWatchTx,
+                ref installWatchOutPoint,
+                ref watchAllTxn,
+                ref getChainUtxo,
+                ref filterBlock,
+                ref reEntered,
+                
+                ref log,
+                ourNodeSecret,
+                networkGraphBufPtr,
+                networkGraphBufLen,
+                out handle),
+                check);
+        
         
         [DllImport(RustLightning, EntryPoint = "new_inbound_connection", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern FFIResult _new_inbound_connection(
@@ -142,52 +202,23 @@ namespace NRustLightning
             return MaybeCheck(_get_peer_node_ids(bufOut, bufLen, out actualNodeIdsLength, handle), check);
         }
 
-        [DllImport(RustLightning, EntryPoint = "send_non_mpp_payment_with_peer_manager", ExactSpelling = true,
+        [DllImport(RustLightning, EntryPoint = "get_network_graph", ExactSpelling = true,
             CallingConvention = CallingConvention.Cdecl)]
-        private static extern unsafe FFIResult _send_non_mpp_payment_with_peer_manager(
-            byte* theirNodeIdPtr,
-            byte* paymentHashPtr,
-            ref FFIBytes lastHopsPtr,
-            ulong finalValueMSat,
-            uint finalCLTV,
-            PeerManagerHandle peerManagerHandle,
-            ChannelManagerHandle channelManagerHandle);
+        private static extern FFIResult _get_network_graph(
+            IntPtr bufOut,
+            UIntPtr bufLen,
+            out UIntPtr actualLen,
+            PeerManagerHandle peerManagerHandle
+            );
 
-        internal static unsafe FFIResult send_non_mpp_payment_with_peer_manager(
-            byte* theirNodeIdPtr,
-            byte* paymentHashPtr,
-            ref FFIBytes lastHopsPtr,
-            ulong finalValueMSat,
-            uint finalCLTV,
+        internal static FFIResult get_network_graph(
+            IntPtr bufOut,
+            UIntPtr bufLen,
+            out UIntPtr actualLen,
             PeerManagerHandle peerManagerHandle,
-            ChannelManagerHandle channelManagerHandle,
-            bool check = true)
-            => MaybeCheckPaymentFailure(_send_non_mpp_payment_with_peer_manager(theirNodeIdPtr, paymentHashPtr, ref lastHopsPtr, finalValueMSat, finalCLTV, peerManagerHandle, channelManagerHandle), check);
-        
-        [DllImport(RustLightning, EntryPoint = "send_mpp_payment_with_peer_manager", ExactSpelling = true,
-            CallingConvention = CallingConvention.Cdecl)]
-        private static extern unsafe FFIResult _send_mpp_payment_with_peer_manager(
-            byte* theirNodeIdPtr,
-            byte* paymentHashPtr,
-            ref FFIBytes lastHopsPtr,
-            ulong finalValueMSat,
-            uint finalCLTV,
-            byte* paymentSecretPointer,
-            PeerManagerHandle peerManagerHandle,
-            ChannelManagerHandle channelManagerHandle);
+            bool check = true
+        ) => MaybeCheck(_get_network_graph(bufOut, bufLen, out actualLen, peerManagerHandle), check);
 
-        internal static unsafe FFIResult send_mpp_payment_with_peer_manager(
-            byte* theirNodeIdPtr,
-            byte* paymentHashPtr,
-            ref FFIBytes lastHopsPtr,
-            ulong finalValueMSat,
-            uint finalCLTV,
-            byte* paymentSecretPointer,
-            PeerManagerHandle peerManagerHandle,
-            ChannelManagerHandle channelManagerHandle,
-            bool check = true)
-            => MaybeCheckPaymentFailure(_send_mpp_payment_with_peer_manager(theirNodeIdPtr, paymentHashPtr, ref lastHopsPtr, finalValueMSat, finalCLTV, paymentSecretPointer ,peerManagerHandle, channelManagerHandle), check);
-        
         
         [DllImport(RustLightning, EntryPoint = "release_peer_manager", ExactSpelling = true,
             CallingConvention = CallingConvention.Cdecl)]

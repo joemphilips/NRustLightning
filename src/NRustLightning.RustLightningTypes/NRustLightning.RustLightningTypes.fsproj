@@ -11,11 +11,19 @@
         <Compile Include="Event.fs" />
         <Compile Include="ChannelDetails.fs" />
         <Compile Include="RouteHint.fs" />
+        <Compile Include="NetworkGraph.fs" />
         <Compile Include="ChannelKeys.fs" />
+        <Compile Include="NetAddresses.fs" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200716-0844-git-70da61d" />
+      <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>NRustLightning.RustLightningType.Tests</_Parameter1>
+      </AssemblyAttribute>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="DotNetLightning" Version="1.1.2-date20200804-0552-git-21fb15e" />
     </ItemGroup>
 
 </Project>
