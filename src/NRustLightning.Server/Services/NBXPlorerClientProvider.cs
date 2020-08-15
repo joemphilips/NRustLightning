@@ -33,34 +33,17 @@ namespace NRustLightning.Server.Services
                     if (!string.IsNullOrEmpty(config.Value.NBXCookieFile))
                         c.SetCookieAuth(config.Value.NBXCookieFile);
                     c.SetClient(httpClientFactory.CreateClient(nameof(NBXplorerClientProvider)));
-                    // check the connection by getting status.
-                    // TODO: Prepare HostedService for waiting NBXplorer and bitcoind gets ready?
 
-                    int sleepMs = 50;
-                    Exception e = null;
-                    int maxRetry = 6;
-                    c.WaitServerStarted();
-                    for (int count = 0; count <= maxRetry; count++)
+                    var timeout = new CancellationTokenSource(4000);
+                    try
                     {
-                        try
-                        {
-                            var _ = c.GetStatus();
-                            e = null;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning($"Failed to connect to nbxplorer. retrying in {sleepMs} milliseconds...");
-                            e = ex;
-                            Thread.Sleep(sleepMs);
-                            sleepMs *= 2;
-                        }
+                        c.WaitServerStarted(timeout.Token);
+                        c.GetStatus();
                     }
-
-
-                    if (e != null)
+                    catch (Exception)
                     {
-                        _logger.LogCritical($"Failed to connect nbxplorer. check your settings.");
-                        throw e;
+                        _logger.LogError($"Failed to connect to nbxplorer! cryptoCode: {n.CryptoCode} url: {config.Value.NBXplorerUri}. cookiefile: {config.Value.NBXCookieFile}" );
+                        throw;
                     }
 
                     explorerClients.Add(n.CryptoCode, c);
