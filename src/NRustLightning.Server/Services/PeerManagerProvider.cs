@@ -128,7 +128,7 @@ namespace NRustLightning.Server.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogDebug($"failed to resume ManyChannelMonitor. ({ex})");
+                        _logger.LogDebug($"failed to resume ManyChannelMonitor. ({ex.Message})");
                         // we tried enough. creating new one.
                     }
 
@@ -136,6 +136,7 @@ namespace NRustLightning.Server.Services
                     var currentBlockHeader = await nbx.RPCClient.GetBlockHeaderAsync((await nbx.RPCClient.GetBestBlockHashAsync()));
                     if (manyChannelMonitor is null)
                     {
+                        _logger.LogInformation("Creating new ManyChannelMonitor...");
                         manyChannelMonitor = ManyChannelMonitor.Create(n.NBitcoinNetwork, chainWatchInterface, b, logger, feeEst);
                     }
                     // sync channel monitor to the current state.

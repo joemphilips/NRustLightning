@@ -70,7 +70,12 @@ namespace NRustLightning.Server
                 {
                     Version = "v1",
                     Title = "NRustLightning API",
-                    Description = "API endpoint for NRustlightning.Server",
+                    Description = "API endpoint for NRustLightning.Server",
+                    Contact = new OpenApiContact()
+                    {
+                        Name = "Joe Miyamoto",
+                        Email = "joemphilips@gmail.com"
+                    },
                     TermsOfService = new Uri("https://example.com/terms"),
                     License = new OpenApiLicense
                     {

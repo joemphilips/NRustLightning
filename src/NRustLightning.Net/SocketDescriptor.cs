@@ -17,8 +17,6 @@ namespace NRustLightning.Net
 
         /// <summary>
         /// This will be called from rust-lighting, and it writes a data to an output buffer.
-        /// But it does not flush it since flushing requires asynchronous operation.
-        /// You must call `FlushAsync` on caller side.
         /// </summary>
         SendData sendData;
         private DisconnectSocket disconnectSocket;

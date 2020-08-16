@@ -1,5 +1,17 @@
 
-# NRustLightning: C# lightning network daemon powered by [rust-lightning](https://github.com/rust-bitcoin/rust-lightning)
+# NRustLightning: lightning network toolkit and daemon for .NET Core
+
+powered by [rust-lightning](https://github.com/rust-bitcoin/rust-lightning)
+
+# Features
+
+* Security focused
+  * No dependencies besides Microsoft OSS (e.g. AspNetCore) and [Nicolas Dorier](https://github.com/NicolasDorier)'s work (e.g. NBitcoin)
+  * Extensive tests, including integration tests against other LN node implementation.
+* Fully configurable
+  * You can configure every settings for [rust-lightning configuration](https://docs.rs/lightning/0.0.11/lightning/util/config/index.html) as an CLI option fo Environment variable.
+* Loosely coupled architecture.
+  * You can install part of the package if you want to build your own LN wallet
 
 ## Code organization
 

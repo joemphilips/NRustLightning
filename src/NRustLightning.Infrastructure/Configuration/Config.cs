@@ -48,7 +48,7 @@ namespace NRustLightning.Infrastructure.Configuration
             {
                 DataDir = Path.GetDirectoryName(defaultSettings.DefaultDataDir);
                 if (!Directory.Exists(DataDir))
-                    Directory.CreateDirectory(DataDir);
+                    Directory.CreateDirectory(DataDir ?? throw new Exception("Unreachable"));
                 if (!Directory.Exists(defaultSettings.DefaultDataDir))
                     Directory.CreateDirectory(defaultSettings.DefaultDataDir);
             }

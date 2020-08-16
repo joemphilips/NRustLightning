@@ -4,3 +4,6 @@ obj/
 RustFSharpFFI
 data/
 env.sh
+
+swagger.json
+*.zip
