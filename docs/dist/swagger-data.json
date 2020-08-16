@@ -1,0 +1,1098 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "NRustLightning API",
+    "description": "API endpoint for NRustLightning.Server",
+    "termsOfService": "https://example.com/terms",
+    "contact": {
+      "name": "Joe Miyamoto",
+      "email": "joemphilips@gmail.com"
+    },
+    "license": {
+      "name": "Use under MIT license",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "v1"
+  },
+  "paths": {
+    "/v1/Channel/{cryptoCode}": {
+      "get": {
+        "tags": [
+          "Channel"
+        ],
+        "parameters": [
+          {
+            "name": "cryptoCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelInfoResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelInfoResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Channel"
+        ],
+        "parameters": [
+          {
+            "name": "cryptoCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenChannelRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenChannelRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenChannelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Channel"
+        ],
+        "parameters": [
+          {
+            "name": "cryptoCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseChannelRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseChannelRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseChannelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v1/Info": {
+      "get": {
+        "tags": [
+          "Info"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeInfo"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeInfo"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/Payment/{cryptoCode}/invoice": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "parameters": [
+          {
+            "name": "cryptoCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceCreationOption"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceCreationOption"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceCreationOption"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v1/Payment/pay/{bolt11Invoice}": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "parameters": [
+          {
+            "name": "bolt11Invoice",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "amountMSat",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    },
+    "/v1/Peer/connect": {
+      "post": {
+        "tags": [
+          "Peer"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "nullable": true
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "string",
+                "nullable": true
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/Peer/disconnect": {
+      "delete": {
+        "tags": [
+          "Peer"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "nullable": true
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "string",
+                "nullable": true
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/Wallet/{cryptoCode}": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "parameters": [
+          {
+            "name": "cryptoCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v1/Wallet/{cryptoCode}/address": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "parameters": [
+          {
+            "name": "cryptoCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "uint256": {
+        "type": "object",
+        "properties": {
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockHeight": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "item": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "value": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TxIndexInBlock": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "item": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "value": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TxOutIndex": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "item": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "value": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShortChannelId": {
+        "type": "object",
+        "properties": {
+          "blockHeight": {
+            "$ref": "#/components/schemas/BlockHeight"
+          },
+          "blockIndex": {
+            "$ref": "#/components/schemas/TxIndexInBlock"
+          },
+          "txOutIndex": {
+            "$ref": "#/components/schemas/TxOutIndex"
+          },
+          "asString": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShortChannelIdFSharpOption": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/ShortChannelId"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ScriptId": {
+        "type": "object",
+        "properties": {
+          "scriptPubKey": {
+            "$ref": "#/components/schemas/Script"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WitScriptId": {
+        "type": "object",
+        "properties": {
+          "scriptPubKey": {
+            "$ref": "#/components/schemas/Script"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Script": {
+        "type": "object",
+        "properties": {
+          "length": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "paymentScript": {
+            "$ref": "#/components/schemas/Script"
+          },
+          "isWitness": {
+            "type": "boolean",
+            "readOnly": true,
+            "deprecated": true
+          },
+          "isPushOnly": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "hasCanonicalPushes": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "hash": {
+            "$ref": "#/components/schemas/ScriptId"
+          },
+          "witHash": {
+            "$ref": "#/components/schemas/WitScriptId"
+          },
+          "isPayToScriptHash": {
+            "type": "boolean",
+            "readOnly": true,
+            "deprecated": true
+          },
+          "isUnspendable": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isValid": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "KeyId": {
+        "type": "object",
+        "properties": {
+          "scriptPubKey": {
+            "$ref": "#/components/schemas/Script"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WitKeyId": {
+        "type": "object",
+        "properties": {
+          "scriptPubKey": {
+            "$ref": "#/components/schemas/Script"
+          },
+          "witScriptPubKey": {
+            "$ref": "#/components/schemas/Script"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PubKey": {
+        "type": "object",
+        "properties": {
+          "hash": {
+            "$ref": "#/components/schemas/KeyId"
+          },
+          "witHash": {
+            "$ref": "#/components/schemas/WitKeyId"
+          },
+          "isCompressed": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "scriptPubKey": {
+            "$ref": "#/components/schemas/Script"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FeatureBit": {
+        "type": "object",
+        "properties": {
+          "bitArray": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false
+            },
+            "nullable": true
+          },
+          "byteArray": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
+          },
+          "prettyPrint": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChannelDetails": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "$ref": "#/components/schemas/uint256"
+          },
+          "shortChannelId": {
+            "$ref": "#/components/schemas/ShortChannelIdFSharpOption"
+          },
+          "remoteNetworkId": {
+            "$ref": "#/components/schemas/PubKey"
+          },
+          "counterPartyFeatures": {
+            "$ref": "#/components/schemas/FeatureBit"
+          },
+          "channelValueSatoshis": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "outboundCapacityMSat": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "inboundCapacityMSat": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "isLive": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChannelInfoResponse": {
+        "type": "object",
+        "properties": {
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelDetails"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChannelHandshakeConfig": {
+        "type": "object",
+        "properties": {
+          "minimumDepth": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ourToSelfDelay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ourHtlcMinimumMsat": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChannelHandshakeLimits": {
+        "type": "object",
+        "properties": {
+          "minFundingSatoshis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "maxHtlcMinimumMsat": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "minMaxHtlcValueInFlightMsat": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "maxChannelReserveSatoshis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "minMaxAcceptedHtlcs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minDustLimitSatoshis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "maxDustLimitSatoshis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "maxMinimumDepth": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "forceAnnouncedChannelPreference": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "theirToSelfDelay": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChannelConfig": {
+        "type": "object",
+        "properties": {
+          "feeProportionalMillionths": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "announcedChannel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "commitUpfrontShutdownPubkey": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserConfig": {
+        "type": "object",
+        "properties": {
+          "ownChannelConfig": {
+            "$ref": "#/components/schemas/ChannelHandshakeConfig"
+          },
+          "peerChannelConfigLimits": {
+            "$ref": "#/components/schemas/ChannelHandshakeLimits"
+          },
+          "channelOptions": {
+            "$ref": "#/components/schemas/ChannelConfig"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OpenChannelRequest": {
+        "type": "object",
+        "properties": {
+          "theirNetworkKey": {
+            "$ref": "#/components/schemas/PubKey"
+          },
+          "channelValueSatoshis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pushMSat": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overrideConfig": {
+            "$ref": "#/components/schemas/UserConfig"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "CloseChannelRequest": {
+        "type": "object",
+        "properties": {
+          "theirNetworkKey": {
+            "$ref": "#/components/schemas/PubKey"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddressFamily": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          28,
+          29,
+          65536,
+          65537,
+          -1
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "EndPoint": {
+        "type": "object",
+        "properties": {
+          "addressFamily": {
+            "$ref": "#/components/schemas/AddressFamily"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PeerConnectionString": {
+        "type": "object",
+        "properties": {
+          "nodeId": {
+            "$ref": "#/components/schemas/PubKey"
+          },
+          "endPoint": {
+            "$ref": "#/components/schemas/EndPoint"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NodeInfo": {
+        "type": "object",
+        "properties": {
+          "numConnected": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nodeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "connectionString": {
+            "$ref": "#/components/schemas/PeerConnectionString"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LNMoney": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "item": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "milliSatoshi": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "satoshi": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "btc": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "value": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TimeSpan": {
+        "type": "object",
+        "properties": {
+          "ticks": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "days": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "hours": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "milliseconds": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "minutes": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "seconds": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "totalDays": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "totalHours": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "totalMilliseconds": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "totalMinutes": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "totalSeconds": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "InvoiceCreationOption": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/LNMoney"
+          },
+          "paymentSecret": {
+            "$ref": "#/components/schemas/uint256"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiry": {
+            "$ref": "#/components/schemas/TimeSpan"
+          },
+          "fallbackAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "encodeDescriptionWithHash": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
