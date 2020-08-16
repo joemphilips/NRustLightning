@@ -51,6 +51,24 @@ You must make sure to connect to your [nbxplorer](https://github.com/dgarage/NBX
 
 If you don't have any, you can try with regtest in docker-compose. See below.
 
+
+
+## REST API
+
+See [here for the swagger documentation for the server API](https://joemphilips.github.io/NRustLightning/dist/)
+
+
+
+You can check the document in local if you are running in debug build. If you want to check it out quickly, first run regtest server by
+
+```
+source tests/NRustLightning.Server.Tests/env.sh
+docker-compose -f tests/NRustLightning.Server.Tests/docker-compose.yml up
+```
+
+and access to `http://localhost:10320/swagger/`
+
+
 ## Single file executable
 
 `NRustLightning.CLI` and `NRustLightning.Server` supports single file executable.
@@ -92,14 +110,3 @@ docker-compose -f tests/NRustLightning.Server.Tests/docker-compose.yml up
 ./tests/NRustLightning.Server.Tests/docker-lnd-cli.sh
 ```
 
-## API
-
-We expose the swagger endpoint in debug build. If you want to check it out quickly, first run regtest server by
-
-```
-source tests/NRustLightning.Server.Tests/env.sh
-docker-compose -f tests/NRustLightning.Server.Tests/docker-compose.yml up
-```
-
-
-and access to `http://localhost:10320/swagger/`
