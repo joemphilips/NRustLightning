@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -22,50 +23,52 @@ namespace NRustLightning.Infrastructure.Configuration
         public Uri NBXplorerUri { get; set; } = new Uri(Constants.DefaultNBXplorerUri);
         public string? NBXCookieFile = null;
         public string ConfigurationFile { get; set; } = "nrustlightning.conf";
-        public string DataDir { get; set; } = Constants.DataDirectoryPath;
+        public string DataDir { get; set; }
         public List<ChainConfiguration> ChainConfiguration { get; } = new List<ChainConfiguration>();
 
         public UserConfigObject RustLightningConfig { get; set; } = new UserConfigObject();
 
-        public Func<Task<byte[]>>? GetSeed;
-        
         public string DBFilePath { get; set; }
 
         public int PaymentTimeoutSec { get; set; } = Constants.DefaultPaymentTimeoutSec;
 
         public int DBCacheMB { get; set; } = Constants.DefaultDBCacheMB;
+        private ILogger? _logger;
+
+        private string? _seedFromConfig;
+
+        private string? _pin;
         
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
+        
+        public string SeedFilePath { get; set; }
 
         public Config LoadArgs(IConfiguration config, ILogger? logger)
         {
+            _logger = logger;
             var networkType = config.GetNetworkType();
-            logger.LogInformation($"Network type: {networkType}");
+            logger?.LogInformation($"Network type: {networkType}");
             NetworkProvider = new NRustLightningNetworkProvider(networkType);
             var defaultSettings = NRustLightningDefaultSettings.GetDefaultSettings(NetworkProvider.NetworkType);
-            DataDir = config.GetOrDefault<string>("datadir", null);
-            if (DataDir is null)
-            {
-                DataDir = Path.GetDirectoryName(defaultSettings.DefaultDataDir);
-                if (!Directory.Exists(DataDir))
-                    Directory.CreateDirectory(DataDir ?? throw new Exception("Unreachable"));
-                if (!Directory.Exists(defaultSettings.DefaultDataDir))
-                    Directory.CreateDirectory(defaultSettings.DefaultDataDir);
-            }
+            var d = config.GetOrDefault<string>("datadir", null);
+            DataDir = d is null ? Path.GetDirectoryName(defaultSettings.DefaultDataDir) : Path.Join(d, NRustLightningDefaultSettings.GetFolderName(networkType));
+            
+            if (!Directory.Exists(DataDir))
+                Directory.CreateDirectory(DataDir ?? throw new Exception("Unreachable"));
 
             var nbxConfig = config.GetSection("nbx");
             var nbxCookieFile =
                 nbxConfig.GetOrDefault("cookiefile",
-                    Constants.DefaultNBXplorerCookieFile(NetworkProvider.NetworkType));
+                    Constants.DefaultNbXplorerCookieFile(NetworkProvider.NetworkType));
             NBXplorerUri = new Uri(nbxConfig.GetOrDefault("rpcurl", Constants.DefaultNBXplorerUri));
             
             if (!File.Exists(nbxCookieFile))
             {
-                logger.LogWarning($"cookie file for nbxplorer does not exist in {nbxCookieFile}" +
+                logger?.LogWarning($"cookie file for nbxplorer does not exist in {nbxCookieFile}" +
                                   " Make sure you are running nbx with --noauth.");
             }
 
-            logger.LogInformation($"nbxplorer url {NBXplorerUri}");
+            logger?.LogInformation($"nbxplorer url {NBXplorerUri}");
             NBXCookieFile = nbxCookieFile;
 
             var p2pExternalIp = config.GetOrDefault("externalip", Constants.DefaultP2PExternalIpStr);
@@ -93,8 +96,8 @@ namespace NRustLightning.Infrastructure.Configuration
             else
                 throw new ConfigException($"Invalid external ip {p2pExternalIp}");
             
-            logger.LogInformation($"Advertising external ip: {P2PExternalIp.ToEndpointString()}");
-            logger.LogDebug($"Network: {NetworkProvider.NetworkType.ToString()}");
+            logger?.LogInformation($"Advertising external ip: {P2PExternalIp.ToEndpointString()}");
+            logger?.LogDebug($"Network: {NetworkProvider.NetworkType.ToString()}");
             var supportedChains = config.GetOrDefault<string>("chains", "BTC")
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(t => t.ToLowerInvariant());
@@ -110,7 +113,7 @@ namespace NRustLightning.Infrastructure.Configuration
                     chainConfiguration.Rpc = args.ConfigureRPCClient(n, logger);
                     if (chainConfiguration.Rpc.Address.Port == n.NBitcoinNetwork.DefaultPort)
                     {
-                        logger.LogWarning($"{n.CryptoCode}: It seems that the１ RPC port ({chainConfiguration.Rpc.Address.Port}) is equal to the default P2P port ({n.NBitcoinNetwork.DefaultPort}, this is probably a misconfiguration)");
+                        logger?.LogWarning($"{n.CryptoCode}: It seems that the１ RPC port ({chainConfiguration.Rpc.Address.Port}) is equal to the default P2P port ({n.NBitcoinNetwork.DefaultPort}, this is probably a misconfiguration)");
                     }
                     if((chainConfiguration.Rpc.CredentialString.CookieFile != null || chainConfiguration.Rpc.CredentialString.UseDefault) && !n.SupportCookieAuthentication)
                     {
@@ -127,41 +130,65 @@ namespace NRustLightning.Infrastructure.Configuration
 
             config.GetSection("ln").Bind(RustLightningConfig);
 
-            string? seed = null;
-            var filePath = Path.Join(DataDir, "node_secret");
-            if (File.Exists(filePath))
-            {
-                logger.LogDebug($"reading seed from {filePath}");
-                seed = File.ReadAllText(filePath);
-            }
-            if (seed is null)
-                seed = config.GetOrDefault("seed", String.Empty);
-            if (String.IsNullOrEmpty(seed))
-            {
-                logger.LogWarning($"seed not found in {filePath}! You can specify it with --seed option.");
-                logger.LogInformation("generating new seed...");
-                seed = RandomUtils.GetUInt256().ToString();
-            }
 
             DBFilePath = Path.Combine(DataDir, "Db.dat");
             if (!Directory.Exists(DBFilePath))
                 Directory.CreateDirectory(DBFilePath);
             
-            var h = new HexEncoder();
-            if (!(h.IsValid(seed) && seed.Length == 64))
-            {
-                throw new NRustLightningException($"Seed corrupted {seed}");
-            }
-            File.WriteAllText(filePath, seed);
-            GetSeed = async () => {
-                var s = await File.ReadAllTextAsync(filePath);
-                return h.DecodeData(s);
-            };
-
             PaymentTimeoutSec = config.GetOrDefault("paymenttimeout", Constants.DefaultPaymentTimeoutSec);
 
             DBCacheMB = config.GetOrDefault("dbcache", Constants.DefaultDBCacheMB);
+            _seedFromConfig = config.GetOrDefault("seed", string.Empty);
+            _pin = config.GetOrDefault("pin", string.Empty);
+            SeedFilePath = Path.Join(DataDir, "node_secret");
             return this;
+        }
+
+        public async Task<string?> TryGetEncryptedSeed()
+        {
+            if (!File.Exists(SeedFilePath)) return null;
+            _logger?.LogDebug($"reading seed from {SeedFilePath}");
+            var encryptedSeed = await File.ReadAllTextAsync(SeedFilePath);
+            return string.IsNullOrEmpty(encryptedSeed) ? null : encryptedSeed;
+        }
+
+        public bool HasSeedInConfig => !string.IsNullOrEmpty(_seedFromConfig);
+
+        public string GetSeedInConfig()
+        {
+            Debug.Assert(HasSeedInConfig);
+            return _seedFromConfig;
+        }
+
+        public string Pin => _pin;
+
+        public string GetNewPin()
+        {
+            string pin = _pin;
+            if (!string.IsNullOrEmpty(pin)) return pin;
+            
+            while (true)
+            {
+                Console.WriteLine("Please enter the pin code to secure your seed on disk");
+                var pin1 = Console.ReadLine();
+                Console.WriteLine("Please enter again:");
+                var pin2 = Console.ReadLine();
+                if (pin1 == pin2 && !string.IsNullOrEmpty(pin1))
+                {
+                    pin = pin1;
+                    break;
+                }
+                else if (pin1 == pin2)
+                {
+                    Console.WriteLine("You cannot specify empty pin code");
+                }
+                else
+                {
+                    Console.WriteLine("pin code mismatch! try again");
+                }
+            }
+
+            return pin;
         }
     }
 }

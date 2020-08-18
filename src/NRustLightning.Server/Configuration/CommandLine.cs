@@ -37,8 +37,10 @@ namespace NRustLightning.Server.Configuration
                         Argument = new Argument<DirectoryInfo> {Arity = ArgumentArity.ZeroOrOne}
                     },
                     
-                    new Option<string>(new [] {"-s", "--seed"}, @"The node seed (in 32 bytes hex). If not provided, it tries to read from path specified in config.
+                    new Option<string>(new [] {"-s", "--seed"}, @"The node seed (in 32 bytes hex). If not provided, it tries to read from the path specified in config.
 If the server couldn't find any, it will create a new seed.
+Note that this option should be used only for the testing.
+The server does not store the seed on disk and instead it holds on memory.
 ")
                     {
                         Argument = new Argument<string>() { Arity = ArgumentArity.ZeroOrOne }
@@ -107,6 +109,14 @@ If the server couldn't find any, it will create a new seed.
                     new Option<int>("--dbcache", $"database cache size (in MB). (default: {Constants.DefaultDBCacheMB})")
                     {
                         Argument = new Argument<int> { Arity =  ArgumentArity.ZeroOrOne }
+                    },
+                    new Option<string>("--pin", @"utf-8 encoded password for encrypting our seed before storing on a disk.
+It can be anything but we recommend it to be long enough to assure the cryptographic security. If the size is larger than the 32 bytes, the entropy won't increase anymore.
+This option will be ignored if you specify the seed directly from the option (e.g. by `--seed` cli argument)
+(default: server asks you to enter from console)
+")
+                    {
+                        Argument = new Argument<string> { Arity = ArgumentArity.ZeroOrOne }
                     }
                 };
             options.AddRange(op);

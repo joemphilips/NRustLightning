@@ -22,10 +22,6 @@ namespace NRustLightning.Infrastructure.Repository
         public RepositoryProvider(NRustLightningNetworkProvider networks, IOptions<Config> config, IServiceProvider serviceProvider)
         {
             Config = config.Value;
-            var directory = Path.Combine(Config.DataDir, "db");
-            if (!Directory.Exists(directory))
-                Directory.CreateDirectory(directory);
-
             foreach (var n in networks.GetAll())
             {
                 var settings = GetChainSetting(n);
