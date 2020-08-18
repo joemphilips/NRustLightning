@@ -8,6 +8,7 @@ powered by [rust-lightning](https://github.com/rust-bitcoin/rust-lightning)
 * Security focused
   * No dependencies besides Microsoft OSS (e.g. AspNetCore) and [Nicolas Dorier](https://github.com/NicolasDorier)'s work (e.g. NBitcoin)
   * Extensive tests, including integration tests against other LN node implementation.
+  * encrypt node master secret by user-provided password (pin) before storing it to the disk.
 * Fully configurable
   * You can configure every settings for [rust-lightning configuration](https://docs.rs/lightning/0.0.11/lightning/util/config/index.html) as an CLI option fo Environment variable.
 * Loosely coupled architecture.
@@ -30,7 +31,7 @@ from low level to high level...
 * `src/NRustLightning`
   * library to interoperate with rust-lightning through abi.
 * `src/NRustLightning.Net`
-  * library to connect above to the transport layer. primarily through TCP socket.
+  * library to connect above package to the transport layer. primarily through TCP socket.
   * Probably this is the one you want to use if you are considering to build your own wallet.
 * `src/NRustLightning.Infrastructure`
   * library which contains logic for both server and client.
