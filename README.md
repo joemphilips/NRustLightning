@@ -13,6 +13,16 @@ powered by [rust-lightning](https://github.com/rust-bitcoin/rust-lightning)
 * Loosely coupled architecture.
   * You can install part of the package if you want to build your own LN wallet
 
+## Compilation
+
+Basically all you need to compile the server is
+
+1. Latest Version of DotNet SDK
+2. nightly version of the Cargo
+
+check out [the Dockerfile](./src/NRustLightning.Server/Dockerfile) for the detail
+
+
 ## Code organization
 
 from low level to high level...
@@ -31,6 +41,7 @@ from low level to high level...
 * `src/NRustLightning.CLI`
   * command-line application  to work with the server. Which wraps the client.
   * This is still pretty much WIP
+
 
 ## How to configure the server
 
