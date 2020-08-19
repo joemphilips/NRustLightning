@@ -68,7 +68,7 @@ namespace NRustLightning.Server.Tests
         /// <param name="output"></param>
         /// <param name="caller"></param>
         /// <returns></returns>
-        public static async Task<ExplorerClient> StartExplorerFixtureAsync(this DockerFixture dockerFixture, ITestOutputHelper output, string caller)
+        public static async Task<ExplorerClient> StartExplorerFixtureAsync(this DockerFixture dockerFixture, string caller)
         {
             var ports = new int[2];
             Support.Utils.FindEmptyPort(ports);
@@ -100,40 +100,29 @@ namespace NRustLightning.Server.Tests
                     w.WriteLine($"export {kv.Key}='{kv.Value}'");
                 }
             }
-            try
+            await dockerFixture.InitAsync(() => new DockerFixtureOptions
             {
-                await dockerFixture.InitAsync(() => new DockerFixtureOptions
+                DockerComposeFiles = new[] {"docker-compose.base.yml"},
+                EnvironmentVariables = env,
+                DockerComposeDownArgs = "--remove-orphans --volumes",
+                // we need this because c-lightning is not working well with bind mount.
+                // If we use volume mount instead, this is the only way to recreate the volume at runtime.
+                DockerComposeUpArgs = "--renew-anon-volumes",
+                StartupTimeoutSecs = 400,
+                LogFilePath = Path.Join(dataPath, "docker-compose.log"),
+                CustomUpTest = o =>
                 {
-                    DockerComposeFiles = new[] {"docker-compose.base.yml"},
-                    EnvironmentVariables = env,
-                    DockerComposeDownArgs = "--remove-orphans --volumes",
-                    // we need this because c-lightning is not working well with bind mount.
-                    // If we use volume mount instead, this is the only way to recreate the volume at runtime.
-                    DockerComposeUpArgs = "--renew-anon-volumes",
-                    StartupTimeoutSecs = 400,
-                    LogFilePath = Path.Join(dataPath, "docker-compose.log"),
-                    CustomUpTest = o =>
-                    {
-                        return
-                            o.Any(x => x.Contains("BTC: Node state changed: NBXplorerSynching => Ready")); // nbx is up
-                    }
-                });
-            }
-            catch (DockerComposeException ex)
-            {
-                foreach (var m in ex.DockerComposeOutput)
-                {
-                    output.WriteLine(m);
-                    throw;
+                    return
+                        o.Any(x => x.Contains("BTC: Node state changed: NBXplorerSynching => Ready")); // nbx is up
                 }
-            }
+            });
             
             var networkProvider = new NRustLightningNetworkProvider(NetworkType.Regtest);
             var btcNetwork = networkProvider.GetByCryptoCode("BTC");
             return new ExplorerClient(btcNetwork.NbXplorerNetwork, new Uri($"http://localhost:{ports[1]}"));
         }
         
-        public static async Task<Clients> StartLNTestFixtureAsync(this DockerFixture dockerFixture, ITestOutputHelper output, string caller, bool useCachedData = false)
+        public static async Task<Clients> StartLNTestFixtureAsync(this DockerFixture dockerFixture, string caller, bool useCachedData = false)
         {
             var ports = new int[5];
             Support.Utils.FindEmptyPort(ports);
@@ -167,37 +156,26 @@ namespace NRustLightning.Server.Tests
                     w.WriteLine($"export {kv.Key}='{kv.Value}'");
                 }
             }
-            try
+            await dockerFixture.InitAsync(() => new DockerFixtureOptions
             {
-                await dockerFixture.InitAsync(() => new DockerFixtureOptions
+                DockerComposeFiles = new[] {"docker-compose.yml"},
+                EnvironmentVariables = env,
+                DockerComposeDownArgs = "--remove-orphans --volumes",
+                // we need this because c-lightning is not working well with bind mount.
+                // If we use volume mount instead, this is the only way to recreate the volume at runtime.
+                DockerComposeUpArgs = "--renew-anon-volumes",
+                StartupTimeoutSecs = 400,
+                LogFilePath = Path.Join(dataPath, "docker-compose.log"),
+                CustomUpTest = o =>
                 {
-                    DockerComposeFiles = new[] {"docker-compose.yml"},
-                    EnvironmentVariables = env,
-                    DockerComposeDownArgs = "--remove-orphans --volumes",
-                    // we need this because c-lightning is not working well with bind mount.
-                    // If we use volume mount instead, this is the only way to recreate the volume at runtime.
-                    DockerComposeUpArgs = "--renew-anon-volumes",
-                    StartupTimeoutSecs = 400,
-                    LogFilePath = Path.Join(dataPath, "docker-compose.log"),
-                    CustomUpTest = o =>
-                    {
-                        return
-                            o.Any(x => x.Contains("Listening for P2P message from any IP on port")) // nrustlightning is up
-                            && o.Any(x => x.Contains("PeerManagerProvider started")) // ditto
-                            && o.Any(x => x.Contains("Server started with public key")) // lightningd is up
-                            && o.Any(x => x.Contains("BTC: Node state changed: NBXplorerSynching => Ready")) // nbx is up
-                            && o.Any(x => x.Contains("BTCN: Server listening on")); // lnd is up
-                    }
-                });
-            }
-            catch (DockerComposeException ex)
-            {
-                foreach (var m in ex.DockerComposeOutput)
-                {
-                    output.WriteLine(m);
-                    throw;
+                    return
+                        o.Any(x => x.Contains("Listening for P2P message from any IP on port")) // nrustlightning is up
+                        && o.Any(x => x.Contains("PeerManagerProvider started")) // ditto
+                        && o.Any(x => x.Contains("Server started with public key")) // lightningd is up
+                        && o.Any(x => x.Contains("BTC: Node state changed: NBXplorerSynching => Ready")) // nbx is up
+                        && o.Any(x => x.Contains("BTCN: Server listening on")); // lnd is up
                 }
-            }
+            });
             
             var networkProvider = new NRustLightningNetworkProvider(NetworkType.Regtest);
             var btcNetwork = networkProvider.GetByCryptoCode("BTC");

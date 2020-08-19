@@ -8,6 +8,7 @@ using NBitcoin;
 using NBitcoin.RPC;
 using NRustLightning.Client;
 using System.Linq;
+using Xunit;
 
 namespace NRustLightning.Server.Tests.Support
 {
@@ -32,17 +33,35 @@ namespace NRustLightning.Server.Tests.Support
 
         public async Task OutBoundConnectAll()
         {
-            var clightningInfo = await ClightningLNClient.GetInfo();
-            await NRustLightningHttpClient.ConnectAsync(clightningInfo.NodeInfoList.FirstOrDefault().ToConnectionString());
-            var lndInfo = await LndLNClient.GetInfo();
-            await NRustLightningHttpClient.ConnectAsync(lndInfo.NodeInfoList.FirstOrDefault().ToConnectionString());
-            await LndLNClient.ConnectTo(clightningInfo.NodeInfoList.FirstOrDefault());
+            var clightningPeerInfo = await CLightningClient.ListPeersAsync();
+            var lndPeerInfo = await LndClient.SwaggerClient.ListPeersAsync();
+
+            var nrlInfo = await NRustLightningHttpClient.GetInfoAsync();
+            if (clightningPeerInfo.Any(x => x.Id.Equals(nrlInfo.ConnectionString.NodeId.ToHex()))
+                && lndPeerInfo.Peers.Any(x => x.Pub_key.Equals(nrlInfo.ConnectionString.NodeId.ToHex())))
+                return;
+
+            var lndConnString = (await LndLNClient.GetInfo()).NodeInfoList.First().ToConnectionString();
+            var clightningConnString = (await ClightningLNClient.GetInfo()).NodeInfoList.First().ToConnectionString();
+            await NRustLightningHttpClient.ConnectAsync(lndConnString);
+            await NRustLightningHttpClient.ConnectAsync(clightningConnString);
+
+            await Support.Utils.Retry(4, TimeSpan.FromSeconds(2), async () =>
+            {
+                clightningPeerInfo = await CLightningClient.ListPeersAsync();
+                lndPeerInfo = await LndClient.SwaggerClient.ListPeersAsync();
+                nrlInfo = await NRustLightningHttpClient.GetInfoAsync();
+                return
+                    nrlInfo.NodeIds.Count >= 2 &&
+                    clightningPeerInfo.Any(x => x.Id.Equals(nrlInfo.ConnectionString.NodeId.ToHex())) &&
+                    lndPeerInfo.Peers.Any(x => x.Pub_key.Equals(nrlInfo.ConnectionString.NodeId.ToHex()));
+            }, "Failed to establish outbound connection");
         }
 
         public async Task PrepareFunds()
         {
             var nrlBalance = (await NRustLightningHttpClient.GetWalletInfoAsync()).OnChainBalanceSatoshis;
-            if (nrlBalance > 0)
+            if (nrlBalance > 200000)
             {
                 return;
             }
@@ -105,20 +124,28 @@ namespace NRustLightning.Server.Tests.Support
 
         public async Task CreateEnoughTxToEstimateFee()
         {
-            var txPerBlock = 6;
-            var nBlock = 6;
-            for (int i = 0; i < nBlock; i++)
+            try
             {
-                for (int j = 0; j < txPerBlock; j++)
+                await this.NBXClient.GetFeeRateAsync(30);
+            }
+            catch
+            {
+
+                var txPerBlock = 6;
+                var nBlock = 6;
+                for (int i = 0; i < nBlock; i++)
                 {
-                    var addr = new Key().PubKey.GetSegwitAddress(Network.RegTest);
-                    await this.BitcoinRPCClient.SendToAddressAsync(addr, Money.Coins(0.1m));
+                    for (int j = 0; j < txPerBlock; j++)
+                    {
+                        var addr = new Key().PubKey.GetSegwitAddress(Network.RegTest);
+                        await this.BitcoinRPCClient.SendToAddressAsync(addr, Money.Coins(0.1m));
+                    }
+
+                    await BitcoinRPCClient.GenerateAsync(1);
                 }
 
-                await BitcoinRPCClient.GenerateAsync(1);
+                await WaitChainSync();
             }
-
-            await WaitChainSync();
         }
     }
 }

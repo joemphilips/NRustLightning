@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,20 +16,21 @@ using Xunit.Abstractions;
 
 namespace NRustLightning.Server.Tests.LNIntegrationTests
 {
-    public abstract class LNIntegrationTestsBase : IClassFixture<DockerFixture>
+    public class LNIntegrationTestsBase : DockerFixture
     {
-        protected readonly DockerFixture _dockerFixture;
-        protected readonly ITestOutputHelper _output;
+        protected readonly IMessageSink _output;
         protected Clients _clients;
         
-        protected LNIntegrationTestsBase (DockerFixture dockerFixture, ITestOutputHelper output)
+        public LNIntegrationTestsBase (IMessageSink output) : base(output)
         {
-            _dockerFixture = dockerFixture;
             _output = output;
-            _clients = _dockerFixture.StartLNTestFixtureAsync(_output, this.GetType().Name).GetAwaiter().GetResult();
+            var id = new Guid();
+            _clients = this.StartLNTestFixtureAsync(this.GetType().Name + $"-{id}").GetAwaiter().GetResult();
         }
 
-        protected async Task OutBoundChannelOpenRoundtrip(Clients clients, ILightningClient remoteClient)
+        public Clients Clients => _clients;
+
+        public async Task OutBoundChannelOpenRoundtrip(Clients clients, ILightningClient remoteClient)
         {
             var walletInfo = await clients.NRustLightningHttpClient.GetWalletInfoAsync();
             var info = await remoteClient.GetInfo();
@@ -65,13 +67,13 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
                     var maybeRemoteChannel = (await remoteClient.ListChannels()).FirstOrDefault(c => c.RemoteNode.Equals(localId));
                     return maybeRemoteChannel != null;
                 }
-            });
+            }, "Failed to create outbound channel");
         }
         internal async Task OutboundChannelCloseRoundtrip(Clients clients, ILightningClient remoteClient)
         {
             var info = await remoteClient.GetInfo();
             var localInfo = (await clients.NRustLightningHttpClient.GetInfoAsync());
-            var theirNodeKey = info.NodeInfoList.FirstOrDefault(x => !x.NodeId.Equals(localInfo.ConnectionString.NodeId))?.NodeId ?? Infrastructure.Utils.Utils.Fail<PubKey>("Channel Seems already closed");
+            var theirNodeKey =  info.NodeInfoList.FirstOrDefault(x => !x.NodeId.Equals(localInfo.ConnectionString.NodeId))?.NodeId ?? Infrastructure.Utils.Utils.Fail<PubKey>("Channel Seems already closed");
             await clients.NRustLightningHttpClient.CloseChannelAsync(theirNodeKey);
             await Support.Utils.Retry(20, TimeSpan.FromSeconds(2), async () =>
             {
@@ -83,16 +85,29 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
                     return false;
                 var maybeRemoteChannel = (await remoteClient.ListChannels()).FirstOrDefault(c => c.RemoteNode.Equals(localInfo.ConnectionString.NodeId));
                 return (maybeRemoteChannel is null || !maybeRemoteChannel.IsActive);
-            });
+            }, "failed to close channel");
         }
         internal async Task InboundChannelOpenRoundtrip(Clients clients, ILightningClient remoteClient)
         {
             var localInfo = await clients.NRustLightningHttpClient.GetInfoAsync();
             var feeRate = (await clients.NBXClient.GetFeeRateAsync(3)).FeeRate;
-            await remoteClient.OpenChannel(new BTCPayServer.Lightning.OpenChannelRequest()
-                {NodeInfo = localInfo.ConnectionString.ToNodeInfo(), ChannelAmount = 100000, FeeRate = feeRate});
+            if (remoteClient is CLightningClient cli)
+            {
+                var c = (await cli.ListPeersAsync()).First(x => x.Id.Equals(localInfo.ConnectionString.NodeId.ToHex()));
+                var p = c.NetworkAddresses[0].Split(":");
+                var (host, port) = (p[0], int.Parse(p[1]));
+                Console.WriteLine($"Host: {host}. port {port}");
+                await remoteClient.OpenChannel(new BTCPayServer.Lightning.OpenChannelRequest()
+                    {NodeInfo = new NodeInfo(localInfo.ConnectionString.NodeId, host, port), ChannelAmount = 100000, FeeRate = feeRate});
+            }
+            else
+            {
+                await remoteClient.OpenChannel(new BTCPayServer.Lightning.OpenChannelRequest()
+                    {NodeInfo = localInfo.ConnectionString.ToNodeInfo(), ChannelAmount = 100000, FeeRate = feeRate});
+            }
+
             // wait until bitcoind detects unconfirmed funding tx on mempool.
-            await Support.Utils.Retry(12, TimeSpan.FromSeconds(1.5), async () =>
+            await Support.Utils.Retry(8, TimeSpan.FromSeconds(1.5), async () =>
             {
                 var m = await clients.BitcoinRPCClient.GetRawMempoolAsync();
                 return m.Length > 0;
@@ -103,7 +118,7 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
             var theirNodeKey = remoteInfo.NodeInfoList.FirstOrDefault(x => !x.NodeId.Equals(localInfo.ConnectionString.NodeId))?.NodeId ?? Infrastructure.Utils.Utils.Fail<PubKey>("Channel Seems already closed");
             var addr = await clients.NRustLightningHttpClient.GetNewDepositAddressAsync();
             await clients.BitcoinRPCClient.GenerateToAddressAsync(10, addr.Address);
-            await Support.Utils.Retry(20, TimeSpan.FromSeconds(2.0), async () =>
+            await Support.Utils.Retry(15, TimeSpan.FromSeconds(2.0), async () =>
             {
                 await clients.BitcoinRPCClient.GenerateToAddressAsync(2, addr.Address);
                 var maybeLocalChannel = (await clients.NRustLightningHttpClient.GetChannelDetailsAsync()).Details.FirstOrDefault(c => c.RemoteNetworkId.Equals(theirNodeKey));
@@ -123,10 +138,10 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
                     Assert.NotNull(channelList);
                     return (channelList.Length > 0 && channelList.First().IsActive && channelList.First().RemoteNode.Equals(localInfo.ConnectionString.NodeId));
                 }
-            });
+            }, "failed to create inbound channel");
         }
 
-        protected async Task InboundPaymentRoundTrip(Clients clients, ILightningClient lnClient)
+        public async Task InboundPaymentRoundTrip(Clients clients, ILightningClient lnClient)
         {
             
             var resp = await clients.NRustLightningHttpClient.GetInvoiceAsync(new InvoiceCreationOption { Amount = LNMoney.MilliSatoshis(100L), Description = "foo bar" });
@@ -135,12 +150,12 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
             {
                 var payResp = await lnClient.Pay(resp.Invoice.ToString());
                 return payResp.Result == PayResult.Ok;
-            });
+            }, "failed to send inbound payment");
         }
 
-        protected async Task OutboundPaymentRoundTrip(Clients clients, ILightningClient lnClient)
+        public async Task OutboundPaymentRoundTrip(Clients clients, ILightningClient lnClient)
         {
-            await Task.Delay(10000); // not sure why we need this.
+            await Task.Delay(1000); // not sure why we need this.
             await Support.Utils.Retry(3, TimeSpan.FromSeconds(12), async () =>
             {
                 var invoice = await lnClient.CreateInvoice(10000, "CanCreateInvoice", TimeSpan.FromMinutes(5));
@@ -154,7 +169,7 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
                 }
 
                 return true;
-            });
+            }, "Failed to send outbound payment");
         }
 
     }
