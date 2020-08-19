@@ -58,12 +58,9 @@ namespace NRustLightning.Server.Services
         
         private BitcoinExtKey GetBaseXPriv(NRustLightningNetwork network)
         {
-            BitcoinExtKey baseKey;
-            if (!BaseXPrivs.TryGetValue(network, out baseKey))
-            {
-                baseKey = new BitcoinExtKey(new ExtKey(_keysRepository.GetNodeSecret().ToBytes()).Derive(network.BaseKeyPath), network.NBitcoinNetwork);
-                BaseXPrivs.TryAdd(network, baseKey);
-            }
+            if (BaseXPrivs.TryGetValue(network, out var baseKey)) return baseKey;
+            baseKey = new BitcoinExtKey(new ExtKey(_keysRepository.GetNodeSecret().ToBytes()).Derive(network.BaseKeyPath), network.NBitcoinNetwork);
+            BaseXPrivs.TryAdd(network, baseKey);
             return baseKey;
         }
 

@@ -8,8 +8,10 @@ powered by [rust-lightning](https://github.com/rust-bitcoin/rust-lightning)
 * Security focused
   * No dependencies besides Microsoft OSS (e.g. AspNetCore) and [Nicolas Dorier](https://github.com/NicolasDorier)'s work (e.g. NBitcoin)
   * Extensive tests, including integration tests against other LN node implementation.
+  * encrypt node master secret by user-provided password (pin) before storing it to the disk.
 * Fully configurable
-  * You can configure every settings for [rust-lightning configuration](https://docs.rs/lightning/0.0.11/lightning/util/config/index.html) as an CLI option fo Environment variable.
+  * You can configure every settings for [rust-lightning configuration](https://docs.rs/lightning/0.0.11/lightning/util/config/index.html) as an CLI option or Environment variable.
+  * For other configuration options, please can check the help message.
 * Loosely coupled architecture.
   * You can install part of the package if you want to build your own LN wallet
 
@@ -30,7 +32,7 @@ from low level to high level...
 * `src/NRustLightning`
   * library to interoperate with rust-lightning through abi.
 * `src/NRustLightning.Net`
-  * library to connect above to the transport layer. primarily through TCP socket.
+  * library to connect above package to the transport layer. primarily through TCP socket.
   * Probably this is the one you want to use if you are considering to build your own wallet.
 * `src/NRustLightning.Infrastructure`
   * library which contains logic for both server and client.
@@ -39,7 +41,7 @@ from low level to high level...
 * `src/NRustLightning.Client`
   * C# client library for the server.
 * `src/NRustLightning.CLI`
-  * command-line application  to work with the server. Which wraps the client.
+  * command-line application to work with the server. Which wraps the client.
   * This is still pretty much WIP
 
 
@@ -101,7 +103,7 @@ dotnet run -- '[parse]' --regtest <whatever-options-you-want-to-pass>
 
 ## Test organization
 
-From low level tests to high level tests...
+From low level to high level ...
 
 * `NRustLightning.Tests.Common`
   * Common classes which used in more than two test packages.

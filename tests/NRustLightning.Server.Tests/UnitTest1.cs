@@ -14,12 +14,14 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Hosting;
 using Microsoft.FSharp.Core;
 using NBitcoin;
+using NBitcoin.DataEncoders;
 using NRustLightning.Adaptors;
 using NRustLightning.Infrastructure.Extensions;
 using NRustLightning.Infrastructure.JsonConverters;
 using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Infrastructure.Models.Response;
 using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Utils;
 using NRustLightning.Interfaces;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Tests.Stubs;
@@ -37,6 +39,13 @@ namespace NRustLightning.Server.Tests
         public IServiceProvider sp;
         private MemoryPool<byte> _pool = MemoryPool<byte>.Shared;
         
+        private static HexEncoder _hex = new HexEncoder();
+        
+        private static Key[] _keys =
+        {
+            new Key(_hex.DecodeData("0101010101010101010101010101010101010101010101010101010101010101")),
+            new Key(_hex.DecodeData("0202020202020202020202020202020202020202020202020202020202020202")),
+        };
         public UnitTest1(CustomWebApplicationFactory fixture)
         {
             _fixture = fixture;
@@ -277,6 +286,30 @@ namespace NRustLightning.Server.Tests
             Assert.True(items2.HasValue);
             var (chanMon2, _) = items2.Value;
             Assert.True(chanMon.Serialize(_pool).SequenceEqual(chanMon2.Serialize(_pool)));
+        }
+
+        [Fact]
+        public async Task KeyRepositoryTest()
+        {
+            using var tester = DBTrieRepositoryTester.Create(nameof(KeyRepositoryTest));
+            
+            Assert.Throws<FormatException>(() => tester.KeysRepository.InitializeFromSeed("bogus seed"));
+            Assert.Throws<ArgumentOutOfRangeException>(() => tester.KeysRepository.InitializeFromSeed("deadbeef"));
+            var seed = _keys[0].ToBytes();
+
+            var pin = "my pin code";
+            await tester.KeysRepository.EncryptSeedAndSaveToFile(seed, pin);
+
+            // case 1: can decrypt seed with the same pin.
+            var encryptedSeed = await tester.Config.TryGetEncryptedSeed();
+            Assert.NotNull(encryptedSeed);
+            var seed2 = tester.KeysRepository.DecryptEncryptedSeed(_hex.DecodeData(encryptedSeed), pin);
+            Assert.Equal(Hex.Encode(seed), Hex.Encode(seed2));
+            
+            // case 2: can not with different pin 
+            var e = Assert.Throws<NRustLightningException>(() => tester.KeysRepository.DecryptEncryptedSeed(_hex.DecodeData(encryptedSeed), "bogus pin code"));
+            Assert.Contains("Pin code mismatch", e.Message);
+
         }
 
         [Fact(Skip = "We must tackle on this when ready.")]
