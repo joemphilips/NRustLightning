@@ -35,6 +35,7 @@ namespace NRustLightning.Server.Services
         private readonly ChannelProvider _channelProvider;
         private readonly IOptions<Config> _config;
         private readonly RepositoryProvider _repositoryProvider;
+        private readonly EventAggregator _eventAggregator;
         private Dictionary<string, PeerManager> _peerManagers = new Dictionary<string, PeerManager>();
         private Dictionary<string, ManyChannelMonitor> _manyChannelMonitors = new Dictionary<string, ManyChannelMonitor>();
         private readonly MemoryPool<byte> _pool = MemoryPool<byte>.Shared;
@@ -46,7 +47,8 @@ namespace NRustLightning.Server.Services
             ILoggerFactory loggerFactory,
             ChannelProvider channelProvider,
             IOptions<Config> config,
-            RepositoryProvider repositoryProvider
+            RepositoryProvider repositoryProvider,
+            EventAggregator eventAggregator
             )
         {
             _nbXplorerClientProvider = nbXplorerClientProvider;
@@ -57,6 +59,7 @@ namespace NRustLightning.Server.Services
             _channelProvider = channelProvider;
             _config = config;
             _repositoryProvider = repositoryProvider;
+            _eventAggregator = eventAggregator;
         }
 
         public PeerManager? TryGetPeerManager(string cryptoCode)
@@ -80,7 +83,7 @@ namespace NRustLightning.Server.Services
                 var nbx = _nbXplorerClientProvider.TryGetClient(n);
                 if (nbx != null)
                 {
-                    var b = new NbXplorerBroadcaster(nbx, _loggerFactory.CreateLogger<NbXplorerBroadcaster>());
+                    var b = new NbXplorerBroadcaster(nbx, _loggerFactory.CreateLogger<NbXplorerBroadcaster>(), _eventAggregator);
                     var feeEst = new NbXplorerFeeEstimator(_loggerFactory.CreateLogger<NbXplorerFeeEstimator>(),
                         _channelProvider.GetFeeRateChannel(n).Reader);
                     var chainWatchInterface =

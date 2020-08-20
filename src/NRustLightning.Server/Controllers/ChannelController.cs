@@ -1,6 +1,8 @@
+using System;
 using System.Buffers;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -13,6 +15,7 @@ using NRustLightning.Infrastructure.Models.Response;
 using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Infrastructure.Utils;
 using NRustLightning.RustLightningTypes;
+using NRustLightning.Server.Events;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Services;
 
@@ -26,13 +29,15 @@ namespace NRustLightning.Server.Controllers
         private readonly PeerManagerProvider _peerManagerProvider;
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly ILogger<ChannelController> _logger;
+        private readonly EventAggregator _eventAggregator;
         private readonly MemoryPool<byte> _pool;
 
-        public ChannelController(PeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<ChannelController> logger)
+        public ChannelController(PeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<ChannelController> logger, EventAggregator eventAggregator)
         {
             _peerManagerProvider = peerManagerProvider;
             _networkProvider = networkProvider;
             _logger = logger;
+            _eventAggregator = eventAggregator;
             _pool = MemoryPool<byte>.Shared;
         }
         
@@ -54,7 +59,7 @@ namespace NRustLightning.Server.Controllers
         [Route("{cryptoCode}")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<ulong> OpenChannel(string cryptoCode, [FromBody] OpenChannelRequest o)
+        public async Task<ActionResult<ulong>> OpenChannel(string cryptoCode, [FromBody] OpenChannelRequest o)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
             var peerMan = _peerManagerProvider.TryGetPeerManager(n);
@@ -77,11 +82,19 @@ namespace NRustLightning.Server.Controllers
                     chanMan.CreateChannel(o.TheirNetworkKey, o.ChannelValueSatoshis, o.PushMSat,
                         userId, in v);
                 }
+
                 peerMan.ProcessEvents();
+                var cts = new CancellationTokenSource(10000);
+                await _eventAggregator.WaitNext<Event>(
+                    x => x is Event.FundingBroadcastSafe d && d.Item.UserChannelId == userId, cts.Token);
             }
             catch (FFIException ex)
             {
                 return BadRequest(ex.Message);
+            }
+            catch (OperationCanceledException ex)
+            {
+                return base.Problem(ex.Message, null, 500, "Operation timed out");
             }
 
             return Ok(userId);
@@ -89,7 +102,7 @@ namespace NRustLightning.Server.Controllers
 
         [HttpDelete]
         [Route("{cryptoCode}")]
-        public ActionResult CloseChannel(string cryptoCode, [FromBody] CloseChannelRequest req)
+        public async Task<ActionResult> CloseChannel(string cryptoCode, [FromBody] CloseChannelRequest req)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
             var peerMan = _peerManagerProvider.GetPeerManager(n);
@@ -101,6 +114,17 @@ namespace NRustLightning.Server.Controllers
             }
             peerMan.ChannelManager.CloseChannel(s.ChannelId);
             peerMan.ProcessEvents();
+            try
+            {
+                var cts = new CancellationTokenSource(5000);
+                await _eventAggregator.WaitNext<TxBroadcastEvent>(
+                    x => x.Tx.Inputs.Any(i => i.PrevOut.Hash == s.ChannelId), cts.Token);
+            }
+            catch (OperationCanceledException ex)
+            {
+                return Problem(ex.Message, null, 500, "Operation timed out");
+            }
+
             return Ok();
         }
     }
