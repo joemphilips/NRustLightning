@@ -73,7 +73,7 @@ namespace NRustLightning.Server
                 // we want to give users only read capability when they have payed for it. not write.
                 options.MacaroonCaveats.Add($"{ourServiceName}{DotNetLightning.Payment.LSAT.Constants.CAPABILITIES_CONDITION_PREFIX}=read");
                 int amount = lsatConfig.GetOrDefault("amount", 1);
-                options.InvoiceAmount = LNMoney.MilliSatoshis(amount);
+                options.InvoiceAmount = LNMoney.MilliSatoshis((long)amount);
             });
             services.AddAuthorization(options =>
             {

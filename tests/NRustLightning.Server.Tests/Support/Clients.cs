@@ -61,7 +61,7 @@ namespace NRustLightning.Server.Tests.Support
         public async Task PrepareFunds()
         {
             var nrlBalance = (await NRustLightningHttpClient.GetWalletInfoAsync()).OnChainBalanceSatoshis;
-            if (nrlBalance > 200000)
+            if (nrlBalance > 2000000)
             {
                 return;
             }
@@ -71,9 +71,9 @@ namespace NRustLightning.Server.Tests.Support
             var nrlAddress = (await NRustLightningHttpClient.GetNewDepositAddressAsync()).Address;
             foreach (var addr in new[] {clAddress, lndAddress, nrlAddress})
             {
-                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(2m));
-                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(2m));
-                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(2m));
+                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(3m));
+                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(3m));
+                await this.BitcoinRPCClient.SendToAddressAsync(addr,Money.Coins(3m));
             }
 
             await this.BitcoinRPCClient.GenerateAsync(20);

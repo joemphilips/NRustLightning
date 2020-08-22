@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using DotNetLightning.Crypto;
 using DotNetLightning.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using NRustLightning.RustLightningTypes;
@@ -22,6 +23,7 @@ using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.P2P;
+using NRustLightning.Utils;
 
 namespace NRustLightning.Server.Services
 {
@@ -43,6 +45,7 @@ namespace NRustLightning.Server.Services
                         serviceProvider.GetRequiredService<EventAggregator>(),
                         loggerFactory.CreateLogger(nameof(RustLightningEventReactor)+ $":{n.CryptoCode}"),
                         serviceProvider.GetRequiredService<InvoiceService>(),
+                        serviceProvider.GetRequiredService<ChannelProvider>(),
                         serviceProvider.GetRequiredService<IRepository>()
                     );
                     Reactors.Add(n.CryptoCode, reactor);
@@ -70,6 +73,7 @@ namespace NRustLightning.Server.Services
         private readonly EventAggregator _eventAggregator;
         private readonly ILogger _logger;
         private readonly InvoiceService _invoiceService;
+        private readonly ChannelProvider _channelProvider;
         private readonly IRepository _repository;
 
         private readonly Dictionary<uint256, Transaction> _pendingFundingTx = new Dictionary<uint256, Transaction>();
@@ -83,6 +87,7 @@ namespace NRustLightning.Server.Services
             EventAggregator eventAggregator,
             ILogger logger,
             InvoiceService invoiceService,
+            ChannelProvider channelProvider,
             IRepository repository)
         {
             _pool = MemoryPool<byte>.Shared;
@@ -93,6 +98,7 @@ namespace NRustLightning.Server.Services
             _eventAggregator = eventAggregator;
             _logger = logger;
             _invoiceService = invoiceService;
+            _channelProvider = channelProvider;
             _repository = repository;
         }
         
@@ -181,10 +187,11 @@ namespace NRustLightning.Server.Services
             }
             else if (e is Event.SpendableOutputs spendableOutputs)
             {
+                var chan = _channelProvider.GetSpendableOutputDescriptorChannel(_network.CryptoCode);
                 foreach (var o in spendableOutputs.Item)
                 {
                     _logger.LogInformation($"New spendable on-chain funds txid: {o.OutPoint.Item.Hash}. vout: {o.OutPoint.Item.N}");
-                    // Do nothing. nbxplorer should handle it for us.
+                    await chan.Writer.WriteAsync(o, cancellationToken);
                 }
             }
             else

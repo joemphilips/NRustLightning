@@ -9,6 +9,10 @@ powered by [rust-lightning](https://github.com/rust-bitcoin/rust-lightning)
   * No dependencies besides Microsoft OSS (e.g. AspNetCore) and [Nicolas Dorier](https://github.com/NicolasDorier)'s work (e.g. NBitcoin)
   * Extensive tests, including integration tests against other LN node implementation.
   * encrypt node master secret by user-provided password (pin) before storing it to the disk.
+  * Static channel backup
+    * whenever node shuts down, it saves current state under data directory (which is configurable with `--datadir` option)
+      And reads the data of all channels and comes back to original state. It may or may not close the channel depending on
+      what happened on-chain after shutting down.
 * Fully configurable
   * You can configure every settings for [rust-lightning configuration](https://docs.rs/lightning/0.0.11/lightning/util/config/index.html) as an CLI option or Environment variable.
   * For other configuration options, please can check the help message.

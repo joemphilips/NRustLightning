@@ -21,6 +21,9 @@ namespace NRustLightning.Utils
         private readonly ulong _startingTimeSecs;
         private readonly ulong _startingTime100Nanos;
         private readonly Key _nodeSecret;
+
+        public Key DestinationKey { get; }
+        
         private readonly Script _destinationScript;
         private readonly PubKey _shutdownPubKey;
         
@@ -33,7 +36,7 @@ namespace NRustLightning.Utils
         private readonly ExtKey _channelIdMasterKey;
         private int _channelIdChildIndex;
         private DataEncoder _ascii;
-
+        
         public KeysManager(byte[] seed, DateTime startingTime)
         {
             _seed = seed ?? throw new ArgumentNullException(nameof(seed));
@@ -45,8 +48,8 @@ namespace NRustLightning.Utils
             }
             var master = new ExtKey(seed);
             _nodeSecret = master.Derive(0).PrivateKey;
-            var destinationKey = master.Derive(1).PrivateKey;
-            _destinationScript = destinationKey.PubKey.WitHash.ScriptPubKey;
+            DestinationKey = master.Derive(1).PrivateKey;
+            _destinationScript = DestinationKey.PubKey.WitHash.ScriptPubKey;
             _shutdownPubKey = master.Derive(2).PrivateKey.PubKey;
             _channelMasterKey = master.Derive(3);
             _sessionMasterKey = master.Derive(4);

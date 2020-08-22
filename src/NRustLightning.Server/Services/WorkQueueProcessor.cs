@@ -1,11 +1,17 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using DotNetLightning.Crypto;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NBXplorer;
+using NBXplorer.Models;
+using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Networks;
+using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.P2P;
 
@@ -29,7 +35,8 @@ namespace NRustLightning.Server.Services
                     serviceProvider.GetRequiredService<P2PConnectionHandler>(),
                     loggerFactory.CreateLogger<WorkQueueProcessor>(),
                     serviceProvider.GetRequiredService<PeerManagerProvider>(),
-                    n
+                    n,
+                    serviceProvider.GetRequiredService<WalletService>()
                 );
                 _processors.Add(n.CryptoCode, p);
             }
@@ -46,23 +53,27 @@ namespace NRustLightning.Server.Services
         private readonly ILogger<WorkQueueProcessor> _logger;
         private readonly PeerManagerProvider _peerManagerProvider;
         private readonly NRustLightningNetwork _network;
+        private readonly WalletService _walletService;
         private readonly MemoryPool<byte> _pool = MemoryPool<byte>.Shared;
 
-        private Task _task;
+        private Task[] _tasks;
 
-        public WorkQueueProcessor(ChannelProvider channelProvider, P2PConnectionHandler p2PConnectionHandler, ILogger<WorkQueueProcessor> logger, PeerManagerProvider peerManagerProvider, NRustLightningNetwork network)
+        public WorkQueueProcessor(ChannelProvider channelProvider, P2PConnectionHandler p2PConnectionHandler,
+            ILogger<WorkQueueProcessor> logger, PeerManagerProvider peerManagerProvider, NRustLightningNetwork network,
+            WalletService walletService)
         {
             _channelProvider = channelProvider;
             _p2PConnectionHandler = p2PConnectionHandler;
             _logger = logger;
             _peerManagerProvider = peerManagerProvider;
             _network = network;
-            _task = HandleOutboundConnectQueue();
+            _walletService = walletService;
+            _tasks = new [] { HandleOutboundConnectQueue(), HandleSpendableOutputEventQueue() };
         }
 
         private async Task HandleOutboundConnectQueue()
         {
-            var t = _channelProvider.GetOutboundConnectionRequestQueue("BTC");
+            var t = _channelProvider.GetOutboundConnectionRequestQueue(_network.CryptoCode);
             var chanMan = _peerManagerProvider.GetPeerManager(_network).ChannelManager;
             var knownChannels = chanMan.ListChannels(_pool);
             while (await t.Reader.WaitToReadAsync())
@@ -79,6 +90,16 @@ namespace NRustLightning.Server.Services
                     var channelDetail = knownChannels.First(c => c.RemoteNetworkId.Equals(req.NodeId));
                     chanMan.ForceCloseChannel(channelDetail.ChannelId);
                 }
+            }
+        }
+
+        private async Task HandleSpendableOutputEventQueue()
+        {
+            var t = _channelProvider.GetSpendableOutputDescriptorChannel(_network.CryptoCode);
+            while (await t.Reader.WaitToReadAsync())
+            {
+                var desc = await t.Reader.ReadAsync();
+                await _walletService.HandleSpendableOutput(_network, desc);
             }
         }
         

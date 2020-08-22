@@ -181,6 +181,44 @@ namespace NRustLightning.Infrastructure.Repository
             await table.Insert(DBKeys.NetworkGraphVersion, g.ToBytes());
         }
 
+        public async IAsyncEnumerable<SpendableOutputDescriptorWithMetadata> GetAllSpendableOutputDescriptors()
+        {
+            using var tx = await _engine.OpenTransaction();
+            var table = tx.GetTable(DBKeys.OutpointsToStaticOutputDescriptor);
+            await foreach (var item in table.Enumerate())
+            {
+                yield return SpendableOutputDescriptorWithMetadata.FromBytes((await item.ReadValue()).ToArray());
+            }
+        }
+
+        public async IAsyncEnumerable<SpendableOutputDescriptorWithMetadata?> GetSpendableOutputDescriptors(IEnumerable<OutPoint> outpoints)
+        {
+            if (outpoints == null) throw new ArgumentNullException(nameof(outpoints));
+            using var tx = await _engine.OpenTransaction();
+            var table = tx.GetTable(DBKeys.OutpointsToStaticOutputDescriptor);
+            foreach (var op in outpoints)
+            {
+                var raw = await table.Get(op.ToBytes());
+                if (raw is null)
+                {
+                    yield return null;
+                    continue;
+                }
+
+                var b = await raw.ReadValue();
+                yield return SpendableOutputDescriptorWithMetadata.FromBytes(b.ToArray());
+            }
+        }
+
+        public async Task SetSpendableOutputDescriptor(SpendableOutputDescriptorWithMetadata outputDescriptor)
+        {
+            if (outputDescriptor == null) throw new ArgumentNullException(nameof(outputDescriptor));
+            using var tx = await _engine.OpenTransaction();
+            var t = tx.GetTable(DBKeys.OutpointsToStaticOutputDescriptor);
+            await t.Insert(outputDescriptor.Descriptor.OutPoint.Value.ToBytes(), outputDescriptor.ToBytes());
+            await tx.Commit();
+        }
+
         private async ValueTask<DBTrieEngine> OpenEngine(CancellationToken ct)
         {
             int tried = 0;

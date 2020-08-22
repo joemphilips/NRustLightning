@@ -84,7 +84,7 @@ namespace NRustLightning.Server.Controllers
                 }
 
                 peerMan.ProcessEvents();
-                var cts = new CancellationTokenSource(10000);
+                var cts = new CancellationTokenSource(20000);
                 await _eventAggregator.WaitNext<Event>(
                     x => x is Event.FundingBroadcastSafe d && d.Item.UserChannelId == userId, cts.Token);
             }
@@ -94,7 +94,7 @@ namespace NRustLightning.Server.Controllers
             }
             catch (OperationCanceledException ex)
             {
-                return base.Problem(ex.Message, null, 500, "Operation timed out");
+                return base.Problem(ex.Message, null, 500, "Channel opening Operation timed out");
             }
 
             return Ok(userId);
@@ -102,7 +102,7 @@ namespace NRustLightning.Server.Controllers
 
         [HttpDelete]
         [Route("{cryptoCode}")]
-        public async Task<ActionResult> CloseChannel(string cryptoCode, [FromBody] CloseChannelRequest req)
+        public ActionResult CloseChannel(string cryptoCode, [FromBody] CloseChannelRequest req)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
             var peerMan = _peerManagerProvider.GetPeerManager(n);
@@ -114,17 +114,11 @@ namespace NRustLightning.Server.Controllers
             }
             peerMan.ChannelManager.CloseChannel(s.ChannelId);
             peerMan.ProcessEvents();
-            try
-            {
-                var cts = new CancellationTokenSource(5000);
-                await _eventAggregator.WaitNext<TxBroadcastEvent>(
-                    x => x.Tx.Inputs.Any(i => i.PrevOut.Hash == s.ChannelId), cts.Token);
-            }
-            catch (OperationCanceledException ex)
-            {
-                return Problem(ex.Message, null, 500, "Operation timed out");
-            }
-
+            
+            // Technically, we can await the Broadcaster broadcasts the tx. But do not do it for the because ...
+            // The only way to determine the broadcasted tx is indeed a closing tx of the channel is to check that one
+            // of its input's "prevHash xor prevN" matches the ChannelId, but channel id has different value when it has
+            // not fully opened.
             return Ok();
         }
     }

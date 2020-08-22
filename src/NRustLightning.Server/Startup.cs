@@ -61,7 +61,7 @@ namespace NRustLightning.Server
             services.ConfigureNRustLightning(Configuration, logger);
             services.AddNRustLightning();
             services.AddMvc();
-            services.ConfigureNRustLightningAuth(Configuration);
+            // services.ConfigureNRustLightningAuth(Configuration);
 
 #if DEBUG
             services.AddSwaggerGen(c =>
@@ -111,7 +111,9 @@ namespace NRustLightning.Server
             }
 
             app.UseRouting();
-            
+
+            // this must be called after UseRouting.
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

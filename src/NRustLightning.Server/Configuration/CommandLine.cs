@@ -361,6 +361,10 @@ max relative lock-time (a year) and we would 'lose' money as it would be locked 
 
                 if (result.Children.Contains("seed"))
                 {
+                    if (result.Children.Contains("pin"))
+                    {
+                        return "You can not specify both --seed and --pin";
+                    }
                     var s = result.Children["seed"];
                     var h =  new HexEncoder();
                     var v = s.Tokens.First().Value;
@@ -368,6 +372,7 @@ max relative lock-time (a year) and we would 'lose' money as it would be locked 
                     {
                         return "You must specify 32 bytes hex encoded seed by --seed";
                     }
+
                 }
                 return null;
             });

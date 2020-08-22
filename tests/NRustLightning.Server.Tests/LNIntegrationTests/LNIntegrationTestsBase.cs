@@ -59,12 +59,12 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
                 // So we do dirty fallback here.
                 if (remoteClient is CLightningClient cli)
                 {
-                    var maybeRemoteChannel = (await cli.ListChannelsAsync()).FirstOrDefault(c => new PubKey(c.Destination).Equals(localId));
+                    var maybeRemoteChannel = (await cli.ListChannelsAsync()).Where(c => c.Active).FirstOrDefault(c => new PubKey(c.Destination).Equals(localId));
                     return maybeRemoteChannel != null;
                 }
                 else
                 {
-                    var maybeRemoteChannel = (await remoteClient.ListChannels()).FirstOrDefault(c => c.RemoteNode.Equals(localId));
+                    var maybeRemoteChannel = (await remoteClient.ListChannels()).Where(c => c.IsActive).FirstOrDefault(c => c.RemoteNode.Equals(localId));
                     return maybeRemoteChannel != null;
                 }
             }, "Failed to create outbound channel");
@@ -130,13 +130,19 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
                 {
                     var channelList = await cli.ListChannelsAsync();
                     Assert.NotNull(channelList);
-                    return channelList.Length > 0 && channelList.First().Active && new PubKey(channelList.First().Destination).Equals(localInfo.ConnectionString.NodeId);
+                    var maybeChannel =
+                        channelList.Where(c => c.Active)
+                            .FirstOrDefault(c => new PubKey(c.Destination).Equals(localInfo.ConnectionString.NodeId));
+                    return maybeChannel != null;
                 }
                 else
                 {
                     var channelList = await remoteClient.ListChannels(CancellationToken.None);
                     Assert.NotNull(channelList);
-                    return (channelList.Length > 0 && channelList.First().IsActive && channelList.First().RemoteNode.Equals(localInfo.ConnectionString.NodeId));
+                    var maybeChannel =
+                        channelList.Where(c => c.IsActive)
+                            .FirstOrDefault(c => c.RemoteNode.Equals(localInfo.ConnectionString.NodeId));
+                    return maybeChannel != null;
                 }
             }, "failed to create inbound channel");
         }
