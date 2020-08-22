@@ -90,8 +90,20 @@ type SpendableOutputDescriptor =
     /// These are generally the result of "revocable" output to us, spendable only by us unless
     /// it is an output from us having broadcast an old state (which should never happen).
     | DynamicOutputP2WSH of DynamicOutputP2WSHData
+    /// An output to a P2WPKH, spendable exclusively by our payment key (ie the private key which
+    /// corresponds to the public key in ChannelKeys::pubkeys().payment_point).
+    /// The witness in the spending input, is, simply:
+    /// <BIP 143 signature> <payment key>
+    ///
+    /// These are generally the result of our counterparty having broadcast the current state,
+    /// allowing us to claim the non-HTLC-encumbered outputs immediately.
     | StaticOutputRemotePayment of StaticOutputRemotePaymentData
     with
+    member this.Output =
+        match this with
+        | StaticOutput({ Output = o }) -> o
+        | DynamicOutputP2WSH({Output = o}) -> o
+        | StaticOutputRemotePayment({Output = o}) -> o
     member this.OutPoint =
         match this with
         | StaticOutput({ Outpoint = o }) -> o
@@ -162,6 +174,39 @@ type SpendableOutputDescriptor =
             let (a, b) = d.KeyDerivationParams
             ls.Write(a.GetBytesBigEndian())
             ls.Write(b.GetBytesBigEndian())
+
+type SpendableOutputDescriptorWithMetadata = {
+    Descriptor: SpendableOutputDescriptor
+    MaybeRedeemScript: Script option
+    MaybeSigningKey: Key option
+    MaybeNSequence: uint16 option
+}
+    with
+    member this.Serialize(ls: LightningWriterStream) =
+        this.Descriptor.Serialize ls
+        ls.WriteOption (this.MaybeRedeemScript |> Option.map(fun s -> s.ToBytes()))
+        ls.WriteOption (this.MaybeSigningKey |> Option.map(fun k -> k.ToBytes()))
+        ls.WriteOption (this.MaybeNSequence |> Option.map(fun s -> s.GetBytesBigEndian()))
+        
+    member this.ToBytes() =
+        use ms = new MemoryStream()
+        use s = new LightningWriterStream(ms)
+        this.Serialize s
+        ms.ToArray()
+    static member Deserialize(ls: LightningReaderStream) =
+        {
+            Descriptor = SpendableOutputDescriptor.Deserialize ls
+            MaybeRedeemScript = ls.ReadOption() |> Option.map(fun x -> Script.FromBytesUnsafe(x))
+            MaybeSigningKey = ls.ReadOption() |> Option.map(fun x -> new Key(x))
+            MaybeNSequence = ls.ReadOption() |> Option.map(UInt16.FromBytesBigEndian)
+        }
+        
+    static member FromBytes(data: byte[]) =
+        use ms = new MemoryStream(data)
+        use ls = new LightningReaderStream(ms)
+        SpendableOutputDescriptorWithMetadata.Deserialize(ls)
+    
+
 
 /// An Event which you should probably take some action in response to.
 type Event =
