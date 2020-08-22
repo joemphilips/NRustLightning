@@ -181,20 +181,20 @@ namespace NRustLightning.Infrastructure.Repository
             await table.Insert(DBKeys.NetworkGraphVersion, g.ToBytes());
         }
 
-        public async IAsyncEnumerable<SpendableOutputDescriptorWithMetadata> GetAllSpendableOutputDescriptors()
+        public async IAsyncEnumerable<SpendableOutputDescriptor> GetAllSpendableOutputDescriptors([EnumeratorCancellation] CancellationToken ct = default)
         {
-            using var tx = await _engine.OpenTransaction();
+            using var tx = await _engine.OpenTransaction(ct);
             var table = tx.GetTable(DBKeys.OutpointsToStaticOutputDescriptor);
-            await foreach (var item in table.Enumerate())
+            await foreach (var item in table.Enumerate().WithCancellation(ct))
             {
-                yield return SpendableOutputDescriptorWithMetadata.FromBytes((await item.ReadValue()).ToArray());
+                yield return SpendableOutputDescriptor.ParseUnsafe((await item.ReadValue()).ToArray());
             }
         }
 
-        public async IAsyncEnumerable<SpendableOutputDescriptorWithMetadata?> GetSpendableOutputDescriptors(IEnumerable<OutPoint> outpoints)
+        public async IAsyncEnumerable<SpendableOutputDescriptor?> GetSpendableOutputDescriptors(IEnumerable<OutPoint> outpoints, [EnumeratorCancellation] CancellationToken ct = default)
         {
             if (outpoints == null) throw new ArgumentNullException(nameof(outpoints));
-            using var tx = await _engine.OpenTransaction();
+            using var tx = await _engine.OpenTransaction(ct);
             var table = tx.GetTable(DBKeys.OutpointsToStaticOutputDescriptor);
             foreach (var op in outpoints)
             {
@@ -206,16 +206,16 @@ namespace NRustLightning.Infrastructure.Repository
                 }
 
                 var b = await raw.ReadValue();
-                yield return SpendableOutputDescriptorWithMetadata.FromBytes(b.ToArray());
+                yield return SpendableOutputDescriptor.ParseUnsafe(b.ToArray());
             }
         }
 
-        public async Task SetSpendableOutputDescriptor(SpendableOutputDescriptorWithMetadata outputDescriptor)
+        public async Task SetSpendableOutputDescriptor(SpendableOutputDescriptor outputDescriptor, CancellationToken ct = default)
         {
             if (outputDescriptor == null) throw new ArgumentNullException(nameof(outputDescriptor));
-            using var tx = await _engine.OpenTransaction();
+            using var tx = await _engine.OpenTransaction(ct);
             var t = tx.GetTable(DBKeys.OutpointsToStaticOutputDescriptor);
-            await t.Insert(outputDescriptor.Descriptor.OutPoint.Value.ToBytes(), outputDescriptor.ToBytes());
+            await t.Insert(outputDescriptor.OutPoint.Value.ToBytes(), outputDescriptor.ToBytes());
             await tx.Commit();
         }
 

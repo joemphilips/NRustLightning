@@ -24,9 +24,9 @@ namespace NRustLightning.Infrastructure.Interfaces
         Task SetRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default);
         Task RemoveRemoteEndPoint(EndPoint remoteEndPoint, CancellationToken ct = default);
 
-        IAsyncEnumerable<SpendableOutputDescriptorWithMetadata> GetAllSpendableOutputDescriptors();
-        Task SetSpendableOutputDescriptor(SpendableOutputDescriptorWithMetadata outputDescriptor);
-        IAsyncEnumerable<SpendableOutputDescriptorWithMetadata?> GetSpendableOutputDescriptors(IEnumerable<OutPoint> outpoint);
+        IAsyncEnumerable<SpendableOutputDescriptor> GetAllSpendableOutputDescriptors(CancellationToken ct = default);
+        Task SetSpendableOutputDescriptor(SpendableOutputDescriptor outputDescriptor, CancellationToken ct = default);
+        IAsyncEnumerable<SpendableOutputDescriptor?> GetSpendableOutputDescriptors(IEnumerable<OutPoint> outpoint, CancellationToken ct = default);
         
         Task<NetworkGraph?> GetNetworkGraph(CancellationToken ct = default);
         Task SetNetworkGraph(NetworkGraph g, CancellationToken ct = default);

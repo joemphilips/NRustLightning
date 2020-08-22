@@ -7,6 +7,7 @@ open System.Security.Cryptography.X509Certificates
 open ResultUtils
 open DotNetLightning.Utils.Primitives
 open DotNetLightning.Core.Utils.Extensions
+open DotNetLightning.Crypto
 open DotNetLightning.Serialize
 open DotNetLightning.Utils
 open NBitcoin
@@ -174,39 +175,6 @@ type SpendableOutputDescriptor =
             let (a, b) = d.KeyDerivationParams
             ls.Write(a.GetBytesBigEndian())
             ls.Write(b.GetBytesBigEndian())
-
-type SpendableOutputDescriptorWithMetadata = {
-    Descriptor: SpendableOutputDescriptor
-    MaybeRedeemScript: Script option
-    MaybeSigningKey: Key option
-    MaybeNSequence: uint16 option
-}
-    with
-    member this.Serialize(ls: LightningWriterStream) =
-        this.Descriptor.Serialize ls
-        ls.WriteOption (this.MaybeRedeemScript |> Option.map(fun s -> s.ToBytes()))
-        ls.WriteOption (this.MaybeSigningKey |> Option.map(fun k -> k.ToBytes()))
-        ls.WriteOption (this.MaybeNSequence |> Option.map(fun s -> s.GetBytesBigEndian()))
-        
-    member this.ToBytes() =
-        use ms = new MemoryStream()
-        use s = new LightningWriterStream(ms)
-        this.Serialize s
-        ms.ToArray()
-    static member Deserialize(ls: LightningReaderStream) =
-        {
-            Descriptor = SpendableOutputDescriptor.Deserialize ls
-            MaybeRedeemScript = ls.ReadOption() |> Option.map(fun x -> Script.FromBytesUnsafe(x))
-            MaybeSigningKey = ls.ReadOption() |> Option.map(fun x -> new Key(x))
-            MaybeNSequence = ls.ReadOption() |> Option.map(UInt16.FromBytesBigEndian)
-        }
-        
-    static member FromBytes(data: byte[]) =
-        use ms = new MemoryStream(data)
-        use ls = new LightningReaderStream(ms)
-        SpendableOutputDescriptorWithMetadata.Deserialize(ls)
-    
-
 
 /// An Event which you should probably take some action in response to.
 type Event =

@@ -205,13 +205,12 @@ namespace NRustLightning.Server.Services
                             // Thus instead of creating new outbound connection. Put params into work queue and delegate
                             // The actual processing to another class.
                             var chan = _channelProvider.GetOutboundConnectionRequestQueue(n);
-                            chan.Writer.TryWrite(new PeerConnectionString(pk, ToSystemAddress(addresses[0])));
+                            await chan.Writer.WriteAsync(new PeerConnectionString(pk, ToSystemAddress(addresses[0])), cancellationToken);
                         }
                     }
 
                     _manyChannelMonitors.Add(n.CryptoCode, manyChannelMonitor);
                     _peerManagers.Add(n.CryptoCode, peerMan);
-
                 }
                 _logger.LogInformation("PeerManagerProvider started");
             }

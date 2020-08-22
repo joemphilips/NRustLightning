@@ -99,7 +99,8 @@ namespace NRustLightning.Server.Services
             while (await t.Reader.WaitToReadAsync())
             {
                 var desc = await t.Reader.ReadAsync();
-                await _walletService.HandleSpendableOutput(_network, desc);
+                await _walletService.SaveSpendableOutput(_network, desc);
+                await _walletService.TrackSpendableOutput(_network, desc);
             }
         }
         

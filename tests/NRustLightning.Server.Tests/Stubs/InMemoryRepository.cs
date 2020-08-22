@@ -68,10 +68,10 @@ namespace NRustLightning.Server.Tests.Stubs
             return Task.CompletedTask;
         }
         
-        private ConcurrentDictionary<OutPoint, SpendableOutputDescriptorWithMetadata> _outputDescriptors = new ConcurrentDictionary<OutPoint, SpendableOutputDescriptorWithMetadata>();
+        private ConcurrentDictionary<OutPoint, SpendableOutputDescriptor> _outputDescriptors = new ConcurrentDictionary<OutPoint, SpendableOutputDescriptor>();
 
 #pragma warning disable 1998
-        public async IAsyncEnumerable<SpendableOutputDescriptorWithMetadata> GetAllSpendableOutputDescriptors()
+        public async IAsyncEnumerable<SpendableOutputDescriptor> GetAllSpendableOutputDescriptors([EnumeratorCancellation] CancellationToken ct = default)
 #pragma warning restore 1998
         {
             foreach (var v in _outputDescriptors.Values)
@@ -80,16 +80,16 @@ namespace NRustLightning.Server.Tests.Stubs
             }
         }
 
-        public Task SetSpendableOutputDescriptor(SpendableOutputDescriptorWithMetadata outputDescriptor)
+        public Task SetSpendableOutputDescriptor(SpendableOutputDescriptor outputDescriptor, CancellationToken ct = default)
         {
-            _outputDescriptors.TryAdd(outputDescriptor.Descriptor.OutPoint.Value, outputDescriptor);
+            _outputDescriptors.TryAdd(outputDescriptor.OutPoint.Value, outputDescriptor);
             return Task.CompletedTask;
         }
 
 #pragma warning disable 1998
-        public async IAsyncEnumerable<SpendableOutputDescriptorWithMetadata?> GetSpendableOutputDescriptors(
+        public async IAsyncEnumerable<SpendableOutputDescriptor?> GetSpendableOutputDescriptors(
 #pragma warning restore 1998
-            IEnumerable<OutPoint> outpoint)
+            IEnumerable<OutPoint> outpoint, [EnumeratorCancellation] CancellationToken ct = default)
         {
             foreach (var o in outpoint)
             {

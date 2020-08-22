@@ -58,6 +58,14 @@ namespace NRustLightning.Utils
         }
 
 
+        /// <summary>
+        /// Deterministically derive channel keys from the seed. that means it does not depend on `startingTime` you
+        /// passed in constructor.
+        /// </summary>
+        /// <param name="channelValueSatoshis"></param>
+        /// <param name="param1"></param>
+        /// <param name="param2"></param>
+        /// <returns></returns>
         public ChannelKeys DeriveChannelKeys(ulong channelValueSatoshis, ulong param1, ulong param2)
         {
             var channelId = (uint)((param1 & 0xFFFF_FFFF_0000_0000) >> 32);
