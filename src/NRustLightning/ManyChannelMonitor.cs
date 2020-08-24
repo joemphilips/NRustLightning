@@ -30,16 +30,16 @@ namespace NRustLightning
             ILogger logger,
             IFeeEstimator feeEstimator)
         {
-            return Create(new ChainWatchInterfaceConverter(chainWatchInterface),
+            return Create(new ChainWatchInterfaceDelegatesHolder(chainWatchInterface),
                 new BroadcasterDelegatesHolder(broadcaster, network), new LoggerDelegatesHolder(logger),
                 new FeeEstimatorDelegatesHolder(feeEstimator));
         }
 
         private static ManyChannelMonitor Create(
-            IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
-            IBroadcasterDelegatesHolder broadcasterDelegatesHolder,
-            ILoggerDelegatesHolder loggerDelegatesHolder,
-            IFeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder
+            in ChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
+            in BroadcasterDelegatesHolder broadcasterDelegatesHolder,
+            in LoggerDelegatesHolder loggerDelegatesHolder,
+            in FeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder
         )
         {
             Interop.create_many_channel_monitor(

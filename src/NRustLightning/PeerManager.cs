@@ -74,7 +74,7 @@ namespace NRustLightning
             if (channelManager == null) throw new ArgumentNullException(nameof(channelManager));
             if (blockNotifier == null) throw new ArgumentNullException(nameof(blockNotifier));
             
-            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceDelegatesHolder(chainWatchInterface);
             var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
             blockNotifier.RegisterChannelManager(channelManager);
             unsafe

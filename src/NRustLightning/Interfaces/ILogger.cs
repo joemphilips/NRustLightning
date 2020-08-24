@@ -3,17 +3,13 @@ using NRustLightning.Adaptors;
 
 namespace NRustLightning.Interfaces
 {
-    internal interface ILoggerDelegatesHolder
-    {
-        Log Log { get; }
-    }
 
     public interface ILogger
     {
         void Log(FFILogLevel logLevel, string msg, string originalModulePath, string originalFileName, uint originalLineNumber);
     }
 
-    internal class LoggerDelegatesHolder : ILoggerDelegatesHolder
+    internal struct LoggerDelegatesHolder
     {
         private readonly ILogger _logger;
 
@@ -23,7 +19,7 @@ namespace NRustLightning.Interfaces
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _log = (ref FFILogRecord record) =>
             {
-                _logger.Log(record.level, record.Args, record.ModulePath, record.File, record.line);
+                logger.Log(record.level, record.Args, record.ModulePath, record.File, record.line);
             };
         }
 

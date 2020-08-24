@@ -28,11 +28,11 @@ namespace NRustLightning
             IChainWatchInterface chainWatchInterface)
         {
             if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
-            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
-            return Create(chainWatchInterfaceDelegatesHolder);
+            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceDelegatesHolder(chainWatchInterface);
+            return Create(in chainWatchInterfaceDelegatesHolder);
         }
 
-        internal static BlockNotifier Create(IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder)
+        internal static BlockNotifier Create(in ChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder)
         {
             Interop.create_block_notifier(chainWatchInterfaceDelegatesHolder.InstallWatchTx, chainWatchInterfaceDelegatesHolder.InstallWatchOutPoint, chainWatchInterfaceDelegatesHolder.WatchAllTxn, chainWatchInterfaceDelegatesHolder.GetChainUtxo, chainWatchInterfaceDelegatesHolder.FilterBlock ,chainWatchInterfaceDelegatesHolder.ReEntered, out var handle);
             return new BlockNotifier(handle, new object[]{ chainWatchInterfaceDelegatesHolder });

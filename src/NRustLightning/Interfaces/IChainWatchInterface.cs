@@ -12,33 +12,6 @@ using Network = NBitcoin.Network;
 
 namespace NRustLightning.Interfaces
 {
-    internal interface IChainWatchInterfaceDelegatesHolder
-    {
-        /// <summary>
-        /// Provides a txid/random-scriptPubKey-in-the-tx which must be watched for.
-        /// </summary>
-        InstallWatchTx InstallWatchTx { get; }
-        /// <summary>
-        /// Provides an outpoint which must be watched for, providing any transactions which spend the given outpoint.
-        /// </summary>
-        InstallWatchOutPoint InstallWatchOutPoint { get; }
-        /// <summary>
-        /// Indicates that a listener needs to see all transactions.
-        /// </summary>
-        WatchAllTxn WatchAllTxn { get; }
-        /// <summary>
-        /// Gets the script and value in satoshis for a given unspent transaction output given a short_channel_id
-        /// (a.k.a. unspent_tx_output_identifier). For BTC/tBTC channels the top three
-        /// bytes are the block height, the next 3 the transaction index within the block and the
-        /// final two the output within the tx.
-        /// </summary>
-        GetChainUtxo GetChainUtxo { get; }
-        
-        FilterBlock FilterBlock { get; }
-        
-        ReEntered ReEntered { get; }
-    }
-
     /// <summary>
     /// User defined interface for watching blockchain.
     ///
@@ -65,7 +38,7 @@ namespace NRustLightning.Interfaces
     /// delegate and passing it to rust will cause a crash with following error message.
     /// "Process terminated. A callback was made on a garbage collected delegate of type"
     /// </summary>
-    internal class ChainWatchInterfaceConverter : IChainWatchInterfaceDelegatesHolder
+    internal struct ChainWatchInterfaceDelegatesHolder
     {
 
         private FilterBlock _filterBlock;
@@ -75,7 +48,7 @@ namespace NRustLightning.Interfaces
         private WatchAllTxn _watchAllTxn;
         private ReEntered _reEntered;
         
-        public ChainWatchInterfaceConverter(IChainWatchInterface chainWatchInterface)
+        public ChainWatchInterfaceDelegatesHolder(IChainWatchInterface chainWatchInterface)
         {
             if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
             _filterBlock = (ref byte blockPtr, UIntPtr blockLen, ref UIntPtr indexPtr, ref UIntPtr indexLen) =>

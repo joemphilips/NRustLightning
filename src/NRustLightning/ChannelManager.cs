@@ -58,7 +58,7 @@ namespace NRustLightning
         )
         {
             
-            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceConverter(chainWatchInterface);
+            var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceDelegatesHolder(chainWatchInterface);
             var keysInterfaceDelegatesHolder = new KeysInterfaceDelegatesHolder(keysInterface);
             var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
             var broadcasterDelegatesHolder = new BroadcasterDelegatesHolder(broadcaster, nbitcoinNetwork);
@@ -66,11 +66,11 @@ namespace NRustLightning
             return Create(
                 nbitcoinNetwork,
                 in config,
-                chainWatchInterfaceDelegatesHolder,
-                keysInterfaceDelegatesHolder,
-                loggerDelegatesHolder,
-                broadcasterDelegatesHolder,
-                feeEstimatorDelegatesHolder,
+                in chainWatchInterfaceDelegatesHolder,
+                in keysInterfaceDelegatesHolder,
+                in loggerDelegatesHolder,
+                in broadcasterDelegatesHolder,
+                in feeEstimatorDelegatesHolder,
                 currentBlockHeight,
                 manyChannelMonitor
                 );
@@ -78,11 +78,11 @@ namespace NRustLightning
         internal static ChannelManager Create(
             NBitcoin.Network nbitcoinNetwork,
             in UserConfig config,
-            IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
-            KeysInterfaceDelegatesHolder keysInterfaceDelegatesHolder,
-            ILoggerDelegatesHolder loggerDelegatesHolder,
-            IBroadcasterDelegatesHolder broadcasterDelegatesHolder,
-            IFeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder,
+            in ChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
+            in KeysInterfaceDelegatesHolder keysInterfaceDelegatesHolder,
+            in LoggerDelegatesHolder loggerDelegatesHolder,
+            in BroadcasterDelegatesHolder broadcasterDelegatesHolder,
+            in FeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder,
             ulong currentBlockHeight,
             ManyChannelMonitor manyChannelMonitor
             )
