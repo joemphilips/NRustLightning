@@ -59,7 +59,7 @@ namespace NRustLightning.Server.Controllers
         [Route("{cryptoCode}")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ulong>> OpenChannel(string cryptoCode, [FromBody] OpenChannelRequest o)
+        public async Task<ActionResult<uint256>> OpenChannel(string cryptoCode, [FromBody] OpenChannelRequest o)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
             var peerMan = _peerManagerProvider.TryGetPeerManager(n);
@@ -71,6 +71,7 @@ namespace NRustLightning.Server.Controllers
             var chanMan = peerMan.ChannelManager;
             var maybeConfig = o.OverrideConfig;
             var userId = RandomUtils.GetUInt64();
+            OutPoint fundingOutPoint;
             try
             {
                 if (maybeConfig is null)
@@ -85,8 +86,9 @@ namespace NRustLightning.Server.Controllers
 
                 peerMan.ProcessEvents();
                 var cts = new CancellationTokenSource(20000);
-                await _eventAggregator.WaitNext<Event>(
+                var e = await _eventAggregator.WaitNext<Event>(
                     x => x is Event.FundingBroadcastSafe d && d.Item.UserChannelId == userId, cts.Token);
+                fundingOutPoint = ((Event.FundingBroadcastSafe) e).Item.OutPoint.Item;
             }
             catch (FFIException ex)
             {
@@ -96,8 +98,7 @@ namespace NRustLightning.Server.Controllers
             {
                 return base.Problem(ex.Message, null, 500, "Channel opening Operation timed out");
             }
-
-            return Ok(userId);
+            return fundingOutPoint.Hash;
         }
 
         [HttpDelete]
