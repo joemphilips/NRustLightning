@@ -148,10 +148,12 @@ namespace NRustLightning.Server.Services
                         await manyChannelMonitor.SyncChannelMonitor(
                             latestBlockHashes,
                             currentBlockHeader,
-                            currentBlockHeight, 
+                            currentBlockHeight,
                             blockSource,
                             n.NBitcoinNetwork,
-                            _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(ManyChannelMonitor)}"));
+                            _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(ManyChannelMonitor)}"),
+                            cancellationToken
+                        );
                     }
                     
                     var chanManItems = await repo.GetChannelManager(new ChannelManagerReadArgs(_keysRepository, b, feeEst, logger, chainWatchInterface, n.NBitcoinNetwork, manyChannelMonitor), cancellationToken);
@@ -172,7 +174,7 @@ namespace NRustLightning.Server.Services
                         // sync channel manager to the current state
                         await blockNotifier.SyncChainListener(latestBlockHash, currentBlockHeader, currentBlockHeight,
                             blockSource, n.NBitcoinNetwork,
-                            _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(BlockNotifier)}"));
+                            _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(BlockNotifier)}"), cancellationToken);
                     }
                     blockNotifier.RegisterManyChannelMonitor(manyChannelMonitor);
 

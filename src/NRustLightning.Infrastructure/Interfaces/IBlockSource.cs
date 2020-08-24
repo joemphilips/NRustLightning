@@ -136,7 +136,7 @@ namespace NRustLightning.Infrastructure.Interfaces
             BlockHeaderData currentHeader, BlockHeaderData prevHeader, Network n,
             CancellationToken ct = default)
         {
-            while (true)
+            while (!ct.IsCancellationRequested)
             {
                 if (prevHeader.Header.HashPrevBlock == currentHeader.Header.HashPrevBlock)
                 {
@@ -202,7 +202,7 @@ namespace NRustLightning.Infrastructure.Interfaces
             }
         }
 
-        private static async Task<List<ForkStep>> FindFork(this IBlockSource blockSource, BlockHeaderData currentHeader, BlockHeaderData prevHeader, Network n)
+        private static async Task<List<ForkStep>> FindFork(this IBlockSource blockSource, BlockHeaderData currentHeader, BlockHeaderData prevHeader, Network n, CancellationToken ct)
         {
             var stepsTx = new List<ForkStep>();
             if (currentHeader.Equals(prevHeader))
@@ -210,18 +210,18 @@ namespace NRustLightning.Infrastructure.Interfaces
                 return stepsTx;
             }
 
-            await blockSource.FindForkStep(stepsTx, currentHeader, prevHeader, n);
+            await blockSource.FindForkStep(stepsTx, currentHeader, prevHeader, n, ct);
             return stepsTx;
         }
 
         private static async Task SyncOneChannelListener(this IChainListener chainListener, Primitives.LNOutPoint? maybeKey,
             uint256 oldBlockHash, BlockHeader newBlockHeader, uint currentHeight,
-            IBlockSource blockSource, Network n, ILogger? logger = null
+            IBlockSource blockSource, Network n, ILogger? logger = null, CancellationToken ct = default
         )
         {
             var oldHeaderData = await blockSource.GetHeader(oldBlockHash);
             var newHeaderData = new BlockHeaderData(currentHeight, newBlockHeader);
-            var events = await blockSource.FindFork(newHeaderData, oldHeaderData, n);
+            var events = await blockSource.FindFork(newHeaderData, oldHeaderData, n, ct);
                 
             uint256? lastDisconnectTip = null;
             BlockHeaderData? newTip = null;
@@ -266,18 +266,18 @@ namespace NRustLightning.Infrastructure.Interfaces
 
         public static Task SyncChainListener(this IChainListener chainListener, uint256 oldLatestBlockHash,
             BlockHeader newBlockHeader, uint currentHeight, IBlockSource blockSource,
-            Network n, ILogger? logger = null)
+            Network n, ILogger? logger = null, CancellationToken ct = default)
         {
             return SyncOneChannelListener(chainListener, null, oldLatestBlockHash, newBlockHeader, currentHeight,
-                blockSource, n, logger);
+                blockSource, n, logger, ct);
         }
         public static async Task SyncChannelMonitor(this ManyChannelMonitor chainListener,
             IDictionary<Primitives.LNOutPoint, uint256> oldBlockHashes, BlockHeader newBlockHeader, uint currentHeight,
-            IBlockSource blockSource, Network n, ILogger? logger = null)
+            IBlockSource blockSource, Network n, ILogger? logger = null, CancellationToken ct = default)
         {
             foreach (var kvp in oldBlockHashes)
             {
-                await chainListener.SyncOneChannelListener(kvp.Key, kvp.Value, newBlockHeader, currentHeight, blockSource, n, logger);
+                await chainListener.SyncOneChannelListener(kvp.Key, kvp.Value, newBlockHeader, currentHeight, blockSource, n, logger, ct);
             }
         }
     }
