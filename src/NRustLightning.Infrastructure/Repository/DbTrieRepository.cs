@@ -83,7 +83,14 @@ namespace NRustLightning.Infrastructure.Repository
             using var chanManRow = await tx.GetTable(DBKeys.ChannelManager).Get(DBKeys.ChannelManagerVersion);
             if (chanManRow is null) return null;
             var val = await chanManRow.ReadValue();
-            return val.IsEmpty ? default : ChannelManager.Deserialize(val, readArgs, _conf.Value.RustLightningConfig, _pool);
+            if (val.IsEmpty)
+                return null;
+            var r = ChannelManager.Deserialize(val, readArgs, _conf.Value.RustLightningConfig, _pool);
+            // there is a edge case that when the ChannelManager is created and serialized without any block connect,
+            // latestBlockHash becomes empty. So just return null in that case.
+            if (r.Item1.Equals(uint256.Zero))
+                return null;
+            return r;
         }
 
         public async Task<(ManyChannelMonitor, Dictionary<Primitives.LNOutPoint, uint256>)?> GetManyChannelMonitor(ManyChannelMonitorReadArgs readArgs, CancellationToken ct = default)
@@ -94,7 +101,9 @@ namespace NRustLightning.Infrastructure.Repository
                 await tx.GetTable(DBKeys.ManyChannelMonitor).Get(DBKeys.ManyChannelMonitorVersion);
             if (manyChannelMonitorRow is null) return null;
             var val = await manyChannelMonitorRow.ReadValue();
-            return val.IsEmpty ? default : ManyChannelMonitor.Deserialize(readArgs, val, _pool);
+            if (val.IsEmpty)
+                return null;
+            return ManyChannelMonitor.Deserialize(readArgs, val, _pool);
         }
 
         public async Task SetManyChannelMonitor(ManyChannelMonitor manyChannelMonitor, CancellationToken ct = default)
