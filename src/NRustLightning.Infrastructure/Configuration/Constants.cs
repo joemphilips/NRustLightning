@@ -23,8 +23,8 @@ namespace NRustLightning.Infrastructure.Configuration
         public static readonly string DefaultHttpsBind = "127.0.0.1";
         
         public static readonly int DefaultP2PPort = 9735;
-        public static readonly int DefaultHttpPort = 80;
-        public static readonly int DefaultHttpsPort = 443;
+        public static readonly int DefaultHttpPort = 5000;
+        public static readonly int DefaultHttpsPort = 5001;
         public static readonly int DefaultPaymentTimeoutSec = 10;
         public static readonly string DefaultP2PExternalIpStr = $"{DefaultP2PHost}:{DefaultP2PPort}";
         public static readonly IPEndPoint DefaultP2PExternalIp = (IPEndPoint)NBitcoin.Utils.ParseEndpoint(DefaultP2PHost, DefaultP2PPort);

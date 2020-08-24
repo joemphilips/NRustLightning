@@ -50,6 +50,8 @@ from low level to high level...
 
 ## How to configure the server
 
+### General
+
 `NRustLightning.Server` takes configuration options by either
 
 * cli argument (e.g. `--https.port=443`)
@@ -63,12 +65,21 @@ git clone --recursive <this repository url>
 dotnet run --project src/NRustLightning.Server -- --help 
 ```
 
+### NBXplorer
+
+NRustLightning depends on nbxplorer.
 You must make sure to connect to your [nbxplorer](https://github.com/dgarage/NBXplorer) instance. You can use options
-starts from `nbx` is
+starts from `nbx`
 
 If you don't have any, you can try with regtest in docker-compose. See below.
 
+### HTTPS
 
+NRustLightning runs only in https by default. So you must prepare certificate before you start and pass with
+`--https.cert`, `--https.certpass` options.
+
+If you don't want to bother preparing your own certificate, then pass `--nohttps` option. This will
+make NRustLighting run only in http
 
 ## REST API
 

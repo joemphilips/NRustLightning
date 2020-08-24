@@ -6,6 +6,7 @@ using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using DotNetLightning.Chain;
 using Microsoft.AspNetCore.Connections;
@@ -130,7 +131,7 @@ namespace NRustLightning.Server
     public static class KestrelServerOptionsExtensions
     {
         private static void ConfigureEndPoint(this KestrelServerOptions options, IConfiguration conf, string subsectionKey,
-            int defaultPort, string defaultBind, ILogger<Program> logger, Action<ListenOptions> listenConfigure)
+            int defaultPort, string defaultBind, ILogger<Program> logger, Action<ListenOptions> configureListenOption)
         {
             var subSection = conf.GetSection(subsectionKey);
             var port = subSection.GetValue("port", defaultPort);
@@ -162,7 +163,7 @@ namespace NRustLightning.Server
             foreach (var endpoint in endPoints)
             {
                 logger.LogInformation($"Binding with {subsectionKey} to {endpoint}");
-                options.Listen(endpoint, listenConfigure);
+                options.Listen(endpoint, configureListenOption);
             }
         }
         
@@ -171,36 +172,33 @@ namespace NRustLightning.Server
             var logger = options.ApplicationServices.GetRequiredService<ILoggerFactory>()
                 .CreateLogger<Program>();
             var config = options.ApplicationServices.GetRequiredService<IConfiguration>();
-
-            # region http
-            options.ConfigureEndPoint(config, "http", Constants.DefaultHttpPort, Constants.DefaultHttpBind, logger,
-                listenOptions =>
-                {
-                    listenOptions.UseConnectionLogging();
-                }
-            );
-            # endregion
             
-            # region https
-            var httpsConf = config.GetSection("https");
             var noHttps = config.GetValue<bool>("nohttps");
-            if (!noHttps && httpsConf.Exists())
+            if (noHttps)
             {
-                var https = new HttpsConfig();
-                httpsConf.Bind(httpsConf);
-                logger.LogDebug($"https config is port: {https.Port}. cert: {https.Cert}. pass: {https.CertPass}");
+                options.ConfigureEndPoint(config, "http", Constants.DefaultHttpPort, Constants.DefaultHttpBind, logger,
+                    listenOptions => { listenOptions.UseConnectionLogging(); }
+                );
+            }
+            else
+            {
+                var httpsConf = config.GetSection("https");
+                if(httpsConf is null || !httpsConf.Exists() || httpsConf["cert"] is null)
+                {
+                    throw new ConfigException("You must specify either --nohttps option or --https.cert ");
+                }
+                var cert = httpsConf.GetOrDefault("cert", Constants.DefaultCertFile);
+                var certPass = httpsConf.GetOrDefault("certpass", string.Empty);
+                logger.LogDebug($"Using https certificate: {cert}");
                 options.ConfigureEndPoint(config, "https", Constants.DefaultHttpsPort, Constants.DefaultHttpsBind, logger,
                     listenOptions =>
                     {
                         listenOptions.UseConnectionLogging();
-                        listenOptions.UseHttps(https.Cert, https.CertPass);
-                        listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
+                        listenOptions.UseHttps(new X509Certificate2(cert, certPass));
                     });
             }
-            # endregion
 
             # region p2p
-            
             options.ConfigureEndPoint(config, "p2p", Constants.DefaultP2PPort, Constants.DefaultP2PBind, logger,
                 listenOptions =>
                 {

@@ -43,6 +43,9 @@ namespace NRustLightning.Server.Controllers
         
         [HttpGet]
         [Route("{cryptoCode}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<ChannelInfoResponse> Get(string cryptoCode)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
@@ -59,6 +62,7 @@ namespace NRustLightning.Server.Controllers
         [Route("{cryptoCode}")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<uint256>> OpenChannel(string cryptoCode, [FromBody] OpenChannelRequest o)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
