@@ -115,7 +115,7 @@ namespace NRustLightning.Server.Controllers
             peerMan.ChannelManager.CloseChannel(s.ChannelId);
             peerMan.ProcessEvents();
             
-            // Technically, we can await the Broadcaster broadcasts the tx. But do not do it for the because ...
+            // Technically, we can await the Broadcaster broadcasts the tx. But do not do it because ...
             // The only way to determine the broadcasted tx is indeed a closing tx of the channel is to check that one
             // of its input's "prevHash xor prevN" matches the ChannelId, but channel id has different value when it has
             // not fully opened.

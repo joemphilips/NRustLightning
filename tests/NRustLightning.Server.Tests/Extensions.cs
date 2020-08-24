@@ -169,7 +169,7 @@ namespace NRustLightning.Server.Tests
                 CustomUpTest = o =>
                 {
                     return
-                        o.Any(x => x.Contains("Listening for P2P message from any IP on port")) // nrustlightning is up
+                        o.Any(x => x.Contains("Now listening on: http://0.0.0.0:9735")) // nrustlightning is up
                         && o.Any(x => x.Contains("PeerManagerProvider started")) // ditto
                         && o.Any(x => x.Contains("Server started with public key")) // lightningd is up
                         && o.Any(x => x.Contains("BTC: Node state changed: NBXplorerSynching => Ready")) // nbx is up

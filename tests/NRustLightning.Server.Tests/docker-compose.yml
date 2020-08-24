@@ -168,7 +168,8 @@ services:
       - --nohttps
       - --regtest
       - --debug.http=true
-      - --httpport=8080
+      - --http.port=8080
+      - --http.bind=0.0.0.0
       - --externalip="nrustlightning:9735"
       - --nbx.rpcurl="http://nbxplorer:${NBXPLORER_PORT}"
       - --ln.channel_options.announced_channel=true

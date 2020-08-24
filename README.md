@@ -48,7 +48,6 @@ from low level to high level...
   * command-line application to work with the server. Which wraps the client.
   * This is still pretty much WIP
 
-
 ## How to configure the server
 
 `NRustLightning.Server` takes configuration options by either
@@ -64,7 +63,8 @@ git clone --recursive <this repository url>
 dotnet run --project src/NRustLightning.Server -- --help 
 ```
 
-You must make sure to connect to your [nbxplorer](https://github.com/dgarage/NBXplorer) instance by options which starts from `nbx`
+You must make sure to connect to your [nbxplorer](https://github.com/dgarage/NBXplorer) instance. You can use options
+starts from `nbx` is
 
 If you don't have any, you can try with regtest in docker-compose. See below.
 

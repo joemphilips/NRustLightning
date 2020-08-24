@@ -178,16 +178,6 @@ namespace NRustLightning.Server.Services
             await _nbXplorerClientProvider.GetClient(n).BroadcastAsync(tx);
         }
 
-        /// <summary>
-        /// 1. Track the output in NBXplorer
-        /// 2. Track the output in bitcoin-ore
-        /// 3. Save the output and its metadata to our repository
-        /// </summary>
-        /// <param name="network"></param>
-        /// <param name="o"></param>
-        /// <param name="ct"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
         public async Task SaveSpendableOutput(NRustLightningNetwork network, SpendableOutputDescriptor o, CancellationToken ct = default)
         {
             var repo = _repositoryProvider.GetRepository(network);

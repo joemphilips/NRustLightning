@@ -17,6 +17,11 @@ namespace NRustLightning.Infrastructure.Configuration
         public static readonly string DataDirectoryPath = Path.Join(HomeDirectoryPath, "data");
         public static readonly string DefaultCertFile = Path.Combine(HomePath, ".aspnet", "https", "ssl.cert");
         public static readonly string DefaultP2PHost = "127.0.0.1";
+        
+        public static readonly string DefaultP2PBind = "0.0.0.0";
+        public static readonly string DefaultHttpBind = "127.0.0.1";
+        public static readonly string DefaultHttpsBind = "127.0.0.1";
+        
         public static readonly int DefaultP2PPort = 9735;
         public static readonly int DefaultHttpPort = 80;
         public static readonly int DefaultHttpsPort = 443;
