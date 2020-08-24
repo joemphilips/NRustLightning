@@ -107,7 +107,7 @@ namespace NRustLightning.Server.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogCritical("Failed to get current height through nbx.");
+                        _logger.LogCritical("Failed to get current height through nbx. Check you have set `exposerpc` option for nbxplorer");
                         throw;
                     }
 

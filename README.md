@@ -69,7 +69,9 @@ dotnet run --project src/NRustLightning.Server -- --help
 
 NRustLightning depends on nbxplorer.
 You must make sure to connect to your [nbxplorer](https://github.com/dgarage/NBXplorer) instance. You can use options
-starts from `nbx`
+starts from `nbx`.
+Your nbxplorer instance must set `EXPOSERPC` option to true. usually this can be done by setting environment variable `NBXPLORER_EXPOSERPC` to `1`.
+Be aware that this option is not allowed in an old version of nbxplorer, it will return 404 error and crashes.
 
 If you don't have any, you can try with regtest in docker-compose. See below.
 
