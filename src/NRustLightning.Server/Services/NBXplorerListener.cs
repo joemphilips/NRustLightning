@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using DotNetLightning.Channel;
 using DotNetLightning.Utils;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -77,6 +79,8 @@ namespace NRustLightning.Server.Services
         private async Task ListenToSessionLoop(LongPollingNotificationSession session, CancellationToken stoppingToken)
         {
             var client = session.Client;
+            var peerMan = _peerManagerProvider.GetPeerManager(_network);
+            Debug.Assert(_peerManagerProvider.CurrentHeightsInStartup.TryGetValue(_network, out var startupHeight));
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -85,12 +89,12 @@ namespace NRustLightning.Server.Services
                         (await session.GetEventsAsync(lastEventId, 10000, true, stoppingToken))
                         .Where(e => e.EventType == "newblock")
                         .Select(e => (NewBlockEvent) e)
+                        .Where(e => e.Height > startupHeight - 10) // for the sake of speed.
                         .OrderBy(e => e.Height);
-
+                        
                     foreach (var e in events)
                     {
                         var newBlock = await client.RPCClient.GetBlockAsync(e.Hash).ConfigureAwait(false);
-                        var peerMan = _peerManagerProvider.GetPeerManager(_network);
                         peerMan.BlockNotifier.BlockConnected(newBlock, (uint) e.Height);
                         lastEventId = e.EventId > lastEventId ? e.EventId : lastEventId;
                     }

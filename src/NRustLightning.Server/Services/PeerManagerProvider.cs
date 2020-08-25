@@ -74,6 +74,8 @@ namespace NRustLightning.Server.Services
             TryGetPeerManager(cryptoCode) ?? Infrastructure.Utils.Utils.Fail<PeerManager>($"Failed to get peer manager for cryptocode: {cryptoCode}");
 
         public PeerManager GetPeerManager(NRustLightningNetwork n) => GetPeerManager(n.CryptoCode);
+        
+        public Dictionary<NRustLightningNetwork, uint> CurrentHeightsInStartup { get; } = new Dictionary<NRustLightningNetwork, uint>();
 
         public IEnumerable<PeerManager> GetAll() => _peerManagers.Values;
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -110,6 +112,8 @@ namespace NRustLightning.Server.Services
                         _logger.LogCritical("Failed to get current height through nbx. Check you have set `exposerpc` option for nbxplorer");
                         throw;
                     }
+                    
+                    CurrentHeightsInStartup.TryAdd(n, currentBlockHeight);
 
                     ManyChannelMonitor? manyChannelMonitor = null;
                     Dictionary<Primitives.LNOutPoint, uint256> latestBlockHashes = null;
@@ -145,6 +149,7 @@ namespace NRustLightning.Server.Services
                     // sync channel monitor to the current state.
                     else
                     {
+                        _logger.LogInformation($"Syncing ChannelMonitor for {n.CryptoCode} ...");
                         await manyChannelMonitor.SyncChannelMonitor(
                             latestBlockHashes,
                             currentBlockHeader,
@@ -162,7 +167,7 @@ namespace NRustLightning.Server.Services
                     if (chanManItems is null)
                     {
                     
-                        _logger.LogInformation($"Creating fresh ChannelManager... for {n.CryptoCode}");
+                        _logger.LogInformation($"Creating fresh ChannelManager for {n.CryptoCode} ...");
                         chanMan = ChannelManager.Create(n.NBitcoinNetwork, conf, chainWatchInterface, _keysRepository, logger, b, feeEst, currentBlockHeight, manyChannelMonitor);
                         blockNotifier.RegisterChannelManager(chanMan);
                     }
@@ -172,6 +177,7 @@ namespace NRustLightning.Server.Services
                         (latestBlockHash, chanMan) = chanManItems.Value;
                         blockNotifier.RegisterChannelManager(chanMan);
                         // sync channel manager to the current state
+                        _logger.LogInformation($"Syncing BlockNotifier... for {n.CryptoCode}");
                         await blockNotifier.SyncChainListener(latestBlockHash, currentBlockHeader, currentBlockHeight,
                             blockSource, n.NBitcoinNetwork,
                             _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(BlockNotifier)}"), cancellationToken);

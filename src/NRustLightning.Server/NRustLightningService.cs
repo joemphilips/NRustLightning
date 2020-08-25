@@ -43,7 +43,7 @@ namespace NRustLightning.Server
             services.AddHostedService<RustLightningEventReactors>();
 
             // to ensure we always save the current state.
-            services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(18));
+            services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(12));
         }
 
         public static void ConfigureNRustLightning(this IServiceCollection services, IConfiguration configuration, ILogger logger)
