@@ -76,7 +76,6 @@ namespace NRustLightning
             
             var chainWatchInterfaceDelegatesHolder = new ChainWatchInterfaceDelegatesHolder(chainWatchInterface);
             var loggerDelegatesHolder = new LoggerDelegatesHolder(logger);
-            blockNotifier.RegisterChannelManager(channelManager);
             unsafe
             {
                 fixed (byte* seedPtr = seed)
