@@ -14,7 +14,7 @@ namespace NRustLightning.Interfaces
         void BroadcastTransaction(Transaction tx);
     }
     
-    internal struct BroadcasterDelegatesHolder
+    internal struct BroadcasterDelegatesHolder : IDisposable
     {
         private readonly IBroadcaster _broadcaster;
         private readonly Network _n;
@@ -28,7 +28,21 @@ namespace NRustLightning.Interfaces
                 var tx = ffiTx.AsTransaction(n);
                 broadcaster.BroadcastTransaction(tx);
             };
+            _handle = GCHandle.Alloc(_broadcastTransaction);
+            _disposed = false;
         }
+        private GCHandle _handle;
+
+        private bool _disposed;
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _handle.Free();
+                _disposed = true;
+            }
+        }
+        
         public BroadcastTransaction BroadcastTransaction => _broadcastTransaction;
     }
 }

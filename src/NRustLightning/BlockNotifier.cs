@@ -95,6 +95,11 @@ namespace NRustLightning
             if (!_disposed)
             {
                 _disposed = true;
+                foreach (var dep in _deps)
+                {
+                    if (dep is IDisposable d)
+                        d.Dispose();
+                }
                 _channelManager?.Dispose();
                 _manyChannelMonitor?.Dispose();
                 _handle.Dispose();

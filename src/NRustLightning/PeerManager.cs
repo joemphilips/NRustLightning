@@ -285,6 +285,11 @@ namespace NRustLightning
                 tick.Dispose();
                 ChannelManager.Dispose();
                 BlockNotifier.Dispose();
+                foreach (var dep in _deps)
+                {
+                    if (dep is IDisposable d)
+                        d.Dispose();
+                }
                 _handle.Dispose();
                 _disposed = true;
             }

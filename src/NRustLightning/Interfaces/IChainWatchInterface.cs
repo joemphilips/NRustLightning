@@ -38,16 +38,23 @@ namespace NRustLightning.Interfaces
     /// delegate and passing it to rust will cause a crash with following error message.
     /// "Process terminated. A callback was made on a garbage collected delegate of type"
     /// </summary>
-    internal struct ChainWatchInterfaceDelegatesHolder
+    internal struct ChainWatchInterfaceDelegatesHolder : IDisposable
     {
 
         private FilterBlock _filterBlock;
+        private GCHandle _filterBlockHandle;
         private InstallWatchTx _installWatchTx;
+        private GCHandle _installWatchTxHandle;
         private InstallWatchOutPoint _installWatchOutPoint;
+        private GCHandle _installWatchOutPointHandle;
         private GetChainUtxo _getChainUtxo;
+        private GCHandle _getChainUtxoHandle;
         private WatchAllTxn _watchAllTxn;
+        private GCHandle _watchAllTxnHandle;
         private ReEntered _reEntered;
-        
+        private GCHandle _reEnteredHandle;
+        private bool _disposed;
+
         public ChainWatchInterfaceDelegatesHolder(IChainWatchInterface chainWatchInterface)
         {
             if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
@@ -109,6 +116,14 @@ namespace NRustLightning.Interfaces
             };
 
             _reEntered = () => (UIntPtr)chainWatchInterface.ReEntered();
+
+            _filterBlockHandle = GCHandle.Alloc(_filterBlock);
+            _installWatchTxHandle = GCHandle.Alloc(_installWatchTx);
+            _installWatchOutPointHandle = GCHandle.Alloc(_installWatchOutPoint);
+            _getChainUtxoHandle = GCHandle.Alloc(_getChainUtxo);
+            _watchAllTxnHandle = GCHandle.Alloc(_watchAllTxn);
+            _reEnteredHandle = GCHandle.Alloc(_reEntered);
+            _disposed = false;
         }
 
         
@@ -118,5 +133,17 @@ namespace NRustLightning.Interfaces
         public GetChainUtxo GetChainUtxo => _getChainUtxo;
         public FilterBlock FilterBlock => _filterBlock;
         public ReEntered ReEntered => _reEntered;
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _filterBlockHandle.Free();
+            _installWatchTxHandle.Free();
+            _installWatchOutPointHandle.Free();
+            _getChainUtxoHandle.Free();
+            _watchAllTxnHandle.Free();
+            _reEnteredHandle.Free();
+            _disposed = true;
+        }
     }
 }

@@ -445,6 +445,13 @@ namespace NRustLightning
             if (!_disposed)
             {
                 Handle.Dispose();
+                foreach (var dep in _deps)
+                {
+                    if (dep is IDisposable d)
+                    {
+                        d.Dispose();
+                    }
+                }
                 _disposed = true;
             }
         }
