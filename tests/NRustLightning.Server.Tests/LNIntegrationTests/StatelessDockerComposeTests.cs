@@ -92,7 +92,7 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
         }
 
         [Fact]
-        [Trait("IntergrationaTest", "LNFixture")]
+        [Trait("IntegrationTest", "LNFixture")]
         public async Task CanWithdrawFunds()
         {
             await _clients.OutBoundConnectAll();
