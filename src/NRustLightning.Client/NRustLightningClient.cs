@@ -7,6 +7,7 @@ using System.Text.Json;
 using DotNetLightning.Payment;
 using DotNetLightning.Utils;
 using NBitcoin;
+using NRustLightning.Infrastructure.Models;
 using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Infrastructure.Models.Response;
 using NRustLightning.Infrastructure.Repository;
@@ -16,6 +17,7 @@ namespace NRustLightning.Client
 {
     public class NRustLightningClient : IDisposable
     {
+        private readonly NRustLightningNetwork _network;
         public HttpClient HttpClient;
         private Uri _baseUri;
         private string cryptoCode;
@@ -27,6 +29,7 @@ namespace NRustLightning.Client
 
         public NRustLightningClient(string baseUrl, NRustLightningNetwork network, X509Certificate2? certificate = null)
         {
+            _network = network;
             var handler = new HttpClientHandler()
             {
                 ClientCertificateOptions = ClientCertificateOption.Automatic,
@@ -90,6 +93,18 @@ namespace NRustLightning.Client
         {
             return RequestAsync<GetNewAddressResponse>($"/v1/wallet/{cryptoCode}/address", HttpMethod.Get);
         }
+
+        public Task<uint256> WithdrawFundsAsync(Money amount, BitcoinAddress destination)
+        {
+            var req = new WithdrawRequest() { AmountSatoshi = (ulong)amount.Satoshi, DestinationAddress = destination.ToString()};
+            return RequestAsync<uint256>($"/v1/wallet/{cryptoCode}/withdraw", HttpMethod.Post, req);
+        }
+
+        public Task<uint256> WithdrawAllFundsAsync(BitcoinAddress destination)
+        {
+            var req = new WithdrawRequest() { AmountSatoshi = 0, DestinationAddress = destination.ToString()};
+            return RequestAsync<uint256>($"/v1/wallet/{cryptoCode}/withdraw", HttpMethod.Post, req);
+        }
         
         /// <summary>
         /// Returns Id for the opened channel
@@ -110,7 +125,11 @@ namespace NRustLightning.Client
         {
             return RequestAsync<object>(relativePath, method, parameters);
         }
-        
+
+        public Task<UTXOChangesWithMetadata> ListUnspent()
+        {
+            return RequestAsync<UTXOChangesWithMetadata>($"/v1/wallet/{cryptoCode}/utxos", HttpMethod.Get);
+        }
 
         private async Task<T> RequestAsync<T>(string relativePath, HttpMethod method, object parameters = null)
         {

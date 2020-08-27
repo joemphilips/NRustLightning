@@ -10,14 +10,17 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.FSharp.Core;
 using NBitcoin;
+using NBitcoin.RPC;
 using NBXplorer.DerivationStrategy;
 using NBXplorer.Models;
 using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Models.Response;
 using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Infrastructure.Repository;
 using NRustLightning.Infrastructure.Utils;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Interfaces;
+using UTXO = NRustLightning.Infrastructure.Models.Response.UTXO;
 
 namespace NRustLightning.Server.Services
 {
@@ -33,6 +36,7 @@ namespace NRustLightning.Server.Services
         Task<Money> GetBalanceAsync(NRustLightningNetwork network, CancellationToken ct = default);
         Task<BitcoinAddress> GetNewAddressAsync(NRustLightningNetwork network, CancellationToken ct = default);
         Task BroadcastAsync(Transaction tx, NRustLightningNetwork network);
+        Task<UTXOChangesWithMetadata> ListUnspent(NRustLightningNetwork network);
     }
 
     public class WalletService : IWalletService
@@ -106,11 +110,18 @@ namespace NRustLightning.Server.Services
                     Destinations =
                         new[]
                         {
-                            new CreatePSBTDestination
-                            {
-                                Amount = amount,
-                                Destination = destination
-                            },
+                            amount == Money.Zero ?
+                                new CreatePSBTDestination
+                                {
+                                    Amount = amount,
+                                    Destination = destination
+                                } :
+                                new CreatePSBTDestination
+                                {
+                                    SweepAll = true,
+                                    Destination = destination
+                                }
+                            ,
                         }.ToList(),
                     ExcludeOutpoints = _outpointAssumedAsSpent.ToList()
                 };
@@ -229,6 +240,53 @@ namespace NRustLightning.Server.Services
                     break;
                 }
             }
+        }
+
+        public async Task<UTXOChangesWithMetadata> ListUnspent(NRustLightningNetwork n)
+        {
+            var _cli = _nbXplorerClientProvider.GetClient(n);
+            var deriv = await GetOurDerivationStrategyAsync(n);
+            var confirmedUtxo = new List<UTXOChangeWithMetadata>();
+            var unconfirmedUtxo = new List<UTXOChangeWithMetadata>();
+            var confirmedSpentOutpoints = new List<OutPoint>();
+            var unconfirmedSpentOutpoints = new List<OutPoint>();
+            
+            var nativeFundsResponse = await _cli.GetUTXOsAsync(deriv);
+            foreach (var utxo in nativeFundsResponse.Confirmed.UTXOs)
+            {
+                var item = new UTXOChangeWithMetadata(new UTXO(utxo), UTXOKind.UserDeposit, new DerivationSchemeTrackedSource(deriv));
+                confirmedUtxo.Add(item);
+            }
+            foreach (var utxo in nativeFundsResponse.Unconfirmed.UTXOs)
+            {
+                unconfirmedUtxo.Add(new UTXOChangeWithMetadata(new UTXO(utxo), UTXOKind.UserDeposit, new DerivationSchemeTrackedSource(deriv)));
+            }
+
+            confirmedSpentOutpoints.AddRange(nativeFundsResponse.Confirmed.SpentOutpoints);
+            unconfirmedSpentOutpoints.AddRange(nativeFundsResponse.Unconfirmed.SpentOutpoints);
+            
+            var repo = _repositoryProvider.GetRepository(n);
+            // TODO: Refactor when https://github.com/dgarage/NBXplorer/issues/291 is ready
+            await foreach (var o in repo.GetAllSpendableOutputDescriptors())
+            {
+                var addr = o.Output.ScriptPubKey.GetDestinationAddress(n.NBitcoinNetwork);
+                var ts = new AddressTrackedSource(addr);
+                var lnUTXOResposne = await _cli.GetUTXOsAsync(ts);
+                foreach (var utxo in lnUTXOResposne.Confirmed.UTXOs)
+                {
+                    confirmedUtxo.Add(new UTXOChangeWithMetadata(new UTXO(utxo), o.GetKind(), ts));
+                }
+                foreach (var utxo in lnUTXOResposne.Unconfirmed.UTXOs)
+                {
+                    unconfirmedUtxo.Add(new UTXOChangeWithMetadata(new UTXO(utxo), o.GetKind(), ts));
+                }
+                confirmedSpentOutpoints.AddRange(lnUTXOResposne.Confirmed.SpentOutpoints);
+                unconfirmedSpentOutpoints.AddRange(lnUTXOResposne.Unconfirmed.SpentOutpoints);
+            };
+            
+            var confirmed = new UTXOChangeWithSpentOutput() {UTXO = confirmedUtxo, SpentOutPoint = confirmedSpentOutpoints};
+            var unconfirmed = new UTXOChangeWithSpentOutput() { UTXO = unconfirmedUtxo, SpentOutPoint = unconfirmedSpentOutpoints};
+            return new UTXOChangesWithMetadata() { Confirmed = confirmed, UnConfirmed = unconfirmed, CurrentHeight = nativeFundsResponse.CurrentHeight };
         }
 
         

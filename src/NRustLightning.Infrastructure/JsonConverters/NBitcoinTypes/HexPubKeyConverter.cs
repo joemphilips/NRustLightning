@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using NBitcoin;
 
-namespace NRustLightning.Infrastructure.JsonConverters
+namespace NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes
 {
     public class HexPubKeyConverter : JsonConverter<PubKey>
     {

@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Infrastructure.JsonConverters;
+using NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes;
 
 namespace NRustLightning.Infrastructure.Models.Request
 {

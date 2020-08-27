@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using BTCPayServer.Lightning;
+using NBitcoin;
 using NRustLightning.Server.Tests.Support;
 using Xunit;
 using Xunit.Abstractions;
@@ -88,6 +89,26 @@ namespace NRustLightning.Server.Tests.LNIntegrationTests
             await  _fixture.OutboundChannelCloseRoundtrip(clients, clients.ClightningLNClient);
             await  _fixture.InboundChannelOpenRoundtrip(clients, clients.CLightningClient);
             await  _fixture.OutboundChannelCloseRoundtrip(clients, _clients.CLightningClient);
+        }
+
+        [Fact]
+        [Trait("IntergrationaTest", "LNFixture")]
+        public async Task CanWithdrawFunds()
+        {
+            await _clients.OutBoundConnectAll();
+            await _clients.PrepareFunds();
+            await _clients.CreateEnoughTxToEstimateFee();
+
+            await _fixture.OutBoundChannelOpenRoundtrip(_clients, _clients.LndLNClient);
+            await  _fixture.OutboundChannelCloseRoundtrip(_clients, _clients.LndLNClient);
+            await  _fixture.InboundChannelOpenRoundtrip(_clients, _clients.LndClient);
+            await  _fixture.OutboundChannelCloseRoundtrip(_clients, _clients.LndClient);
+
+            var addr = new Key().PubKey.WitHash.GetAddress(_clients.NBXClient.Network.NBitcoinNetwork);
+            var txHash = await  _clients.NRustLightningHttpClient.WithdrawFundsAsync(Money.Coins(3m), addr);
+            
+            var info = await _clients.BitcoinRPCClient.GetRawTransactionAsync(txHash);
+            Assert.NotNull(info);
         }
     }
 }

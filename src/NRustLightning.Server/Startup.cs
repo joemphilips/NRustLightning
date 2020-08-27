@@ -10,6 +10,7 @@ using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using NRustLightning.Infrastructure.Configuration;
 using NRustLightning.Infrastructure.JsonConverters;
+using NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Middlewares;
@@ -50,7 +51,6 @@ namespace NRustLightning.Server
                     .Add(new PaymentRequestJsonConverter());
                 options.JsonSerializerOptions.Converters.Add(new uint256JsonConverter());
                 options.JsonSerializerOptions.Converters.Add(new FeatureBitJsonConverter());
-                
                 options.JsonSerializerOptions
                     .Converters.Add(new NullableStructConverterFactory());
                 options.JsonSerializerOptions.Converters

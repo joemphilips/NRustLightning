@@ -3,8 +3,10 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NBitcoin;
 using NRustLightning.Infrastructure.Configuration;
 using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Infrastructure.Repository;
 
 namespace NRustLightning.Server.Tests.Support
@@ -32,7 +34,6 @@ namespace NRustLightning.Server.Tests.Support
             Directory.CreateDirectory(c.DBFilePath);
             var l = LoggerFactory.Create(lb  => lb.AddConsole());
             Repository = new DbTrieRepository(Options.Create(c), l.CreateLogger<DbTrieRepository>());
-
             c.SeedFilePath = Path.Combine(DataDir, "node_secret");
             KeysRepository = new FlatFileKeyRepository(Options.Create(c), l.CreateLogger<FlatFileKeyRepository>());
             Config = c;
