@@ -153,6 +153,19 @@ namespace NRustLightning
         internal static FFIResult tell_block_disconnected_after_resume(IntPtr blockHashRef, uint height, ref FFIOutPoint keyRef, ManyChannelMonitorHandle handle, bool check = true) =>
             MaybeCheck(_tell_block_disconnected_after_resume(blockHashRef, height, ref keyRef, handle), check);
         
+        [DllImport(RustLightning,
+            CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "many_channel_monitor_get_and_clear_pending_events",
+            ExactSpelling = true)]
+        private static extern FFIResult _many_channel_monitor_get_and_clear_pending_events(
+            ManyChannelMonitorHandle handle, IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualBufLen
+            );
+
+        internal static FFIResult many_channel_monitor_get_and_clear_pending_events(
+            ManyChannelMonitorHandle handle, IntPtr bufOut, UIntPtr bufLen, out UIntPtr actualBufLen, bool check = true
+        ) => MaybeCheck(_many_channel_monitor_get_and_clear_pending_events(handle, bufOut, bufLen, out actualBufLen),
+            check);
+        
         
         [DllImport(RustLightning,
             CallingConvention = CallingConvention.Cdecl,

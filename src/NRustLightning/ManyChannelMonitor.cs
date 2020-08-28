@@ -140,6 +140,20 @@ namespace NRustLightning
             }
         }
 
+        public Event[] GetAndClearPendingEvents(MemoryPool<byte> pool)
+        {
+            if (pool == null) throw new ArgumentNullException(nameof(pool));
+            FFIOperationWithVariableLengthReturnBuffer func =
+                (bufOut, bufLength) =>
+                {
+                    var ffiResult =
+                        Interop.many_channel_monitor_get_and_clear_pending_events(Handle, bufOut, bufLength,
+                            out var actualBufLen, false);
+                    return (ffiResult, actualBufLen);
+                };
+            return Event.ParseManyUnsafe(WithVariableLengthReturnBuffer(pool, func));
+        }
+
         private static Dictionary<Primitives.LNOutPoint, uint256> ParseChannelMonitorKeyToItsLatestBlockHash(byte[] b)
         {
             return Parsers.ParseOutPointToBlockHashMap(b);
