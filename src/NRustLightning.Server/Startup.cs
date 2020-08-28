@@ -14,6 +14,7 @@ using NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Middlewares;
+using NRustLightning.Server.Services;
 #if DEBUG
 using Microsoft.OpenApi.Models;
 #endif
@@ -109,6 +110,9 @@ namespace NRustLightning.Server
             {
                 app.UseHttpsRedirection();
             }
+            
+            // warm up services which other services does not depend.
+            app.ApplicationServices.GetService<WorkQueueProcessors>();
 
             app.UseRouting();
 

@@ -11,6 +11,7 @@ using NBXplorer;
 using NBXplorer.Models;
 using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Repository;
 using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.P2P;
@@ -21,14 +22,14 @@ namespace NRustLightning.Server.Services
     {
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly Dictionary<string, WorkQueueProcessor> _processors = new Dictionary<string, WorkQueueProcessor>();
-        public WorkQueueProcessors(INBXplorerClientProvider clientProvider, NRustLightningNetworkProvider networkProvider,
+        public WorkQueueProcessors(RepositoryProvider repositoryProvider, NRustLightningNetworkProvider networkProvider,
             IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
         {
             _networkProvider = networkProvider;
             foreach (var n in networkProvider.GetAll())
             {
-                var cli = clientProvider.TryGetClient(n.CryptoCode);
-                if (cli is null)
+                var repo = repositoryProvider.TryGetRepository(n);
+                if (repo is null)
                     continue;
                 var p = new WorkQueueProcessor(
                     serviceProvider.GetRequiredService<ChannelProvider>(),
@@ -36,7 +37,8 @@ namespace NRustLightning.Server.Services
                     loggerFactory.CreateLogger<WorkQueueProcessor>(),
                     serviceProvider.GetRequiredService<PeerManagerProvider>(),
                     n,
-                    serviceProvider.GetRequiredService<WalletService>()
+                    serviceProvider.GetRequiredService<IWalletService>(),
+                    repo
                 );
                 _processors.Add(n.CryptoCode, p);
             }
@@ -53,14 +55,15 @@ namespace NRustLightning.Server.Services
         private readonly ILogger<WorkQueueProcessor> _logger;
         private readonly PeerManagerProvider _peerManagerProvider;
         private readonly NRustLightningNetwork _network;
-        private readonly WalletService _walletService;
+        private readonly IWalletService _walletService;
+        private readonly IRepository _repo;
         private readonly MemoryPool<byte> _pool = MemoryPool<byte>.Shared;
 
         private Task[] _tasks;
 
         public WorkQueueProcessor(ChannelProvider channelProvider, P2PConnectionHandler p2PConnectionHandler,
             ILogger<WorkQueueProcessor> logger, PeerManagerProvider peerManagerProvider, NRustLightningNetwork network,
-            WalletService walletService)
+            IWalletService walletService, IRepository repo)
         {
             _channelProvider = channelProvider;
             _p2PConnectionHandler = p2PConnectionHandler;
@@ -68,6 +71,7 @@ namespace NRustLightning.Server.Services
             _peerManagerProvider = peerManagerProvider;
             _network = network;
             _walletService = walletService;
+            _repo = repo;
             _tasks = new [] { HandleOutboundConnectQueue(), HandleSpendableOutputEventQueue() };
         }
 
@@ -86,7 +90,7 @@ namespace NRustLightning.Server.Services
                 catch (Exception ex)
                 {
                     _logger.LogError(ex.ToString());
-                    _logger.LogError($"Failed to resume the connection for {req} force-closing the channel.");
+                    _logger.LogError($"Failed to resume the connection for {req}. Force-closing the channel.");
                     var channelDetail = knownChannels.First(c => c.RemoteNetworkId.Equals(req.NodeId));
                     chanMan.ForceCloseChannel(channelDetail.ChannelId);
                 }
@@ -99,10 +103,9 @@ namespace NRustLightning.Server.Services
             while (await t.Reader.WaitToReadAsync())
             {
                 var desc = await t.Reader.ReadAsync();
-                await _walletService.SaveSpendableOutput(_network, desc);
+                await _repo.SetSpendableOutputDescriptor(desc);
                 await _walletService.TrackSpendableOutput(_network, desc);
             }
         }
-        
     }
 }

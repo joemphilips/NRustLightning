@@ -37,6 +37,8 @@ namespace NRustLightning.Server.Services
         Task<BitcoinAddress> GetNewAddressAsync(NRustLightningNetwork network, CancellationToken ct = default);
         Task BroadcastAsync(Transaction tx, NRustLightningNetwork network);
         Task<UTXOChangesWithMetadata> ListUnspent(NRustLightningNetwork network);
+
+        Task TrackSpendableOutput(NRustLightningNetwork network, SpendableOutputDescriptor desc, CancellationToken ct = default);
     }
 
     public class WalletService : IWalletService
@@ -187,12 +189,6 @@ namespace NRustLightning.Server.Services
         public async Task BroadcastAsync(Transaction tx, NRustLightningNetwork n)
         {
             await _nbXplorerClientProvider.GetClient(n).BroadcastAsync(tx);
-        }
-
-        public async Task SaveSpendableOutput(NRustLightningNetwork network, SpendableOutputDescriptor o, CancellationToken ct = default)
-        {
-            var repo = _repositoryProvider.GetRepository(network);
-            await repo.SetSpendableOutputDescriptor(o, ct);
         }
 
         public async Task TrackSpendableOutput(NRustLightningNetwork network,
