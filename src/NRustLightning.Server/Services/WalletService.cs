@@ -113,12 +113,12 @@ namespace NRustLightning.Server.Services
                             amount == Money.Zero ?
                                 new CreatePSBTDestination
                                 {
-                                    Amount = amount,
+                                    SweepAll = true,
                                     Destination = destination
                                 } :
                                 new CreatePSBTDestination
                                 {
-                                    SweepAll = true,
+                                    Amount = amount,
                                     Destination = destination
                                 }
                             ,

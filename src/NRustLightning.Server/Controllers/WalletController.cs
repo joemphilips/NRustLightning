@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,11 +48,12 @@ namespace NRustLightning.Server.Controllers
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode);
             var derivationStrategy = await _walletService.GetOurDerivationStrategyAsync(n);
-            var balance = await _walletService.GetBalanceAsync(n);
-            var outboundCaps = _peerManagerProvider.GetPeerManager(n).ChannelManager.ListChannels(_pool)
-                .Select(c => c.OutboundCapacityMSat).ToArray();
-            var offChainBalance = outboundCaps.Length == 0 ? 0 : outboundCaps.Aggregate((x, acc) => x + acc);
-            var resp = new WalletInfo {DerivationStrategy = derivationStrategy, OnChainBalanceSatoshis = balance, OffChainBalanceMSat = offChainBalance};
+            var onChainBalance = await _walletService.GetBalanceAsync(n);
+            var offChainBalance = _peerManagerProvider.GetPeerManager(n).ChannelManager.ListChannels(_pool)
+                .Select(c => c.OutboundCapacityMSat + c.InboundCapacityMSat)
+                .DefaultIfEmpty()
+                .Aggregate((x, acc) => x + acc);
+            var resp = new WalletInfo {DerivationStrategy = derivationStrategy, OnChainBalanceSatoshis = onChainBalance, OffChainBalanceMSat = offChainBalance};
             return new JsonResult(resp, _repositoryProvider.TryGetSerializer(n).Options);
         }
         
@@ -65,6 +67,22 @@ namespace NRustLightning.Server.Controllers
             return new JsonResult(resp, _repositoryProvider.TryGetSerializer(n).Options);
         }
 
+        /// <summary>
+        /// Withdraw on-chain funds to the user specified address.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///     POST /v1/wallet/btc/withdraw
+        ///     {
+        ///         "AmountSatoshi": 5000,
+        ///         "DestinationAddress": "2NCHX7nn2zxNsgjqq4RqcxJ6iYH5kSuZz91"
+        ///     }
+        /// </remarks>
+        /// <param name="cryptoCode">cryptoCode (e.g. "btc")</param>
+        /// <param name="req">Details for the tx to create. Specify `0` to AmountSatoshis if you want to sweep all your funds.</param>
+        /// <param name="ct"></param>
+        /// <returns>Transaction id of the sending tx</returns>
+        /// <response code="201"> Returns tx id of the sending tx</response>
         [HttpPost]
         [Route("{cryptoCode}/withdraw")]
         public async Task<ActionResult<uint256>> WithdrawFunds(string cryptoCode, WithdrawRequest req, CancellationToken ct)
@@ -74,7 +92,7 @@ namespace NRustLightning.Server.Controllers
             var tx = await _walletService.GetSendingTxAsync(addr, req.AmountSatoshi, n, ct);
             var cli = _clientProvider.GetClient(n);
             await cli.BroadcastAsync(tx, ct);
-            return Ok(tx.GetHash());
+            return CreatedAtRoute($"{cryptoCode}/withdraw",tx.GetHash());
         }
 
         [HttpGet]
