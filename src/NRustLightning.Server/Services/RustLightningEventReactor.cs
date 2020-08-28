@@ -207,11 +207,13 @@ namespace NRustLightning.Server.Services
             {
                 while (await _connectionHandler.EventNotify.Reader.WaitToReadAsync(cancellationToken))
                 {
-                    foreach (var peerManager in _peerManagerProvider.GetAll())
+                    foreach (var (peerManager, manyChannelMonitor) in _peerManagerProvider.GetAllWithManyChannelMonitors())
                     {
                         var _ = await _connectionHandler.EventNotify.Reader.ReadAsync(cancellationToken);
                         cancellationToken.ThrowIfCancellationRequested();
-                        var events = peerManager.ChannelManager.GetAndClearPendingEvents(_pool);
+                        var e1 = peerManager.ChannelManager.GetAndClearPendingEvents(_pool);
+                        var e2 = manyChannelMonitor.GetAndClearPendingEvents(_pool);
+                        var events = e1.Concat(e2);
                         await Task.WhenAll(events.Select(async e =>
                             await HandleEvent(e, cancellationToken).ConfigureAwait(false)));
                     }

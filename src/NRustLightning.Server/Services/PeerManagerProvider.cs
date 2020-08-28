@@ -78,6 +78,14 @@ namespace NRustLightning.Server.Services
         public Dictionary<NRustLightningNetwork, uint> CurrentHeightsInStartup { get; } = new Dictionary<NRustLightningNetwork, uint>();
 
         public IEnumerable<PeerManager> GetAll() => _peerManagers.Values;
+
+        public IEnumerable<(PeerManager, ManyChannelMonitor)> GetAllWithManyChannelMonitors()
+        {
+            foreach (var kv in _peerManagers)
+            {
+                yield return (kv.Value, _manyChannelMonitors.GetValueOrDefault(kv.Key));
+            }
+        }
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             foreach (var n in _networkProvider.GetAll())
