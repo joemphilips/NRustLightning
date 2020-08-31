@@ -89,6 +89,13 @@ namespace NRustLightning.Infrastructure.Repository
 
             return seed;
         }
+
+        public ChannelKeys DeriveChannelKeys(ulong amountSat, ulong param1, ulong param2)
+            => _keysManager.DeriveChannelKeys(amountSat, param1, param2);
+
+        public Key GetDestinationKey()
+            => this._keysManager.DestinationKey;
+
         public RepositorySerializer Serializer { get; set; }
         public Key GetNodeSecret() =>
             _keysManager?.GetNodeSecret() ?? Utils.Utils.Fail<Key>("Failed to get node_secret: KeysRepository not initialized");

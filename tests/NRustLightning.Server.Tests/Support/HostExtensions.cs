@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +14,8 @@ namespace NRustLightning.Server.Tests.Support
         public static NRustLightningClient GetTestNRustLightningClient(this IHost host)
         {
             var httpClient = host.GetTestClient();
-            var client = new NRustLightningClient(httpClient.BaseAddress.ToString(), new NRustLightningNetworkProvider(NetworkType.Regtest).GetByCryptoCode("BTC"));
+            var s = httpClient.BaseAddress.ToString();
+            var client = new NRustLightningClient(s, new NRustLightningNetworkProvider(NetworkType.Regtest).GetByCryptoCode("BTC"));
             client.HttpClient = httpClient;
             return client;
         }

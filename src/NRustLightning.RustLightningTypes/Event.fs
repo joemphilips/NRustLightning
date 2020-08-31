@@ -7,6 +7,7 @@ open System.Security.Cryptography.X509Certificates
 open ResultUtils
 open DotNetLightning.Utils.Primitives
 open DotNetLightning.Core.Utils.Extensions
+open DotNetLightning.Crypto
 open DotNetLightning.Serialize
 open DotNetLightning.Utils
 open NBitcoin
@@ -90,8 +91,20 @@ type SpendableOutputDescriptor =
     /// These are generally the result of "revocable" output to us, spendable only by us unless
     /// it is an output from us having broadcast an old state (which should never happen).
     | DynamicOutputP2WSH of DynamicOutputP2WSHData
+    /// An output to a P2WPKH, spendable exclusively by our payment key (ie the private key which
+    /// corresponds to the public key in ChannelKeys::pubkeys().payment_point).
+    /// The witness in the spending input, is, simply:
+    /// <BIP 143 signature> <payment key>
+    ///
+    /// These are generally the result of our counterparty having broadcast the current state,
+    /// allowing us to claim the non-HTLC-encumbered outputs immediately.
     | StaticOutputRemotePayment of StaticOutputRemotePaymentData
     with
+    member this.Output =
+        match this with
+        | StaticOutput({ Output = o }) -> o
+        | DynamicOutputP2WSH({Output = o}) -> o
+        | StaticOutputRemotePayment({Output = o}) -> o
     member this.OutPoint =
         match this with
         | StaticOutput({ Outpoint = o }) -> o

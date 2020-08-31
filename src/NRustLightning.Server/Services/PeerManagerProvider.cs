@@ -35,6 +35,7 @@ namespace NRustLightning.Server.Services
         private readonly ChannelProvider _channelProvider;
         private readonly IOptions<Config> _config;
         private readonly RepositoryProvider _repositoryProvider;
+        private readonly EventAggregator _eventAggregator;
         private Dictionary<string, PeerManager> _peerManagers = new Dictionary<string, PeerManager>();
         private Dictionary<string, ManyChannelMonitor> _manyChannelMonitors = new Dictionary<string, ManyChannelMonitor>();
         private readonly MemoryPool<byte> _pool = MemoryPool<byte>.Shared;
@@ -46,7 +47,8 @@ namespace NRustLightning.Server.Services
             ILoggerFactory loggerFactory,
             ChannelProvider channelProvider,
             IOptions<Config> config,
-            RepositoryProvider repositoryProvider
+            RepositoryProvider repositoryProvider,
+            EventAggregator eventAggregator
             )
         {
             _nbXplorerClientProvider = nbXplorerClientProvider;
@@ -57,6 +59,7 @@ namespace NRustLightning.Server.Services
             _channelProvider = channelProvider;
             _config = config;
             _repositoryProvider = repositoryProvider;
+            _eventAggregator = eventAggregator;
         }
 
         public PeerManager? TryGetPeerManager(string cryptoCode)
@@ -71,8 +74,18 @@ namespace NRustLightning.Server.Services
             TryGetPeerManager(cryptoCode) ?? Infrastructure.Utils.Utils.Fail<PeerManager>($"Failed to get peer manager for cryptocode: {cryptoCode}");
 
         public PeerManager GetPeerManager(NRustLightningNetwork n) => GetPeerManager(n.CryptoCode);
+        
+        public Dictionary<NRustLightningNetwork, uint> CurrentHeightsInStartup { get; } = new Dictionary<NRustLightningNetwork, uint>();
 
         public IEnumerable<PeerManager> GetAll() => _peerManagers.Values;
+
+        public IEnumerable<(PeerManager, ManyChannelMonitor)> GetAllWithManyChannelMonitors()
+        {
+            foreach (var kv in _peerManagers)
+            {
+                yield return (kv.Value, _manyChannelMonitors.GetValueOrDefault(kv.Key));
+            }
+        }
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             foreach (var n in _networkProvider.GetAll())
@@ -80,7 +93,7 @@ namespace NRustLightning.Server.Services
                 var nbx = _nbXplorerClientProvider.TryGetClient(n);
                 if (nbx != null)
                 {
-                    var b = new NbXplorerBroadcaster(nbx, _loggerFactory.CreateLogger<NbXplorerBroadcaster>());
+                    var b = new NbXplorerBroadcaster(nbx, _loggerFactory.CreateLogger<NbXplorerBroadcaster>(), _eventAggregator);
                     var feeEst = new NbXplorerFeeEstimator(_loggerFactory.CreateLogger<NbXplorerFeeEstimator>(),
                         _channelProvider.GetFeeRateChannel(n).Reader);
                     var chainWatchInterface =
@@ -104,9 +117,11 @@ namespace NRustLightning.Server.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogCritical("Failed to get current height through nbx.");
+                        _logger.LogCritical("Failed to get current height through nbx. Check you have set `exposerpc` option for nbxplorer");
                         throw;
                     }
+                    
+                    CurrentHeightsInStartup.TryAdd(n, currentBlockHeight);
 
                     ManyChannelMonitor? manyChannelMonitor = null;
                     Dictionary<Primitives.LNOutPoint, uint256> latestBlockHashes = null;
@@ -142,13 +157,16 @@ namespace NRustLightning.Server.Services
                     // sync channel monitor to the current state.
                     else
                     {
+                        _logger.LogInformation($"Syncing ChannelMonitor for {n.CryptoCode} ...");
                         await manyChannelMonitor.SyncChannelMonitor(
                             latestBlockHashes,
                             currentBlockHeader,
-                            currentBlockHeight, 
+                            currentBlockHeight,
                             blockSource,
                             n.NBitcoinNetwork,
-                            _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(ManyChannelMonitor)}"));
+                            _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(ManyChannelMonitor)}"),
+                            cancellationToken
+                        );
                     }
                     
                     var chanManItems = await repo.GetChannelManager(new ChannelManagerReadArgs(_keysRepository, b, feeEst, logger, chainWatchInterface, n.NBitcoinNetwork, manyChannelMonitor), cancellationToken);
@@ -157,7 +175,7 @@ namespace NRustLightning.Server.Services
                     if (chanManItems is null)
                     {
                     
-                        _logger.LogInformation($"Creating fresh ChannelManager... for {n.CryptoCode}");
+                        _logger.LogInformation($"Creating fresh ChannelManager for {n.CryptoCode} ...");
                         chanMan = ChannelManager.Create(n.NBitcoinNetwork, conf, chainWatchInterface, _keysRepository, logger, b, feeEst, currentBlockHeight, manyChannelMonitor);
                         blockNotifier.RegisterChannelManager(chanMan);
                     }
@@ -167,9 +185,10 @@ namespace NRustLightning.Server.Services
                         (latestBlockHash, chanMan) = chanManItems.Value;
                         blockNotifier.RegisterChannelManager(chanMan);
                         // sync channel manager to the current state
+                        _logger.LogInformation($"Syncing BlockNotifier... for {n.CryptoCode}");
                         await blockNotifier.SyncChainListener(latestBlockHash, currentBlockHeader, currentBlockHeight,
                             blockSource, n.NBitcoinNetwork,
-                            _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(BlockNotifier)}"));
+                            _loggerFactory.CreateLogger($"{nameof(PeerManagerProvider)}:{nameof(BlockNotifier)}"), cancellationToken);
                     }
                     blockNotifier.RegisterManyChannelMonitor(manyChannelMonitor);
 
@@ -202,13 +221,12 @@ namespace NRustLightning.Server.Services
                             // Thus instead of creating new outbound connection. Put params into work queue and delegate
                             // The actual processing to another class.
                             var chan = _channelProvider.GetOutboundConnectionRequestQueue(n);
-                            chan.Writer.TryWrite(new PeerConnectionString(pk, ToSystemAddress(addresses[0])));
+                            await chan.Writer.WriteAsync(new PeerConnectionString(pk, ToSystemAddress(addresses[0])), cancellationToken);
                         }
                     }
 
                     _manyChannelMonitors.Add(n.CryptoCode, manyChannelMonitor);
                     _peerManagers.Add(n.CryptoCode, peerMan);
-
                 }
                 _logger.LogInformation("PeerManagerProvider started");
             }

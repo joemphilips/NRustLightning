@@ -11,16 +11,22 @@ using DotNetLightning.Payment;
 using DotNetLightning.Serialize;
 using DotNetLightning.Utils;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.FSharp.Core;
 using NBitcoin;
 using NBitcoin.DataEncoders;
+using NBXplorer.Models;
 using NRustLightning.Adaptors;
 using NRustLightning.Infrastructure.Extensions;
 using NRustLightning.Infrastructure.JsonConverters;
+using NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes;
+using NRustLightning.Infrastructure.JsonConverters.NBXplorerJsonConverter;
 using NRustLightning.Infrastructure.Models.Request;
 using NRustLightning.Infrastructure.Models.Response;
 using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Repository;
 using NRustLightning.Infrastructure.Utils;
 using NRustLightning.Interfaces;
 using NRustLightning.RustLightningTypes;
@@ -30,6 +36,7 @@ using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
 using Xunit;
 using Network = NBitcoin.Network;
+using UTXO = NRustLightning.Infrastructure.Models.Response.UTXO;
 
 namespace NRustLightning.Server.Tests
 {
@@ -106,8 +113,33 @@ namespace NRustLightning.Server.Tests
             Assert.Contains("prettyPrint", j);
             var featureBit2 = JsonSerializer.Deserialize<FeatureBit>(j, opts);
             Assert.Equal(featureBit, featureBit2);
+            
         }
         
+        [Theory]
+        [InlineData("btc")]
+        [Trait("UnitTest", "UnitTest")]
+        public void RepositorySerializerTest(string cryptoCode)
+        {
+            var networkProvider = new NRustLightningNetworkProvider(NetworkType.Regtest);
+            var ser = new RepositorySerializer(networkProvider.GetByCryptoCode(cryptoCode));
+            // utxo response
+            var resp = new UTXOChangesWithMetadata();
+            var confirmed = new UTXOChangeWithSpentOutput();
+            var unconfirmed = new UTXOChangeWithSpentOutput();
+            confirmed.SpentOutPoint = new List<OutPoint>() { OutPoint.Zero };
+            var coinBaseTx =
+                Transaction.Parse(
+                    "020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff0401750101ffffffff0200f2052a0100000017a914d4bb8bf5f987cd463a2f5e6e4f04618c7aaed1b5870000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf90120000000000000000000000000000000000000000000000000000000000000000000000000", Network.RegTest);
+            var utxo  = new UTXO(new NBXplorer.Models.UTXO(coinBaseTx.Outputs.AsCoins().First()));
+            Assert.NotNull(JsonSerializer.Serialize(utxo, ser.Options));
+            confirmed.UTXO =  new List<UTXOChangeWithMetadata>() { new UTXOChangeWithMetadata(utxo, UTXOKind.UserDeposit, new AddressTrackedSource(coinBaseTx.Outputs[0].ScriptPubKey.GetDestinationAddress(Network.RegTest))) };
+            resp.Confirmed = confirmed;
+            resp.UnConfirmed = unconfirmed;
+            var res = JsonSerializer.Serialize(resp, ser.Options);
+            Assert.NotNull(res);
+        }
+
         [Fact]
         [Trait("UnitTest", "REST")]
         public async Task CanGetNewInvoice()
@@ -225,6 +257,16 @@ namespace NRustLightning.Server.Tests
             var monitorReadArgs = new ManyChannelMonitorReadArgs(chainWatchInterface, broadcaster, logger, feeEstiamtor, n);
             return (channelManager, readArgs, manyChannelMonitor, monitorReadArgs);
         }
+
+        [Fact]
+        [Trait("UnitTest", "REST")]
+        public async Task CanListUnspent()
+        {
+            using var host = await new HostBuilder().ConfigureTestHost().StartAsync();
+            var c = host.GetTestNRustLightningClient();
+            var r = await c.ListUnspent();
+            Assert.NotNull(r);
+        }
         
 
         [Fact]
@@ -309,7 +351,6 @@ namespace NRustLightning.Server.Tests
             // case 2: can not with different pin 
             var e = Assert.Throws<NRustLightningException>(() => tester.KeysRepository.DecryptEncryptedSeed(_hex.DecodeData(encryptedSeed), "bogus pin code"));
             Assert.Contains("Pin code mismatch", e.Message);
-
         }
 
         [Fact(Skip = "We must tackle on this when ready.")]

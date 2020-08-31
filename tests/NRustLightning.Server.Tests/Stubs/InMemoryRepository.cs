@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetLightning.Payment;
@@ -9,8 +9,6 @@ using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
 using NRustLightning.Infrastructure.Interfaces;
-using NRustLightning.Infrastructure.Models.Request;
-using NRustLightning.Infrastructure.Networks;
 using NRustLightning.RustLightningTypes;
 
 namespace NRustLightning.Server.Tests.Stubs
@@ -19,9 +17,9 @@ namespace NRustLightning.Server.Tests.Stubs
     {
         private ConcurrentDictionary<Primitives.PaymentHash, PaymentRequest> _hashToInvoice = new ConcurrentDictionary<Primitives.PaymentHash, PaymentRequest>();
         private ConcurrentDictionary<Primitives.PaymentHash, Primitives.PaymentPreimage> _hashToPreimage = new ConcurrentDictionary<Primitives.PaymentHash, Primitives.PaymentPreimage>();
-        private ChannelManager? latestChannelManager = null;
-        private ManyChannelMonitor? latestManyChannelMonitor = null;
-        private NetworkGraph? latestNetworkGraph = null;
+        private ChannelManager? latestChannelManager;
+        private ManyChannelMonitor? latestManyChannelMonitor;
+        private NetworkGraph? latestNetworkGraph;
         
         private List<EndPoint> EndPoints = new List<EndPoint>();
         public Task<Primitives.PaymentPreimage?> GetPreimage(Primitives.PaymentHash hash, CancellationToken ct = default)
@@ -48,7 +46,9 @@ namespace NRustLightning.Server.Tests.Stubs
             return Task.CompletedTask;
         }
 
-        public async IAsyncEnumerable<EndPoint> GetAllRemoteEndPoint(CancellationToken ct = default)
+#pragma warning disable 1998
+        public async IAsyncEnumerable<EndPoint> GetAllRemoteEndPoint([EnumeratorCancellation]CancellationToken _ = default)
+#pragma warning restore 1998
         {
             foreach (var e in EndPoints)
             {
@@ -66,6 +66,36 @@ namespace NRustLightning.Server.Tests.Stubs
         {
             EndPoints.Remove(remoteEndPoint);
             return Task.CompletedTask;
+        }
+        
+        private ConcurrentDictionary<OutPoint, SpendableOutputDescriptor> _outputDescriptors = new ConcurrentDictionary<OutPoint, SpendableOutputDescriptor>();
+
+#pragma warning disable 1998
+        public async IAsyncEnumerable<SpendableOutputDescriptor> GetAllSpendableOutputDescriptors([EnumeratorCancellation] CancellationToken ct = default)
+#pragma warning restore 1998
+        {
+            foreach (var v in _outputDescriptors.Values)
+            {
+                yield return v;
+            }
+        }
+
+        public Task SetSpendableOutputDescriptor(SpendableOutputDescriptor outputDescriptor, CancellationToken ct = default)
+        {
+            _outputDescriptors.TryAdd(outputDescriptor.OutPoint.Value, outputDescriptor);
+            return Task.CompletedTask;
+        }
+
+#pragma warning disable 1998
+        public async IAsyncEnumerable<SpendableOutputDescriptor?> GetSpendableOutputDescriptors(
+#pragma warning restore 1998
+            IEnumerable<OutPoint> outpoint, [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            foreach (var o in outpoint)
+            {
+                _outputDescriptors.TryGetValue(o, out var v);
+                yield return v;
+            }
         }
 
         public Task<NetworkGraph?> GetNetworkGraph(CancellationToken ct = default)

@@ -21,6 +21,9 @@ namespace NRustLightning.Utils
         private readonly ulong _startingTimeSecs;
         private readonly ulong _startingTime100Nanos;
         private readonly Key _nodeSecret;
+
+        public Key DestinationKey { get; }
+        
         private readonly Script _destinationScript;
         private readonly PubKey _shutdownPubKey;
         
@@ -33,7 +36,7 @@ namespace NRustLightning.Utils
         private readonly ExtKey _channelIdMasterKey;
         private int _channelIdChildIndex;
         private DataEncoder _ascii;
-
+        
         public KeysManager(byte[] seed, DateTime startingTime)
         {
             _seed = seed ?? throw new ArgumentNullException(nameof(seed));
@@ -45,8 +48,8 @@ namespace NRustLightning.Utils
             }
             var master = new ExtKey(seed);
             _nodeSecret = master.Derive(0).PrivateKey;
-            var destinationKey = master.Derive(1).PrivateKey;
-            _destinationScript = destinationKey.PubKey.WitHash.ScriptPubKey;
+            DestinationKey = master.Derive(1).PrivateKey;
+            _destinationScript = DestinationKey.PubKey.WitHash.ScriptPubKey;
             _shutdownPubKey = master.Derive(2).PrivateKey.PubKey;
             _channelMasterKey = master.Derive(3);
             _sessionMasterKey = master.Derive(4);
@@ -55,6 +58,14 @@ namespace NRustLightning.Utils
         }
 
 
+        /// <summary>
+        /// Deterministically derive channel keys from the seed. that means it does not depend on `startingTime` you
+        /// passed in constructor.
+        /// </summary>
+        /// <param name="channelValueSatoshis"></param>
+        /// <param name="param1"></param>
+        /// <param name="param2"></param>
+        /// <returns></returns>
         public ChannelKeys DeriveChannelKeys(ulong channelValueSatoshis, ulong param1, ulong param2)
         {
             var channelId = (uint)((param1 & 0xFFFF_FFFF_0000_0000) >> 32);

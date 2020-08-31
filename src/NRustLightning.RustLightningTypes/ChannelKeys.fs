@@ -6,10 +6,15 @@ open NBitcoin
 
 
 type ChannelKeys = {
+    /// Private key of funding tx
     FundingKey: Key
+    /// Local secret key for blinded revocation pubkey
     RevocationBaseKey: Key
+    /// Local secret key used for our balance in remote-broadcasted commitment txs.
     PaymentKey: Key
+    /// Local secret key used in HTLC tx
     DelayedPaymentBaseKey: Key
+    /// Local htlc secret key used in commitment tx htlc outputs
     HTLCBaseKey: Key
     CommitmentSeed: uint256
     ChannelValueSatoshis: uint64

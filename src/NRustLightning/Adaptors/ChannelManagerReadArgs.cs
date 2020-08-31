@@ -18,7 +18,7 @@ namespace NRustLightning.Adaptors
         internal BroadcasterDelegatesHolder BroadCaster => new BroadcasterDelegatesHolder(_broadcaster, _n);
         internal FeeEstimatorDelegatesHolder FeeEstimator => new FeeEstimatorDelegatesHolder(_feeEstimator);
         internal LoggerDelegatesHolder LoggerDelegatesHolder => new LoggerDelegatesHolder(_logger);
-        internal ChainWatchInterfaceConverter ChainWatchInterface => new ChainWatchInterfaceConverter(_chainWatchInterface);
+        internal ChainWatchInterfaceDelegatesHolder ChainWatchInterface => new ChainWatchInterfaceDelegatesHolder(_chainWatchInterface);
 
 
         public ChannelManagerReadArgs(IKeysInterface keysInterface, IBroadcaster broadcaster, IFeeEstimator feeEstimator, ILogger logger, IChainWatchInterface chainWatchInterface, NBitcoin.Network n, ManyChannelMonitor manyChannelMonitor)

@@ -30,16 +30,16 @@ namespace NRustLightning
             ILogger logger,
             IFeeEstimator feeEstimator)
         {
-            return Create(new ChainWatchInterfaceConverter(chainWatchInterface),
+            return Create(new ChainWatchInterfaceDelegatesHolder(chainWatchInterface),
                 new BroadcasterDelegatesHolder(broadcaster, network), new LoggerDelegatesHolder(logger),
                 new FeeEstimatorDelegatesHolder(feeEstimator));
         }
 
         private static ManyChannelMonitor Create(
-            IChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
-            IBroadcasterDelegatesHolder broadcasterDelegatesHolder,
-            ILoggerDelegatesHolder loggerDelegatesHolder,
-            IFeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder
+            in ChainWatchInterfaceDelegatesHolder chainWatchInterfaceDelegatesHolder,
+            in BroadcasterDelegatesHolder broadcasterDelegatesHolder,
+            in LoggerDelegatesHolder loggerDelegatesHolder,
+            in FeeEstimatorDelegatesHolder feeEstimatorDelegatesHolder
         )
         {
             Interop.create_many_channel_monitor(
@@ -140,6 +140,20 @@ namespace NRustLightning
             }
         }
 
+        public Event[] GetAndClearPendingEvents(MemoryPool<byte> pool)
+        {
+            if (pool == null) throw new ArgumentNullException(nameof(pool));
+            FFIOperationWithVariableLengthReturnBuffer func =
+                (bufOut, bufLength) =>
+                {
+                    var ffiResult =
+                        Interop.many_channel_monitor_get_and_clear_pending_events(Handle, bufOut, bufLength,
+                            out var actualBufLen, false);
+                    return (ffiResult, actualBufLen);
+                };
+            return Event.ParseManyUnsafe(WithVariableLengthReturnBuffer(pool, func));
+        }
+
         private static Dictionary<Primitives.LNOutPoint, uint256> ParseChannelMonitorKeyToItsLatestBlockHash(byte[] b)
         {
             return Parsers.ParseOutPointToBlockHashMap(b);
@@ -151,6 +165,11 @@ namespace NRustLightning
             if (!_disposed)
             {
                 Handle.Dispose();
+                foreach (var dep in _deps)
+                {
+                    if (dep is IDisposable d)
+                        d.Dispose();
+                }
                 _disposed = true;
             }
         }

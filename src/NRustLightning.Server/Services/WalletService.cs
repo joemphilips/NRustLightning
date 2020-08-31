@@ -1,17 +1,26 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNetLightning.Crypto;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.FSharp.Core;
 using NBitcoin;
+using NBitcoin.RPC;
 using NBXplorer.DerivationStrategy;
 using NBXplorer.Models;
 using NRustLightning.Infrastructure.Interfaces;
+using NRustLightning.Infrastructure.Models.Response;
 using NRustLightning.Infrastructure.Networks;
+using NRustLightning.Infrastructure.Repository;
 using NRustLightning.Infrastructure.Utils;
+using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Interfaces;
+using UTXO = NRustLightning.Infrastructure.Models.Response.UTXO;
 
 namespace NRustLightning.Server.Services
 {
@@ -27,6 +36,9 @@ namespace NRustLightning.Server.Services
         Task<Money> GetBalanceAsync(NRustLightningNetwork network, CancellationToken ct = default);
         Task<BitcoinAddress> GetNewAddressAsync(NRustLightningNetwork network, CancellationToken ct = default);
         Task BroadcastAsync(Transaction tx, NRustLightningNetwork network);
+        Task<UTXOChangesWithMetadata> ListUnspent(NRustLightningNetwork network);
+
+        Task TrackSpendableOutput(NRustLightningNetwork network, SpendableOutputDescriptor desc, CancellationToken ct = default);
     }
 
     public class WalletService : IWalletService
@@ -34,6 +46,7 @@ namespace NRustLightning.Server.Services
         private readonly IKeysRepository _keysRepository;
         private readonly INBXplorerClientProvider _nbXplorerClientProvider;
         private readonly ILogger<WalletService> _logger;
+        private readonly RepositoryProvider _repositoryProvider;
         private readonly ConcurrentDictionary<NRustLightningNetwork, BitcoinExtKey> BaseXPrivs = new ConcurrentDictionary<NRustLightningNetwork, BitcoinExtKey>();
         private readonly ConcurrentDictionary<NRustLightningNetwork, DerivationStrategyBase> DerivationStrategyBaseCache = new ConcurrentDictionary<NRustLightningNetwork, DerivationStrategyBase>();
         
@@ -43,17 +56,19 @@ namespace NRustLightning.Server.Services
         /// </summary>
         private SemaphoreSlim _outpointAssumedAsSpentLock = new SemaphoreSlim(1, 1);
         private readonly FixedSizeQueue<OutPoint> _outpointAssumedAsSpent  = new FixedSizeQueue<OutPoint>(30);
+        private readonly ISecp256k1 _secp256k1Ctx = CryptoUtils.impl.newSecp256k1();
 
         /// <summary>
         /// Service for handling on-chain balance
         /// </summary>
         /// <param name="keysRepository"></param>
         /// <param name="nbXplorerClientProvider"></param>
-        public WalletService(IKeysRepository keysRepository, INBXplorerClientProvider nbXplorerClientProvider, ILogger<WalletService> logger)
+        public WalletService(IKeysRepository keysRepository, INBXplorerClientProvider nbXplorerClientProvider, ILogger<WalletService> logger, RepositoryProvider repositoryProvider)
         {
             _keysRepository = keysRepository;
             _nbXplorerClientProvider = nbXplorerClientProvider;
             _logger = logger;
+            _repositoryProvider = repositoryProvider;
         }
         
         private BitcoinExtKey GetBaseXPriv(NRustLightningNetwork network)
@@ -97,17 +112,24 @@ namespace NRustLightning.Server.Services
                     Destinations =
                         new[]
                         {
-                            new CreatePSBTDestination
-                            {
-                                Amount = amount,
-                                Destination = destination
-                            },
+                            amount == Money.Zero ?
+                                new CreatePSBTDestination
+                                {
+                                    SweepAll = true,
+                                    Destination = destination
+                                } :
+                                new CreatePSBTDestination
+                                {
+                                    Amount = amount,
+                                    Destination = destination
+                                }
+                            ,
                         }.ToList(),
                     ExcludeOutpoints = _outpointAssumedAsSpent.ToList()
                 };
                 var psbtResponse = await nbXplorerClient.CreatePSBTAsync(deriv, req, cancellationToken)
                     .ConfigureAwait(false);
-                var psbt = SignPSBT(psbtResponse.PSBT, network);
+                var psbt = await SignPSBT(psbtResponse.PSBT, network);
                 if (!psbt.IsAllFinalized())
                 {
                     psbt.Finalize();
@@ -132,8 +154,28 @@ namespace NRustLightning.Server.Services
             var derivationScheme = await GetOurDerivationStrategyAsync(network, ct);
             var b = await cli.GetBalanceAsync(derivationScheme, ct);
             if (b.Total is Money m)
+            {
+                m += await GetAmountForLNOutput(network);
                 return m;
+            }
+
             throw new NRustLightningException($"Unexpected money type {b.Total.GetType().Name}");
+        }
+
+        /// <summary>
+        /// Get total UTXO originated as <see cref="SpendableOutputDescriptor"/> which we currently have.
+        /// TODO: Stop using Bitcoin-core RPC feature (TrackAsync and ListUnspentAsync) and batch query to nbx when https://github.com/dgarage/NBXplorer/issues/291 is ready.
+        /// </summary>
+        /// <returns></returns>
+        private async Task<Money> GetAmountForLNOutput(NRustLightningNetwork network)
+        {
+            var repo = _repositoryProvider.GetRepository(network);
+            var cli = _nbXplorerClientProvider.GetClient(network);
+            var ourAddreses = repo.GetAllSpendableOutputDescriptors().ToEnumerable().Select(desc =>
+                desc.Output.ScriptPubKey.GetDestinationAddress(network.NBitcoinNetwork)).ToArray();
+            var currentHeight = await cli.RPCClient.GetBlockCountAsync();
+            var coins = await cli.RPCClient.ListUnspentAsync(0, currentHeight, ourAddreses);
+            return coins.Where(coin => ourAddreses.Contains(coin.Address)).Sum(x => x.Amount);
         }
 
         public async Task<BitcoinAddress> GetNewAddressAsync(NRustLightningNetwork network, CancellationToken ct = default)
@@ -149,11 +191,167 @@ namespace NRustLightning.Server.Services
             await _nbXplorerClientProvider.GetClient(n).BroadcastAsync(tx);
         }
 
-        private PSBT SignPSBT(PSBT psbt, NRustLightningNetwork network)
+        public async Task TrackSpendableOutput(NRustLightningNetwork network,
+            SpendableOutputDescriptor desc, CancellationToken ct = default)
         {
+            var client = _nbXplorerClientProvider.GetClient(network);
+            switch (desc)
+            {
+                case SpendableOutputDescriptor.StaticOutput staticOutput:
+                {
+                    var addr = staticOutput.Item.Output.ScriptPubKey.GetDestinationAddress(network.NBitcoinNetwork);
+                    var s = new AddressTrackedSource(addr);
+                    await client.TrackAsync(s, ct);
+                    await client.RPCClient.ImportAddressAsync(addr);
+                    break;
+                }
+                case SpendableOutputDescriptor.DynamicOutputP2WSH p2wshOutput:
+                {
+                    var (param1, param2) = p2wshOutput.Item.KeyDerivationParams.ToValueTuple();
+                    var amountSat = (ulong)p2wshOutput.Item.Output.Value.Satoshi;
+                    var channelKeys = _keysRepository.DeriveChannelKeys(amountSat, param1, param2);
+                    var delayedPaymentKey = Generators.derivePrivKey(_secp256k1Ctx, channelKeys.DelayedPaymentBaseKey, p2wshOutput.Item.PerCommitmentPoint.PubKey);
+                    var toSelfDelay = p2wshOutput.Item.ToSelfDelay;
+                    var revokeableRedeemScript = _keysRepository.GetRevokeableRedeemScript(p2wshOutput.Item.RemoteRevocationPubKey, toSelfDelay, delayedPaymentKey.PubKey);
+                    Debug.Assert(p2wshOutput.Item.Output.ScriptPubKey.Equals(revokeableRedeemScript.WitHash.ScriptPubKey));
+
+                    var addr =
+                        revokeableRedeemScript.WitHash.ScriptPubKey.GetDestinationAddress(network.NBitcoinNetwork);
+                    var s = new AddressTrackedSource(addr);
+                    await client.TrackAsync(s, ct);
+                    await client.RPCClient.ImportAddressAsync(addr);
+                    break;
+                }
+                case SpendableOutputDescriptor.StaticOutputRemotePayment remoteOutput:
+                {
+                    var (p1, p2 ) = remoteOutput.Item.KeyDerivationParams.ToValueTuple();
+                    var amountSat = (ulong) remoteOutput.Item.Output.Value;
+                    var keys = _keysRepository.DeriveChannelKeys(amountSat, p1, p2);
+                    Debug.Assert(
+                        keys.PaymentKey.PubKey.WitHash.ScriptPubKey.Equals(remoteOutput.Item.Output.ScriptPubKey));
+                    
+                    var addr = remoteOutput.Item.Output.ScriptPubKey.GetDestinationAddress(network.NBitcoinNetwork);
+                    await client.TrackAsync(new AddressTrackedSource(addr), ct);
+                    await client.RPCClient.ImportAddressAsync(addr);
+                    break;
+                }
+            }
+        }
+
+        public async Task<UTXOChangesWithMetadata> ListUnspent(NRustLightningNetwork n)
+        {
+            var _cli = _nbXplorerClientProvider.GetClient(n);
+            var deriv = await GetOurDerivationStrategyAsync(n);
+            var confirmedUtxo = new List<UTXOChangeWithMetadata>();
+            var unconfirmedUtxo = new List<UTXOChangeWithMetadata>();
+            var confirmedSpentOutpoints = new List<OutPoint>();
+            var unconfirmedSpentOutpoints = new List<OutPoint>();
+            
+            var nativeFundsResponse = await _cli.GetUTXOsAsync(deriv);
+            foreach (var utxo in nativeFundsResponse.Confirmed.UTXOs)
+            {
+                var item = new UTXOChangeWithMetadata(new UTXO(utxo), UTXOKind.UserDeposit, new DerivationSchemeTrackedSource(deriv));
+                confirmedUtxo.Add(item);
+            }
+            foreach (var utxo in nativeFundsResponse.Unconfirmed.UTXOs)
+            {
+                unconfirmedUtxo.Add(new UTXOChangeWithMetadata(new UTXO(utxo), UTXOKind.UserDeposit, new DerivationSchemeTrackedSource(deriv)));
+            }
+
+            confirmedSpentOutpoints.AddRange(nativeFundsResponse.Confirmed.SpentOutpoints);
+            unconfirmedSpentOutpoints.AddRange(nativeFundsResponse.Unconfirmed.SpentOutpoints);
+            
+            var repo = _repositoryProvider.GetRepository(n);
+            // TODO: Refactor when https://github.com/dgarage/NBXplorer/issues/291 is ready
+            await foreach (var o in repo.GetAllSpendableOutputDescriptors())
+            {
+                var addr = o.Output.ScriptPubKey.GetDestinationAddress(n.NBitcoinNetwork);
+                var ts = new AddressTrackedSource(addr);
+                var lnUTXOResposne = await _cli.GetUTXOsAsync(ts);
+                foreach (var utxo in lnUTXOResposne.Confirmed.UTXOs)
+                {
+                    confirmedUtxo.Add(new UTXOChangeWithMetadata(new UTXO(utxo), o.GetKind(), ts));
+                }
+                foreach (var utxo in lnUTXOResposne.Unconfirmed.UTXOs)
+                {
+                    unconfirmedUtxo.Add(new UTXOChangeWithMetadata(new UTXO(utxo), o.GetKind(), ts));
+                }
+                confirmedSpentOutpoints.AddRange(lnUTXOResposne.Confirmed.SpentOutpoints);
+                unconfirmedSpentOutpoints.AddRange(lnUTXOResposne.Unconfirmed.SpentOutpoints);
+            };
+            
+            var confirmed = new UTXOChangeWithSpentOutput() {UTXO = confirmedUtxo, SpentOutPoint = confirmedSpentOutpoints};
+            var unconfirmed = new UTXOChangeWithSpentOutput() { UTXO = unconfirmedUtxo, SpentOutPoint = unconfirmedSpentOutpoints};
+            return new UTXOChangesWithMetadata() { Confirmed = confirmed, UnConfirmed = unconfirmed, CurrentHeight = nativeFundsResponse.CurrentHeight };
+        }
+
+        
+        private async Task<PSBT> SignPSBT(PSBT psbt, NRustLightningNetwork network)
+        {
+            var repo = _repositoryProvider.GetRepository(network);
+            var outpoints = psbt.Inputs.Select(txIn => txIn.PrevOut);
+            var signingKeys = new List<Key>();
+            await foreach (var (desc, i) in repo.GetSpendableOutputDescriptors(outpoints).Select((x, i) => (x, i)))
+            {
+                if (desc is null)
+                {
+                    // We don't have any information in repo. This probably means the UTXO is not LN-origin
+                    // (i.e. those are the funds user provided by on-chain)
+                    continue;
+                }
+                switch (desc)
+                {
+                    case SpendableOutputDescriptor.StaticOutput _:
+                        // signature for this input will be generated by Destination key (see below).
+                        // so no need for any operation.
+                        break;
+                    case SpendableOutputDescriptor.DynamicOutputP2WSH p2wshOutput:
+                    {
+                        var (param1, param2) = p2wshOutput.Item.KeyDerivationParams.ToValueTuple();
+                        var amountSat = (ulong) p2wshOutput.Item.Output.Value.Satoshi;
+                        var channelKeys = _keysRepository.DeriveChannelKeys(amountSat, param1, param2);
+                        var delayedPaymentKey = Generators.derivePrivKey(_secp256k1Ctx,
+                            channelKeys.DelayedPaymentBaseKey, p2wshOutput.Item.PerCommitmentPoint.PubKey);
+                        var toSelfDelay = p2wshOutput.Item.ToSelfDelay;
+                        var revokeableRedeemScript =
+                            _keysRepository.GetRevokeableRedeemScript(p2wshOutput.Item.RemoteRevocationPubKey,
+                                toSelfDelay, delayedPaymentKey.PubKey);
+                        Debug.Assert(
+                            p2wshOutput.Item.Output.ScriptPubKey.Equals(revokeableRedeemScript.WitHash.ScriptPubKey));
+                        psbt.AddScripts(revokeableRedeemScript);
+                        psbt.Inputs[i].SetSequence(toSelfDelay);
+                        signingKeys.Add(delayedPaymentKey);
+                        break;
+                    }
+                    case SpendableOutputDescriptor.StaticOutputRemotePayment remoteOutput:
+                    {
+                        var (p1, p2 ) = remoteOutput.Item.KeyDerivationParams.ToValueTuple();
+                        var amountSat = (ulong) remoteOutput.Item.Output.Value;
+                        var keys = _keysRepository.DeriveChannelKeys(amountSat, p1, p2);
+                        Debug.Assert(
+                            keys.PaymentKey.PubKey.WitHash.ScriptPubKey.Equals(remoteOutput.Item.Output.ScriptPubKey));
+                        signingKeys.Add(keys.PaymentKey);
+                        break;
+                    }
+                    default:
+                        throw new Exception($"Unreachable! Unknown output descriptor type {desc}");
+                }
+            }
+            
+            // sign for user provided on-chain funds utxos.
             if (BaseXPrivs.TryGetValue(network, out var xpriv))
             {
                 psbt.SignAll(ScriptPubKeyType.Segwit, xpriv);
+            }
+            
+            // sign for static-outputs. Which RL gave us as a result of off-chain balance handling.
+            var destinationKey = _keysRepository.GetDestinationKey();
+            psbt.SignWithKeys(destinationKey);
+            
+            // sign with other keys which we have saved in repo.
+            foreach (var sk in signingKeys)
+            {
+                psbt.SignWithKeys(sk);
             }
 
             return psbt;

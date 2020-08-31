@@ -1,6 +1,8 @@
+using System;
 using System.Buffers;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -13,6 +15,7 @@ using NRustLightning.Infrastructure.Models.Response;
 using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Infrastructure.Utils;
 using NRustLightning.RustLightningTypes;
+using NRustLightning.Server.Events;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Services;
 
@@ -26,18 +29,23 @@ namespace NRustLightning.Server.Controllers
         private readonly PeerManagerProvider _peerManagerProvider;
         private readonly NRustLightningNetworkProvider _networkProvider;
         private readonly ILogger<ChannelController> _logger;
+        private readonly EventAggregator _eventAggregator;
         private readonly MemoryPool<byte> _pool;
 
-        public ChannelController(PeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<ChannelController> logger)
+        public ChannelController(PeerManagerProvider peerManagerProvider, NRustLightningNetworkProvider networkProvider, ILogger<ChannelController> logger, EventAggregator eventAggregator)
         {
             _peerManagerProvider = peerManagerProvider;
             _networkProvider = networkProvider;
             _logger = logger;
+            _eventAggregator = eventAggregator;
             _pool = MemoryPool<byte>.Shared;
         }
         
         [HttpGet]
         [Route("{cryptoCode}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<ChannelInfoResponse> Get(string cryptoCode)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
@@ -54,7 +62,8 @@ namespace NRustLightning.Server.Controllers
         [Route("{cryptoCode}")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<ulong> OpenChannel(string cryptoCode, [FromBody] OpenChannelRequest o)
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<uint256>> OpenChannel(string cryptoCode, [FromBody] OpenChannelRequest o)
         {
             var n = _networkProvider.GetByCryptoCode(cryptoCode.ToLowerInvariant());
             var peerMan = _peerManagerProvider.TryGetPeerManager(n);
@@ -66,6 +75,7 @@ namespace NRustLightning.Server.Controllers
             var chanMan = peerMan.ChannelManager;
             var maybeConfig = o.OverrideConfig;
             var userId = RandomUtils.GetUInt64();
+            OutPoint fundingOutPoint;
             try
             {
                 if (maybeConfig is null)
@@ -77,14 +87,22 @@ namespace NRustLightning.Server.Controllers
                     chanMan.CreateChannel(o.TheirNetworkKey, o.ChannelValueSatoshis, o.PushMSat,
                         userId, in v);
                 }
+
                 peerMan.ProcessEvents();
+                var cts = new CancellationTokenSource(20000);
+                var e = await _eventAggregator.WaitNext<Event>(
+                    x => x is Event.FundingBroadcastSafe d && d.Item.UserChannelId == userId, cts.Token);
+                fundingOutPoint = ((Event.FundingBroadcastSafe) e).Item.OutPoint.Item;
             }
             catch (FFIException ex)
             {
                 return BadRequest(ex.Message);
             }
-
-            return Ok(userId);
+            catch (OperationCanceledException ex)
+            {
+                return base.Problem(ex.Message, null, 500, "Channel opening Operation timed out");
+            }
+            return fundingOutPoint.Hash;
         }
 
         [HttpDelete]
@@ -101,6 +119,11 @@ namespace NRustLightning.Server.Controllers
             }
             peerMan.ChannelManager.CloseChannel(s.ChannelId);
             peerMan.ProcessEvents();
+            
+            // Technically, we can await the Broadcaster broadcasts the tx. But do not do it because ...
+            // The only way to determine the broadcasted tx is indeed a closing tx of the channel is to check that one
+            // of its input's "prevHash xor prevN" matches the ChannelId, but channel id has different value when it has
+            // not fully opened.
             return Ok();
         }
     }

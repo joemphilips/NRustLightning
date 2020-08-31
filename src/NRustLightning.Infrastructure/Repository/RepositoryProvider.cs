@@ -33,8 +33,8 @@ namespace NRustLightning.Infrastructure.Repository
                     _keysRepositories.Add(n.CryptoCode, keysRepository);
                     _repositorySerializers.Add(n.CryptoCode, serializer);
                     
-                    var invoiceRepository = serviceProvider.GetRequiredService<IRepository>();
-                    _repos.Add(n.CryptoCode, invoiceRepository);
+                    var repository = serviceProvider.GetRequiredService<IRepository>();
+                    _repos.Add(n.CryptoCode, repository);
                 }
             }
         }
@@ -69,10 +69,13 @@ namespace NRustLightning.Infrastructure.Repository
             return repo;
         }
         
-        public RepositorySerializer? GetSerializer(NRustLightningNetwork network)
+        public RepositorySerializer? TryGetSerializer(NRustLightningNetwork network)
         {
             _repositorySerializers.TryGetValue(network.CryptoCode, out var ser);
             return ser;
         }
+
+        public RepositorySerializer GetSerializer(NRustLightningNetwork network) =>
+            TryGetSerializer(network) ?? Utils.Utils.Fail<RepositorySerializer>($"Failed to get repository serializer for {network.CryptoCode}");
     }
 }

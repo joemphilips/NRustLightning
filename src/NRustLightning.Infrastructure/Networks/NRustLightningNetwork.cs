@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using DotNetLightning.Payment;
 using NBitcoin;
 using NBXplorer;
@@ -8,7 +9,7 @@ using FFINetwork =  NRustLightning.Adaptors.Network;
 
 namespace NRustLightning.Infrastructure.Networks
 {
-    public class NRustLightningNetwork
+    public class NRustLightningNetwork : IEquatable<NRustLightningNetwork>
     {
         internal NRustLightningNetwork(INetworkSet networkSet, NetworkType networkType, NBXplorerNetwork nbXplorerNetwork, KeyPath baseKeyPath, string bolt11InvoicePrefix)
         {
@@ -36,6 +37,26 @@ namespace NRustLightning.Infrastructure.Networks
                 NetworkType.Testnet => FFINetwork.TestNet,
                 _ => throw new Exception($"Unreachable!")
             };
+
+        public bool Equals(NRustLightningNetwork? other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return NBitcoinNetwork.NetworkType.Equals(other.NBitcoinNetwork.NetworkType) && CryptoCode == other.CryptoCode;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((NRustLightningNetwork) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(NBitcoinNetwork.NetworkType, CryptoCode);
+        }
     }
 
     public class NRustLightningNetworkProvider

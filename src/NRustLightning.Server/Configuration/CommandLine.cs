@@ -46,22 +46,6 @@ The server does not store the seed on disk and instead it holds on memory.
                         Argument = new Argument<string>() { Arity = ArgumentArity.ZeroOrOne }
                     },
 
-                    // connection options
-                    new Option<string>("--bind", "Bind to given address and always listen on it. (default: any ip)")
-                    {
-                        Argument = new Argument<string>
-                        {
-                            Arity = ArgumentArity.ZeroOrMore
-                        }
-                    },
-                    new Option<int>(new []{"--port", "-p"}, $"Local p2p port to bind (default: {Constants.DefaultP2PPort})")
-                    {
-                        Argument = new Argument<int>
-                        {
-                            Arity = ArgumentArity.ZeroOrOne
-                        }
-                    },
-                    
                     new Option<string>("--externalip", $"address:port that we claim to listen on to peers.")
                     {
                         Argument = new Argument<string>
@@ -70,27 +54,55 @@ The server does not store the seed on disk and instead it holds on memory.
                         }
                     }, 
                     
-                    new Option<string>("--httpport", $"port for listening http request: (default: {Constants.DefaultHttpPort})")
+                    // connection options
+                    new Option<int>(new []{"--p2p.port", "-p"}, $"Local p2p port to bind (default: {Constants.DefaultP2PPort})")
+                    {
+                        Argument = new Argument<int>
+                        {
+                            Arity = ArgumentArity.ZeroOrOne
+                        }
+                    },
+                    new Option<string>("--p2p.bind", @$"list of 'address[:port]' delimited by ',' from which the server listens for (bolt 4) p2p connection" +
+                                                     "(default: 0.0.0.0 (any IP))")
                     {
                         Argument = new Argument<string>
+                        {
+                            Arity = ArgumentArity.ZeroOrMore
+                        }
+                    },
+                    
+                    new Option<int>("--http.port", $"port for listening http request: (default: {Constants.DefaultHttpPort})")
+                    {
+                        Argument = new Argument<int>
                         {
                             Arity = ArgumentArity.ZeroOrOne
                         }
                     },
                     
-                    new Option<string>("--nohttps", $"do not run https")
+                    new Option<string>("--http.bind", $@"list of 'address[:port]' delimited by ',' from which the server listens for the http request.
+If you want to allow any IP to send request, set to '0.0.0.0' (default: {Constants.DefaultHttpBind})")
                     {
-                        Argument = new Argument<string>
+                        Argument = new Argument<string>()
                         {
                             Arity = ArgumentArity.ZeroOrOne
                         }
                     },
-                    new Option<string>("--https.port", $"port for listening HTTPs request: (default: {Constants.DefaultHttpsPort})")
+                    
+                    new Option<bool>("--nohttps", $"do not run https"),
+                    new Option<int>("--https.port", $"port for listening HTTPs request: (default: {Constants.DefaultHttpsPort})")
                     {
-                        Argument = new Argument<string> { Arity = ArgumentArity.ZeroOrOne }
+                        Argument = new Argument<int> { Arity = ArgumentArity.ZeroOrOne }
+                    },
+                    new Option<string>("--https.bind", $@"list of 'address[:port]' delimited by ',' from which the server listens for the http request.
+If you want to allow any IP to send request, set to '0.0.0.0' (default: {Constants.DefaultHttpsBind})")
+                    {
+                        Argument = new Argument<string>()
+                        {
+                            Arity = ArgumentArity.ZeroOrOne
+                        }
                     },
                     new Option<string>("--https.cert", $"path to the https certification file. (default: {new HttpsConfig().Cert})")
-                        {Argument = new Argument<string> {Arity =  ArgumentArity.ZeroOrOne}},
+                        {Argument = new Argument<string> { Arity =  ArgumentArity.ZeroOrOne }},
                     new Option<string>("--https.certpass", $"pass to open https certification file. (default: \"\")")
                         {Argument = new Argument<string> {Arity =  ArgumentArity.ZeroOrOne }},
                     
@@ -361,6 +373,10 @@ max relative lock-time (a year) and we would 'lose' money as it would be locked 
 
                 if (result.Children.Contains("seed"))
                 {
+                    if (result.Children.Contains("pin"))
+                    {
+                        return "You can not specify both --seed and --pin";
+                    }
                     var s = result.Children["seed"];
                     var h =  new HexEncoder();
                     var v = s.Tokens.First().Value;
@@ -368,6 +384,7 @@ max relative lock-time (a year) and we would 'lose' money as it would be locked 
                     {
                         return "You must specify 32 bytes hex encoded seed by --seed";
                     }
+
                 }
                 return null;
             });

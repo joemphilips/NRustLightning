@@ -6,11 +6,6 @@ using Network = NBitcoin.Network;
 
 namespace NRustLightning.Interfaces
 {
-    internal interface IBroadcasterDelegatesHolder
-    {
-        BroadcastTransaction BroadcastTransaction { get; }
-    }
-
     /// <summary>
     /// User defined broadcaster for broadcasting transaction.
     /// </summary>
@@ -19,7 +14,7 @@ namespace NRustLightning.Interfaces
         void BroadcastTransaction(Transaction tx);
     }
     
-    internal class BroadcasterDelegatesHolder : IBroadcasterDelegatesHolder
+    internal struct BroadcasterDelegatesHolder : IDisposable
     {
         private readonly IBroadcaster _broadcaster;
         private readonly Network _n;
@@ -30,10 +25,24 @@ namespace NRustLightning.Interfaces
             _n = n ?? throw new ArgumentNullException(nameof(n));
             _broadcastTransaction = (ref FFITransaction ffiTx) =>
             {
-                var tx = ffiTx.AsTransaction(_n);
+                var tx = ffiTx.AsTransaction(n);
                 broadcaster.BroadcastTransaction(tx);
             };
+            _handle = GCHandle.Alloc(_broadcastTransaction);
+            _disposed = false;
         }
+        private GCHandle _handle;
+
+        private bool _disposed;
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _handle.Free();
+                _disposed = true;
+            }
+        }
+        
         public BroadcastTransaction BroadcastTransaction => _broadcastTransaction;
     }
 }

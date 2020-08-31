@@ -45,7 +45,7 @@ namespace NRustLightning.Server.Controllers
             var n = _networkProvider.GetByCryptoCode(cryptoCode);
             var invoice = await _invoiceService.GetNewInvoice(n, option);
             var resp = new InvoiceResponse {Invoice = invoice};
-            return new JsonResult(resp, _repositoryProvider.GetSerializer(n).Options);
+            return new JsonResult(resp, _repositoryProvider.TryGetSerializer(n).Options);
         }
 
         [HttpPost]

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using NRustLightning.Infrastructure.Models.Response;
 
 namespace NRustLightning.Infrastructure.Utils
 {

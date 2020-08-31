@@ -13,6 +13,7 @@ There are three kinds of tests
 * Full-integration tests against other lightning nodes.
   * See `LNIntegrationTests/`
   * These are the most heavy-weight test.
+  * Right now, these tests are not working well. May improve in the future.
   * See below for the detail.
 
 ## Integration tests against other lightning nodes

@@ -12,33 +12,6 @@ using Network = NBitcoin.Network;
 
 namespace NRustLightning.Interfaces
 {
-    internal interface IChainWatchInterfaceDelegatesHolder
-    {
-        /// <summary>
-        /// Provides a txid/random-scriptPubKey-in-the-tx which must be watched for.
-        /// </summary>
-        InstallWatchTx InstallWatchTx { get; }
-        /// <summary>
-        /// Provides an outpoint which must be watched for, providing any transactions which spend the given outpoint.
-        /// </summary>
-        InstallWatchOutPoint InstallWatchOutPoint { get; }
-        /// <summary>
-        /// Indicates that a listener needs to see all transactions.
-        /// </summary>
-        WatchAllTxn WatchAllTxn { get; }
-        /// <summary>
-        /// Gets the script and value in satoshis for a given unspent transaction output given a short_channel_id
-        /// (a.k.a. unspent_tx_output_identifier). For BTC/tBTC channels the top three
-        /// bytes are the block height, the next 3 the transaction index within the block and the
-        /// final two the output within the tx.
-        /// </summary>
-        GetChainUtxo GetChainUtxo { get; }
-        
-        FilterBlock FilterBlock { get; }
-        
-        ReEntered ReEntered { get; }
-    }
-
     /// <summary>
     /// User defined interface for watching blockchain.
     ///
@@ -65,17 +38,24 @@ namespace NRustLightning.Interfaces
     /// delegate and passing it to rust will cause a crash with following error message.
     /// "Process terminated. A callback was made on a garbage collected delegate of type"
     /// </summary>
-    internal class ChainWatchInterfaceConverter : IChainWatchInterfaceDelegatesHolder
+    internal struct ChainWatchInterfaceDelegatesHolder : IDisposable
     {
 
         private FilterBlock _filterBlock;
+        private GCHandle _filterBlockHandle;
         private InstallWatchTx _installWatchTx;
+        private GCHandle _installWatchTxHandle;
         private InstallWatchOutPoint _installWatchOutPoint;
+        private GCHandle _installWatchOutPointHandle;
         private GetChainUtxo _getChainUtxo;
+        private GCHandle _getChainUtxoHandle;
         private WatchAllTxn _watchAllTxn;
+        private GCHandle _watchAllTxnHandle;
         private ReEntered _reEntered;
-        
-        public ChainWatchInterfaceConverter(IChainWatchInterface chainWatchInterface)
+        private GCHandle _reEnteredHandle;
+        private bool _disposed;
+
+        public ChainWatchInterfaceDelegatesHolder(IChainWatchInterface chainWatchInterface)
         {
             if (chainWatchInterface == null) throw new ArgumentNullException(nameof(chainWatchInterface));
             _filterBlock = (ref byte blockPtr, UIntPtr blockLen, ref UIntPtr indexPtr, ref UIntPtr indexLen) =>
@@ -136,6 +116,14 @@ namespace NRustLightning.Interfaces
             };
 
             _reEntered = () => (UIntPtr)chainWatchInterface.ReEntered();
+
+            _filterBlockHandle = GCHandle.Alloc(_filterBlock);
+            _installWatchTxHandle = GCHandle.Alloc(_installWatchTx);
+            _installWatchOutPointHandle = GCHandle.Alloc(_installWatchOutPoint);
+            _getChainUtxoHandle = GCHandle.Alloc(_getChainUtxo);
+            _watchAllTxnHandle = GCHandle.Alloc(_watchAllTxn);
+            _reEnteredHandle = GCHandle.Alloc(_reEntered);
+            _disposed = false;
         }
 
         
@@ -145,5 +133,17 @@ namespace NRustLightning.Interfaces
         public GetChainUtxo GetChainUtxo => _getChainUtxo;
         public FilterBlock FilterBlock => _filterBlock;
         public ReEntered ReEntered => _reEntered;
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _filterBlockHandle.Free();
+            _installWatchTxHandle.Free();
+            _installWatchOutPointHandle.Free();
+            _getChainUtxoHandle.Free();
+            _watchAllTxnHandle.Free();
+            _reEnteredHandle.Free();
+            _disposed = true;
+        }
     }
 }

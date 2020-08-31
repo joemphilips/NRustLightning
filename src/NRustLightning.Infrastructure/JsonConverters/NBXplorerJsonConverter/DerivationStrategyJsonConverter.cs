@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using NBXplorer.DerivationStrategy;
 
-namespace NRustLightning.Infrastructure.JsonConverters
+namespace NRustLightning.Infrastructure.JsonConverters.NBXplorerJsonConverter
 {
     public class DerivationStrategyJsonConverter : JsonConverter<DerivationStrategyBase>
     {

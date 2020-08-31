@@ -1,8 +1,10 @@
+using System;
 using DotNetLightning.Utils;
 using LSATAuthenticationHandler;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NRustLightning.Infrastructure.Configuration;
 using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Networks;
@@ -39,6 +41,9 @@ namespace NRustLightning.Server
             services.AddHostedService(sp => sp.GetRequiredService<PeerManagerProvider>());
             services.AddHostedService<NBXplorerListeners>();
             services.AddHostedService<RustLightningEventReactors>();
+
+            // to ensure we always save the current state.
+            services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(10));
         }
 
         public static void ConfigureNRustLightning(this IServiceCollection services, IConfiguration configuration, ILogger logger)
@@ -73,7 +78,7 @@ namespace NRustLightning.Server
                 // we want to give users only read capability when they have payed for it. not write.
                 options.MacaroonCaveats.Add($"{ourServiceName}{DotNetLightning.Payment.LSAT.Constants.CAPABILITIES_CONDITION_PREFIX}=read");
                 int amount = lsatConfig.GetOrDefault("amount", 1);
-                options.InvoiceAmount = LNMoney.MilliSatoshis(amount);
+                options.InvoiceAmount = LNMoney.MilliSatoshis((long)amount);
             });
             services.AddAuthorization(options =>
             {

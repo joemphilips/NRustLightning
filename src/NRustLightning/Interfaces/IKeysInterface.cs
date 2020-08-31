@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NBitcoin;
 using NRustLightning.Adaptors;
 using RustLightningTypes;
@@ -18,15 +19,22 @@ namespace NRustLightning.Interfaces
         public uint256 GetChannelId();
     }
     
-    internal class KeysInterfaceDelegatesHolder
+    internal class KeysInterfaceDelegatesHolder : IDisposable
     {
         private readonly IKeysInterface _keysInterface;
         private readonly GetNodeSecret _getNodeSecret;
+        private GCHandle _getNodeSecretHandle;
         private readonly GetDestinationScript _getDestinationScript;
+        private GCHandle _getDestinationScriptHandle;
         private readonly GetShutdownKey _getShutdownKey;
+        private GCHandle _getShutdownKeyHandle;
         private readonly GetChannelKeys _getChannelKeys;
+        private GCHandle _getChannelKeysHandle;
         private readonly GetOnionRand _getOnionRand;
+        private GCHandle _getOnionRandHandle;
         private readonly GetChannelId _getChannelId;
+        private GCHandle _getChannelIdHandle;
+        private bool _disposed;
 
         public KeysInterfaceDelegatesHolder(IKeysInterface keysInterface)
         {
@@ -81,6 +89,14 @@ namespace NRustLightning.Interfaces
                 var b = _keysInterface.GetChannelId().ToBytes(false);
                 Unsafe.CopyBlock(ref id, ref b[0], 32);
             };
+
+            _getNodeSecretHandle = GCHandle.Alloc(_getNodeSecret);
+            _getDestinationScriptHandle = GCHandle.Alloc(_getDestinationScript);
+            _getShutdownKeyHandle = GCHandle.Alloc(_getShutdownKey);
+            _getChannelKeysHandle = GCHandle.Alloc(_getChannelKeys);
+            _getOnionRandHandle = GCHandle.Alloc(_getOnionRand);
+            _getChannelIdHandle = GCHandle.Alloc(_getChannelId);
+            _disposed = false;
         }
 
         public GetNodeSecret GetNodeSecret => _getNodeSecret;
@@ -94,5 +110,17 @@ namespace NRustLightning.Interfaces
         public GetOnionRand GetOnionRand => _getOnionRand;
 
         public GetChannelId GetChannelId => _getChannelId;
+        
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _getNodeSecretHandle.Free();
+            _getDestinationScriptHandle.Free();
+            _getShutdownKeyHandle.Free();
+            _getChannelKeysHandle.Free();
+            _getOnionRandHandle.Free();
+            _getChannelIdHandle.Free();
+            _disposed = true;
+        }
     }
 }

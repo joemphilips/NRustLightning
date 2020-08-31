@@ -10,9 +10,11 @@ using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using NRustLightning.Infrastructure.Configuration;
 using NRustLightning.Infrastructure.JsonConverters;
+using NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Interfaces;
 using NRustLightning.Server.Middlewares;
+using NRustLightning.Server.Services;
 #if DEBUG
 using Microsoft.OpenApi.Models;
 #endif
@@ -50,7 +52,6 @@ namespace NRustLightning.Server
                     .Add(new PaymentRequestJsonConverter());
                 options.JsonSerializerOptions.Converters.Add(new uint256JsonConverter());
                 options.JsonSerializerOptions.Converters.Add(new FeatureBitJsonConverter());
-                
                 options.JsonSerializerOptions
                     .Converters.Add(new NullableStructConverterFactory());
                 options.JsonSerializerOptions.Converters
@@ -61,7 +62,7 @@ namespace NRustLightning.Server
             services.ConfigureNRustLightning(Configuration, logger);
             services.AddNRustLightning();
             services.AddMvc();
-            services.ConfigureNRustLightningAuth(Configuration);
+            // services.ConfigureNRustLightningAuth(Configuration);
 
 #if DEBUG
             services.AddSwaggerGen(c =>
@@ -109,9 +110,14 @@ namespace NRustLightning.Server
             {
                 app.UseHttpsRedirection();
             }
+            
+            // warm up services which other services does not depend.
+            app.ApplicationServices.GetService<WorkQueueProcessors>();
 
             app.UseRouting();
-            
+
+            // this must be called after UseRouting.
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

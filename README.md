@@ -9,6 +9,10 @@ powered by [rust-lightning](https://github.com/rust-bitcoin/rust-lightning)
   * No dependencies besides Microsoft OSS (e.g. AspNetCore) and [Nicolas Dorier](https://github.com/NicolasDorier)'s work (e.g. NBitcoin)
   * Extensive tests, including integration tests against other LN node implementation.
   * encrypt node master secret by user-provided password (pin) before storing it to the disk.
+  * Static channel backup
+    * whenever node shuts down, it saves current state under data directory (which is configurable with `--datadir` option)
+      And reads the data of all channels and comes back to original state. It may or may not close the channel depending on
+      what happened on-chain after shutting down.
 * Fully configurable
   * You can configure every settings for [rust-lightning configuration](https://docs.rs/lightning/0.0.11/lightning/util/config/index.html) as an CLI option or Environment variable.
   * For other configuration options, please can check the help message.
@@ -44,8 +48,9 @@ from low level to high level...
   * command-line application to work with the server. Which wraps the client.
   * This is still pretty much WIP
 
-
 ## How to configure the server
+
+### General
 
 `NRustLightning.Server` takes configuration options by either
 
@@ -60,11 +65,23 @@ git clone --recursive <this repository url>
 dotnet run --project src/NRustLightning.Server -- --help 
 ```
 
-You must make sure to connect to your [nbxplorer](https://github.com/dgarage/NBXplorer) instance by options which starts from `nbx`
+### NBXplorer
+
+NRustLightning depends on nbxplorer.
+You must make sure to connect to your [nbxplorer](https://github.com/dgarage/NBXplorer) instance. You can use options
+starts from `nbx`.
+Your nbxplorer instance must set `EXPOSERPC` option to true. usually this can be done by setting environment variable `NBXPLORER_EXPOSERPC` to `1`.
+Be aware that this option is not allowed in an old version of nbxplorer, it will return 404 error and crashes.
 
 If you don't have any, you can try with regtest in docker-compose. See below.
 
+### HTTPS
 
+NRustLightning runs only in https by default. So you must prepare certificate before you start and pass with
+`--https.cert`, `--https.certpass` options.
+
+If you don't want to bother preparing your own certificate, then pass `--nohttps` option. This will
+make NRustLighting run only in http
 
 ## REST API
 

@@ -2,6 +2,7 @@ using NBitcoin;
 using Newtonsoft.Json;
 using NRustLightning.Adaptors;
 using NRustLightning.Infrastructure.JsonConverters;
+using NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes;
 
 namespace NRustLightning.Infrastructure.Models.Request
 {

@@ -11,7 +11,7 @@ namespace NRustLightning.Adaptors
         private readonly IFeeEstimator _feeEstimator;
         private readonly NBitcoin.Network _n;
 
-        internal ChainWatchInterfaceConverter ChainWatchInterface => new ChainWatchInterfaceConverter(_chainWatchInterface);
+        internal ChainWatchInterfaceDelegatesHolder ChainWatchInterface => new ChainWatchInterfaceDelegatesHolder(_chainWatchInterface);
         internal BroadcasterDelegatesHolder Broadcaster => new BroadcasterDelegatesHolder(_broadcaster, _n);
         internal LoggerDelegatesHolder Logger => new LoggerDelegatesHolder(_logger);
         internal FeeEstimatorDelegatesHolder FeeEstimator => new FeeEstimatorDelegatesHolder(_feeEstimator);

@@ -68,7 +68,7 @@ namespace NRustLightning.Server.Tests.ExplorerIntegrationTests
                  builder.AddConsole();
                  builder.AddDebug();
             });
-            _cli = _dockerFixture.StartExplorerFixtureAsync(_output, nameof(BlockSourceTests)).GetAwaiter().GetResult();
+            _cli = _dockerFixture.StartExplorerFixtureAsync(nameof(BlockSourceTests)).GetAwaiter().GetResult();
         }
         
         [Fact]

@@ -83,7 +83,14 @@ namespace NRustLightning.Infrastructure.Repository
             using var chanManRow = await tx.GetTable(DBKeys.ChannelManager).Get(DBKeys.ChannelManagerVersion);
             if (chanManRow is null) return null;
             var val = await chanManRow.ReadValue();
-            return val.IsEmpty ? default : ChannelManager.Deserialize(val, readArgs, _conf.Value.RustLightningConfig, _pool);
+            if (val.IsEmpty)
+                return null;
+            var r = ChannelManager.Deserialize(val, readArgs, _conf.Value.RustLightningConfig, _pool);
+            // there is a edge case that when the ChannelManager is created and serialized without any block connect,
+            // latestBlockHash becomes empty. So just return null in that case.
+            if (r.Item1.Equals(uint256.Zero))
+                return null;
+            return r;
         }
 
         public async Task<(ManyChannelMonitor, Dictionary<Primitives.LNOutPoint, uint256>)?> GetManyChannelMonitor(ManyChannelMonitorReadArgs readArgs, CancellationToken ct = default)
@@ -94,7 +101,9 @@ namespace NRustLightning.Infrastructure.Repository
                 await tx.GetTable(DBKeys.ManyChannelMonitor).Get(DBKeys.ManyChannelMonitorVersion);
             if (manyChannelMonitorRow is null) return null;
             var val = await manyChannelMonitorRow.ReadValue();
-            return val.IsEmpty ? default : ManyChannelMonitor.Deserialize(readArgs, val, _pool);
+            if (val.IsEmpty)
+                return null;
+            return ManyChannelMonitor.Deserialize(readArgs, val, _pool);
         }
 
         public async Task SetManyChannelMonitor(ManyChannelMonitor manyChannelMonitor, CancellationToken ct = default)
@@ -179,6 +188,44 @@ namespace NRustLightning.Infrastructure.Repository
             using var tx = await _engine.OpenTransaction(ct);
             var table = tx.GetTable(DBKeys.NetworkGraph);
             await table.Insert(DBKeys.NetworkGraphVersion, g.ToBytes());
+        }
+
+        public async IAsyncEnumerable<SpendableOutputDescriptor> GetAllSpendableOutputDescriptors([EnumeratorCancellation] CancellationToken ct = default)
+        {
+            using var tx = await _engine.OpenTransaction(ct);
+            var table = tx.GetTable(DBKeys.OutpointsToStaticOutputDescriptor);
+            await foreach (var item in table.Enumerate().WithCancellation(ct))
+            {
+                yield return SpendableOutputDescriptor.ParseUnsafe((await item.ReadValue()).ToArray());
+            }
+        }
+
+        public async IAsyncEnumerable<SpendableOutputDescriptor?> GetSpendableOutputDescriptors(IEnumerable<OutPoint> outpoints, [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            if (outpoints == null) throw new ArgumentNullException(nameof(outpoints));
+            using var tx = await _engine.OpenTransaction(ct);
+            var table = tx.GetTable(DBKeys.OutpointsToStaticOutputDescriptor);
+            foreach (var op in outpoints)
+            {
+                var raw = await table.Get(op.ToBytes());
+                if (raw is null)
+                {
+                    yield return null;
+                    continue;
+                }
+
+                var b = await raw.ReadValue();
+                yield return SpendableOutputDescriptor.ParseUnsafe(b.ToArray());
+            }
+        }
+
+        public async Task SetSpendableOutputDescriptor(SpendableOutputDescriptor outputDescriptor, CancellationToken ct = default)
+        {
+            if (outputDescriptor == null) throw new ArgumentNullException(nameof(outputDescriptor));
+            using var tx = await _engine.OpenTransaction(ct);
+            var t = tx.GetTable(DBKeys.OutpointsToStaticOutputDescriptor);
+            await t.Insert(outputDescriptor.OutPoint.Value.ToBytes(), outputDescriptor.ToBytes());
+            await tx.Commit();
         }
 
         private async ValueTask<DBTrieEngine> OpenEngine(CancellationToken ct)

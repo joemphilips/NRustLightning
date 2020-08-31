@@ -8,28 +8,34 @@ using Xunit.Abstractions;
 
 namespace NRustLightning.Server.Tests.LNIntegrationTests
 {
-    public class ChannelReestablishTests : LNIntegrationTestsBase
+    public class ChannelReestablishTests : IClassFixture<LNIntegrationTestsBase>
     {
-        public ChannelReestablishTests(DockerFixture dockerFixture, ITestOutputHelper output) : base (dockerFixture, output)
+        private readonly LNIntegrationTestsBase _dockerFixture;
+        private readonly ITestOutputHelper _output;
+
+        public ChannelReestablishTests(LNIntegrationTestsBase dockerFixture, ITestOutputHelper output)
         {
+            _dockerFixture = dockerFixture;
+            _output = output;
         }
         
         [Fact]
         [Trait("IntegrationTest", "LNFixture")]
         public async Task CanResumeOutboundChannelsBy_channel_reestablish()
         {
-            await _clients.OutBoundConnectAll();
-            await _clients.PrepareFunds();
-            await _clients.CreateEnoughTxToEstimateFee();
-            await OutBoundChannelOpenRoundtrip(_clients, _clients.CLightningClient);
-            await OutBoundChannelOpenRoundtrip(_clients, _clients.LndClient);
+            var clients = _dockerFixture.Clients;
+            await clients.OutBoundConnectAll();
+            await clients.PrepareFunds();
+            await clients.CreateEnoughTxToEstimateFee();
+            await _dockerFixture.OutBoundChannelOpenRoundtrip(clients, clients.CLightningClient);
+            await _dockerFixture.OutBoundChannelOpenRoundtrip(clients, clients.LndClient);
             await _dockerFixture.Restart("nrustlightning");
             await Support.Utils.Retry(15, TimeSpan.FromSeconds(2.5), async () =>
             {
                 ChannelInfoResponse resp;
                 try
                 {
-                    resp = await _clients.NRustLightningHttpClient.GetChannelDetailsAsync();
+                    resp = await clients.NRustLightningHttpClient.GetChannelDetailsAsync();
                 }
                 catch(HttpRequestException)
                 {

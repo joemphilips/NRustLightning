@@ -6,6 +6,7 @@ using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using DotNetLightning.Chain;
 using Microsoft.AspNetCore.Connections;
@@ -113,66 +114,98 @@ namespace NRustLightning.Server
                     return builder.AddCommandLineOptions(parseResult);
                 };
 
-            var logger = Startup.GetStartupLoggerFactory().CreateLogger<Program>();
-            
-            var config = configureConfig(new ConfigurationBuilder()).Build();
-            
-            var v = config.GetValue("bind", "*");
-            var isListenAllIp = v == "*";
-            
-            var p2pPort = config.GetValue("port", Constants.DefaultP2PPort);
-
-            var httpPort = config.GetValue("httpport", Constants.DefaultHttpPort);
-
             return
                 Host.CreateDefaultBuilder(args)
-                .ConfigureAppConfiguration(builder => builder.AddConfiguration(config))
+                .ConfigureAppConfiguration(builder => { configureConfig(builder); })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
                     webBuilder.UseKestrel(options => {
-                        options.ListenAnyIP(httpPort, listenOptions =>
-                        {
-                            logger.LogInformation($"Listening on port {httpPort}");
-                            listenOptions.UseConnectionLogging();
-                        });
-                        
-                        var httpsConf = config.GetSection("https");
-                        var noHttps = config.GetValue<bool>("nohttps");
-                        if (!noHttps && httpsConf.Exists())
-                        {
-                            var https = new HttpsConfig();
-                            httpsConf.Bind(https);
-                            logger.LogDebug($"https config is port: {https.Port}. cert: {https.Cert}. pass: {https.CertPass}");
-                            options.ListenAnyIP(https.Port, listenOptions =>
-                            {
-                                listenOptions.UseConnectionLogging();
-                                listenOptions.UseHttps(https.Cert, https.CertPass);
-                                listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
-                            });
-                        }
-
-                        if (isListenAllIp)
-                        {
-                            logger.LogInformation($"Listening for P2P message from any IP on port {p2pPort}");
-                            options.ListenAnyIP(p2pPort, listenOptions =>
-                            {
-                                listenOptions.UseConnectionLogging();
-                                listenOptions.UseConnectionHandler<P2PConnectionHandler>();
-                            });
-                        }
-                        else
-                        {
-                            var allowedIpEndPoint = new IPEndPoint(IPAddress.Parse(v), p2pPort);
-                            logger.LogInformation($"Listening for P2P message from {allowedIpEndPoint}");
-                            options.Listen(allowedIpEndPoint, listenOptions =>
-                            {
-                                listenOptions.UseConnectionLogging();
-                                listenOptions.UseConnectionHandler<P2PConnectionHandler>();
-                            });
-                        }
+                        options.ConfigureEndpoints();
                     });
                 });
+        }
+
+    }
+    
+    public static class KestrelServerOptionsExtensions
+    {
+        private static void ConfigureEndPoint(this KestrelServerOptions options, IConfiguration conf, string subsectionKey,
+            int defaultPort, string defaultBind, ILogger<Program> logger, Action<ListenOptions> configureListenOption)
+        {
+            var subSection = conf.GetSection(subsectionKey);
+            var port = subSection.GetValue("port", defaultPort);
+            var endPoints = new List<IPEndPoint>();
+            var b = subSection["bind"];
+            if (b != null)
+            {
+                foreach (var section in b.Split(","))
+                {
+                    if (NBitcoin.Utils.TryParseEndpoint(section, port, out var endpoint) &&
+                        endpoint is IPEndPoint ipEndPoint)
+                    {
+                        endPoints.Add(ipEndPoint);
+                    }
+
+                    if (section == "localhost")
+                    {
+                        endPoints.Add(new IPEndPoint(IPAddress.IPv6Loopback, port));
+                        endPoints.Add(new IPEndPoint(IPAddress.Loopback, port));
+                    }
+                }
+            }
+
+            if (endPoints.Count == 0)
+            {
+                endPoints.Add(new IPEndPoint(IPAddress.Parse(defaultBind), port));
+            }
+
+            foreach (var endpoint in endPoints)
+            {
+                logger.LogInformation($"Binding with {subsectionKey} to {endpoint}");
+                options.Listen(endpoint, configureListenOption);
+            }
+        }
+        
+        public static void ConfigureEndpoints(this KestrelServerOptions options)
+        {
+            var logger = options.ApplicationServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger<Program>();
+            var config = options.ApplicationServices.GetRequiredService<IConfiguration>();
+            
+            var noHttps = config.GetValue<bool>("nohttps");
+            if (noHttps)
+            {
+                options.ConfigureEndPoint(config, "http", Constants.DefaultHttpPort, Constants.DefaultHttpBind, logger,
+                    listenOptions => { listenOptions.UseConnectionLogging(); }
+                );
+            }
+            else
+            {
+                var httpsConf = config.GetSection("https");
+                if(httpsConf is null || !httpsConf.Exists() || httpsConf["cert"] is null)
+                {
+                    throw new ConfigException("You must specify either --nohttps option or --https.cert ");
+                }
+                var cert = httpsConf.GetOrDefault("cert", Constants.DefaultCertFile);
+                var certPass = httpsConf.GetOrDefault("certpass", string.Empty);
+                logger.LogDebug($"Using https certificate: {cert}");
+                options.ConfigureEndPoint(config, "https", Constants.DefaultHttpsPort, Constants.DefaultHttpsBind, logger,
+                    listenOptions =>
+                    {
+                        listenOptions.UseConnectionLogging();
+                        listenOptions.UseHttps(new X509Certificate2(cert, certPass));
+                    });
+            }
+
+            # region p2p
+            options.ConfigureEndPoint(config, "p2p", Constants.DefaultP2PPort, Constants.DefaultP2PBind, logger,
+                listenOptions =>
+                {
+                    listenOptions.UseConnectionLogging();
+                    listenOptions.UseConnectionHandler<P2PConnectionHandler>();
+                });
+            # endregion
         }
     }
 }
