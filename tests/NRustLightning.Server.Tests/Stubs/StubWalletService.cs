@@ -8,7 +8,9 @@ using NBXplorer.Models;
 using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Models.Response;
 using NRustLightning.Infrastructure.Networks;
+using NRustLightning.RustLightningTypes;
 using NRustLightning.Server.Services;
+using ResultUtils;
 using UTXO = NRustLightning.Infrastructure.Models.Response.UTXO;
 
 namespace NRustLightning.Server.Tests.Stubs
@@ -75,6 +77,12 @@ namespace NRustLightning.Server.Tests.Stubs
             res.Confirmed = confirmed;
             res.UnConfirmed = unconfirmed;
             return Task.FromResult(res);
+        }
+
+        public Task TrackSpendableOutput(NRustLightningNetwork network, SpendableOutputDescriptor desc,
+            CancellationToken ct = default)
+        {
+            return Task.CompletedTask;
         }
     }
 }
