@@ -3,8 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using DotNetLightning.Serialize;
+using DotNetLightning.Serialization;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NBitcoin.DataEncoders;
@@ -14,15 +13,12 @@ using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
 using RustLightningTypes;
 using Xunit;
-using Xunit.Abstractions;
-using Network = NRustLightning.Adaptors.Network;
 
 namespace NRustLightning.Tests
 {
     public class PeerManagerTests
     {
-        private readonly ITestOutputHelper _output;
-        private static HexEncoder Hex = new NBitcoin.DataEncoders.HexEncoder();
+        private static HexEncoder Hex = new HexEncoder();
         private static Key[] _keys =
         {
             new Key(Hex.DecodeData("0101010101010101010101010101010101010101010101010101010101010101")),
@@ -36,9 +32,8 @@ namespace NRustLightning.Tests
 
         private MemoryPool<byte> _pool;
         
-        public PeerManagerTests(ITestOutputHelper output)
+        public PeerManagerTests()
         {
-            _output = output;
             _pool = MemoryPool<byte>.Shared;
         }
 
@@ -102,8 +97,8 @@ namespace NRustLightning.Tests
             using var peerMan = getTestPeerManager();
             
             var channelManager = peerMan.ChannelManager;
-            var nodeFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
-            var channelFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
+            var nodeFeature = FeatureBits.CreateUnsafe(0b000000100100000100000000);
+            var channelFeature = FeatureBits.CreateUnsafe(0b000000100100000100000000);
             var hop1 = new RouteHopWithFeature(_nodeIds[0], nodeFeature, 1, channelFeature, 1000, 72);
             var hop2 = new RouteHopWithFeature(_nodeIds[1], nodeFeature, 2, channelFeature, 1000, 72);
             var route1 = new[] {hop1, hop2};
@@ -120,7 +115,7 @@ namespace NRustLightning.Tests
         public void CanCallBLockNotifierThroughPeerManager()
         {
             var peerMan = getTestPeerManager();
-            var block = NBitcoin.Block.Parse(File.ReadAllText(Path.Join("Data", "block-testnet-828575.txt")), NBitcoin.Network.TestNet);
+            var block = Block.Parse(File.ReadAllText(Path.Join("Data", "block-testnet-828575.txt")), NBitcoin.Network.TestNet);
             peerMan.BlockNotifier.BlockConnected(block, 400001);
             peerMan.BlockNotifier.BlockConnected(block, 400003);
             peerMan.BlockNotifier.BlockDisconnected(block.Header, 400001);

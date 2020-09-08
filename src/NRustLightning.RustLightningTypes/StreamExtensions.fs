@@ -2,8 +2,8 @@ namespace NRustLightning.RustLightningTypes
 
 open System.IO
 open System.Runtime.CompilerServices
-open DotNetLightning.Serialize
-open DotNetLightning.Serialize.Msgs
+open DotNetLightning.Serialization
+open DotNetLightning.Serialization.Msgs
 open DotNetLightning.Utils
 open NBitcoin
 

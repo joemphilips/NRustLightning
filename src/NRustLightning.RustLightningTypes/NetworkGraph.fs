@@ -1,18 +1,14 @@
 namespace NRustLightning.RustLightningTypes
 
-open System.Collections.Generic
-open DotNetLightning.Utils
-
-open System
 open System.IO
-open DotNetLightning.Serialize
-open DotNetLightning.Serialize.Msgs
-open DotNetLightning.Utils.Aether
-open DotNetLightning.Utils.Aether.Operators
+
 open NBitcoin
-open NBitcoin.Crypto
 open ResultUtils
 
+open DotNetLightning.Utils
+open DotNetLightning.Serialization
+open DotNetLightning.Serialization.Msgs
+open DotNetLightning.Utils.Aether
 
 type RoutingFees = private {
     BaseMSat: uint32
@@ -88,7 +84,7 @@ type DirectionalChannelInfo = {
         DirectionalChannelInfo.Deserialize(ls)
 
 type ChannelInfo = {
-    Features: FeatureBit
+    Features: FeatureBits
     NodeOne: NodeId
     OneToTwo: DirectionalChannelInfo option
     NodeTwo: NodeId
@@ -113,7 +109,7 @@ type ChannelInfo = {
         }
     static member Deserialize(ls: LightningReaderStream) =
         {
-            Features = ls.ReadWithLen() |> FeatureBit.CreateUnsafe
+            Features = ls.ReadWithLen() |> FeatureBits.CreateUnsafe
             NodeOne = ls.ReadPubKey() |> NodeId
             OneToTwo = ls.ReadOption() |> Option.map(DirectionalChannelInfo.FromBytes)
             NodeTwo = ls.ReadPubKey() |> NodeId
@@ -146,7 +142,7 @@ type ChannelInfo = {
 /// Information received in the latest node_announcement from this node.
 type NodeAnnouncementInfo = {
     /// Protocol features the node announced support for
-    Features: FeatureBit
+    Features: FeatureBits
     /// When the last known update to the node state was issued. Value is opaque, as set in the announcement.
     LastUpdate: uint32
     /// Color assigned to the node.
@@ -167,7 +163,7 @@ type NodeAnnouncementInfo = {
         }
     static member Deserialize(ls: LightningReaderStream) =
         {
-            Features = ls.ReadWithLen() |> FeatureBit.CreateUnsafe
+            Features = ls.ReadWithLen() |> FeatureBits.CreateUnsafe
             LastUpdate = ls.ReadUInt32(false)
             RGB = ls.ReadRGB()
             Alias = ls.ReadUInt256 false

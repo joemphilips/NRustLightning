@@ -1,26 +1,21 @@
 using System;
 using System.Buffers;
 using System.Linq;
-using System.Text;
-using System.Transactions;
-using DotNetLightning.Serialize;
+using DotNetLightning.Serialization;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using Xunit;
-using NRustLightning;
 using NRustLightning.Adaptors;
 using NRustLightning.Facades;
-using NRustLightning.RustLightningTypes;
 using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
-using Network = NRustLightning.Adaptors.Network;
 
 namespace NRustLightning.Tests
 {
     public class ChannelManagerTests
     {
-        private static HexEncoder Hex = new NBitcoin.DataEncoders.HexEncoder();
+        private static HexEncoder Hex = new HexEncoder();
         private static Key[] _keys =
         {
             new Key(Hex.DecodeData("0101010101010101010101010101010101010101010101010101010101010101")),
@@ -60,8 +55,8 @@ namespace NRustLightning.Tests
         public void CanCreateChannelManager()
         {
             using var channelManager = PeerManagerTests.getTestPeerManager().ChannelManager;
-            var nodeFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
-            var channelFeature = FeatureBit.CreateUnsafe(0b000000100100000100000000);
+            var nodeFeature = FeatureBits.CreateUnsafe(0b000000100100000100000000);
+            var channelFeature = FeatureBits.CreateUnsafe(0b000000100100000100000000);
             var hop1 = new RouteHopWithFeature(_nodeIds[0], nodeFeature, 1, channelFeature, 1000, 72);
             var hop2 = new RouteHopWithFeature(_nodeIds[1], nodeFeature, 2, channelFeature, 1000, 72);
             var route1 = new[] {hop1, hop2};
@@ -110,7 +105,7 @@ namespace NRustLightning.Tests
                 ManyChannelMonitor.Create(n, chainWatchInterface, broadcaster, logger, feeEstiamtor);
             var args = new ChannelManagerReadArgs(keysInterface, broadcaster, feeEstiamtor, logger, chainWatchInterface, n, manyChannelMonitor);
             var items = ChannelManager.Deserialize(b, args, new TestUserConfigProvider(), _pool);
-            var (latestBlockhash, channelManager2) = items;
+            var (_, channelManager2) = items;
 
             Assert.True(channelManager2.Serialize(_pool).SequenceEqual(b));
         }

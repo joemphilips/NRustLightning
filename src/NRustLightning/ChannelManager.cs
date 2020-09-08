@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using DotNetLightning.Serialize.Msgs;
+using DotNetLightning.Serialization.Msgs;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;

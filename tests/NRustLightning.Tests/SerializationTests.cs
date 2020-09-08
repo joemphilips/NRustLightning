@@ -2,7 +2,7 @@ using System;
 using System.Buffers;
 using System.Linq;
 using System.Reflection.Metadata;
-using DotNetLightning.Serialize;
+using DotNetLightning.Serialization;
 using DotNetLightning.Utils;
 using Microsoft.FSharp.Core;
 using NBitcoin;

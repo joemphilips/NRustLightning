@@ -1,8 +1,8 @@
 module internal Generators.Msgs
 
 open Generators.Generator
-open DotNetLightning.Serialize.Msgs
-open DotNetLightning.Serialize
+open DotNetLightning.Serialization.Msgs
+open DotNetLightning.Serialization
 open DotNetLightning.Utils.OnionError
 open FsCheck
 open DotNetLightning.Utils.Primitives
@@ -12,7 +12,7 @@ let (<*>) = Gen.apply
 
 let featuresGen =
     Gen.constant (1L <<< Feature.InitialRoutingSync.OptionalBitPosition)
-    |> Gen.map(FeatureBit.CreateUnsafe)
+    |> Gen.map(FeatureBits.CreateUnsafe)
 
 let private chainHashGen =
     Gen.oneof(seq {

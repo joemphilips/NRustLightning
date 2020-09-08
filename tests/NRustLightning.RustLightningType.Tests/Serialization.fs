@@ -1,6 +1,6 @@
 module Tests
 
-open DotNetLightning.Serialize
+open DotNetLightning.Serialization
 open System.IO
 open Expecto
 open FsCheck

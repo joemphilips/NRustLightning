@@ -8,9 +8,9 @@ open System.Runtime.CompilerServices
 open NBitcoin
 open DotNetLightning.Utils.Primitives
 open DotNetLightning.Utils
-open DotNetLightning.Serialize
+open DotNetLightning.Serialization
 open DotNetLightning.Core.Utils.Extensions
-open DotNetLightning.Serialize.Msgs
+open DotNetLightning.Serialization.Msgs
 
 [<AutoOpen>]
 module PrimitiveStaticExtensions =
@@ -105,7 +105,7 @@ module PrimitiveStaticExtensions =
 [<Extension;AbstractClass;Sealed>]
 type PrimitiveExtensions() =
     [<Extension>]
-    static member ToByteArrayWithLength(this: FeatureBit) =
+    static member ToByteArrayWithLength(this: FeatureBits) =
         let b = this.ByteArray
         let len = ((uint16)b.Length).GetBytesBigEndian()
         Array.concat[len; b]

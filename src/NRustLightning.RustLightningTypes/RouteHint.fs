@@ -5,7 +5,7 @@ open System.IO
 open System.Runtime.CompilerServices
 open DotNetLightning.Core.Utils.Extensions
 open DotNetLightning.Payment
-open DotNetLightning.Serialize
+open DotNetLightning.Serialization
 open DotNetLightning.Utils
 
 
