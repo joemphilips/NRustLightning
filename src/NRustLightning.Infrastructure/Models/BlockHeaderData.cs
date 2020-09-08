@@ -14,7 +14,9 @@ namespace NRustLightning.Infrastructure.Models
 
         public BlockHeader Header => _header;
 
-        private BlockHeaderData() {}
+        private BlockHeaderData()
+        {
+        }
         public BlockHeaderData(uint height, BlockHeader header)
         {
             _height = height;

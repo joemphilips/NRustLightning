@@ -7,7 +7,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using DotNetLightning.Serialize;
+using DotNetLightning.Serialization;
 using NBitcoin;
 using NBitcoin.Protocol;
 using NRustLightning.Adaptors;

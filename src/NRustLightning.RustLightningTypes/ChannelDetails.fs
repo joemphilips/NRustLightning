@@ -2,7 +2,7 @@ namespace NRustLightning.RustLightningTypes
 
 open System.IO
 
-open DotNetLightning.Serialize
+open DotNetLightning.Serialization
 open DotNetLightning.Utils
 
 open NBitcoin
@@ -12,7 +12,7 @@ type ChannelDetails = {
     ChannelId: uint256
     ShortChannelId: Option<ShortChannelId>
     RemoteNetworkId: PubKey
-    CounterPartyFeatures: FeatureBit
+    CounterPartyFeatures: FeatureBits
     ChannelValueSatoshis: uint64
     UserId: uint64
     OutboundCapacityMSat: uint64
@@ -27,7 +27,7 @@ type ChannelDetails = {
             ChannelId = channelId
             ShortChannelId = shortChannelId
             RemoteNetworkId = ls.ReadPubKey()
-            CounterPartyFeatures = ls.ReadWithLen16() |> FeatureBit.CreateUnsafe
+            CounterPartyFeatures = ls.ReadWithLen16() |> FeatureBits.CreateUnsafe
             ChannelValueSatoshis = ls.ReadUInt64(false)
             UserId = ls.ReadUInt64(false)
             OutboundCapacityMSat = ls.ReadUInt64(false)

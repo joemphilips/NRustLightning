@@ -1,16 +1,16 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using DotNetLightning.Serialize;
+using DotNetLightning.Serialization;
 using DotNetLightning.Utils;
 
 namespace NRustLightning.Infrastructure.JsonConverters
 {
-    public class FeatureBitJsonConverter : JsonConverter<FeatureBit>
+    public class FeatureBitJsonConverter : JsonConverter<FeatureBits>
     {
-        public override FeatureBit Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override FeatureBits Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            FeatureBit result;
+            FeatureBits result;
             if (reader.TokenType == JsonTokenType.Null)
                 return null;
             if (!reader.Read())
@@ -24,7 +24,7 @@ namespace NRustLightning.Infrastructure.JsonConverters
             if (!reader.Read())
                 throw new JsonException();
             var bitArray = reader.GetString();
-            result = FeatureBit.TryParse(bitArray).ResultValue;
+            result = FeatureBits.TryParse(bitArray).ResultValue;
             if (!reader.Read())
                 throw new JsonException();
             
@@ -45,7 +45,7 @@ namespace NRustLightning.Infrastructure.JsonConverters
             return result;
         }
 
-        public override void Write(Utf8JsonWriter writer, FeatureBit value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, FeatureBits value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
             writer.WriteString("bitArray", value.ToString());

@@ -1,8 +1,9 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using DotNetLightning.Serialize.Msgs;
+using DotNetLightning.Serialization.Msgs;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
@@ -387,7 +388,7 @@ namespace NRustLightning
 
         public static unsafe (uint256, ChannelManager) Deserialize(ReadOnlyMemory<byte> bytes, ChannelManagerReadArgs readArgs, IUserConfigProvider defaultConfigProvider, MemoryPool<byte> pool)
         {
-            ChannelManagerHandle handle = null;
+            ChannelManagerHandle? handle = null;
             FFIOperationWithVariableLengthReturnBuffer func = (outputBufPtr, outputBufLen) =>
             {
                 fixed (byte* b = bytes.Span)
@@ -422,8 +423,9 @@ namespace NRustLightning
                     return (result, actualLen);
                 }
             };
-
             var buf = WithVariableLengthReturnBuffer(pool, func);
+            Debug.Assert(handle != null);
+
             var latestBlockHash = new uint256(buf, true);
             return (latestBlockHash, new ChannelManager(handle, new object[] {readArgs}));
         }

@@ -1,12 +1,9 @@
-using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DotNetLightning.Utils;
-using Microsoft.FSharp.Core;
 using NBitcoin;
-using NRustLightning.RustLightningTypes;
 using Xunit;
 
 namespace NRustLightning.Net.Tests
@@ -53,7 +50,7 @@ namespace NRustLightning.Net.Tests
             // Channel monitor deserialization tests.
             var monitor = nodes[0].NodeConfig.ManyChannelMonitor;
             var monitorB = monitor.Serialize(_pool);
-            var (monitor2, latestBlockHashes) = ManyChannelMonitor.Deserialize(nodes[0].NodeConfig.ManyChannelMonitorReadArgs, monitorB, _pool);
+            var (_, latestBlockHashes) = ManyChannelMonitor.Deserialize(nodes[0].NodeConfig.ManyChannelMonitorReadArgs, monitorB, _pool);
             Assert.Single(latestBlockHashes);
             Assert.Equal(latestBlockHashes.Keys.First().Item, fundingTx.Outputs.AsCoins().First().Outpoint);
             Assert.Equal(latestBlockHashes.Values.First(), block.GetHash());

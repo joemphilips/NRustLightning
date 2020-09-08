@@ -1,8 +1,8 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using DotNetLightning.Serialize;
-using Msgs = DotNetLightning.Serialize.Msgs;
+using DotNetLightning.Serialization;
+using Msgs = DotNetLightning.Serialization.Msgs;
 
 namespace NRustLightning.Adaptors
 {

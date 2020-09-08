@@ -1,7 +1,7 @@
 namespace RustLightningTypes
 
 open System.IO
-open DotNetLightning.Serialize
+open DotNetLightning.Serialization
 open NBitcoin
 
 

@@ -13,7 +13,7 @@ namespace NRustLightning.Infrastructure.Entities
     }
     public class Invoice
     {
-        public PaymentRequest Bolt11Invoice { get; set; }
-        public InvoiceStatus Status { get; set; }
+        public PaymentRequest? Bolt11Invoice { get; set; }
+        public InvoiceStatus? Status { get; set; }
     }
 }

@@ -3,7 +3,6 @@ module internal Generators.Generator
 open DotNetLightning.Utils
 open FsCheck
 open NBitcoin
-open NRustLightning.RustLightningTypes
 
 let byteGen = byte <!> Gen.choose(0, 127)
 let bytesGen = Gen.listOf(byteGen) |> Gen.map(List.toArray)

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using DotNetLightning.Serialize;
+using DotNetLightning.Serialization;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
@@ -13,16 +13,16 @@ namespace NRustLightning.Facades
     public class RouteHopWithFeature
     {
         public readonly Primitives.NodeId NodeId;
-        public readonly FeatureBit NodeFeatures;
+        public readonly FeatureBits NodeFeatures;
         public readonly ulong ShortChannelId;
-        public readonly FeatureBit ChannelFeatures;
+        public readonly FeatureBits ChannelFeatures;
         public readonly ulong FeeMsat;
         public readonly uint CltvExpiryDelta;
         public RouteHopWithFeature(
             Primitives.NodeId nodeId,
-            FeatureBit nodeFeatures,
+            FeatureBits nodeFeatures,
             ulong shortChannelId,
-            FeatureBit channelFeatures,
+            FeatureBits channelFeatures,
             ulong feeMsat,
             uint cltvExpiryDelta)
         {

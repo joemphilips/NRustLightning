@@ -3,12 +3,10 @@ namespace NRustLightning.RustLightningTypes
 open System
 open System.Diagnostics
 open System.IO
-open System.Security.Cryptography.X509Certificates
 open ResultUtils
 open DotNetLightning.Utils.Primitives
 open DotNetLightning.Core.Utils.Extensions
-open DotNetLightning.Crypto
-open DotNetLightning.Serialize
+open DotNetLightning.Serialization
 open DotNetLightning.Utils
 open NBitcoin
 

@@ -8,11 +8,9 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetLightning.Payment;
-using DotNetLightning.Serialize;
+using DotNetLightning.Serialization;
 using DotNetLightning.Utils;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.FSharp.Core;
 using NBitcoin;
@@ -29,8 +27,6 @@ using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Infrastructure.Repository;
 using NRustLightning.Infrastructure.Utils;
 using NRustLightning.Interfaces;
-using NRustLightning.RustLightningTypes;
-using NRustLightning.Server.Tests.Stubs;
 using NRustLightning.Server.Tests.Support;
 using NRustLightning.Tests.Common.Utils;
 using NRustLightning.Utils;
@@ -104,14 +100,14 @@ namespace NRustLightning.Server.Tests
                 "{\"DerivationStrategy\":\"tpubDBte1PdX36pt167AFbKpHwFJqZAVVRuJSadZ49LdkX5JJbJCNDc8JQ7w5GdaDZcUXm2SutgwjRuufwq4q4soePD4fPKSZCUhqDDarKRCUen\",\"OnChainBalanceSatoshis\":0}";
             var networkProvider = new NRustLightningNetworkProvider(NetworkType.Regtest);
             var btcNetwork = networkProvider.GetByCryptoCode("BTC");
-            var walletInfo = JsonSerializer.Deserialize<WalletInfo>(j, new JsonSerializerOptions {Converters = { new DerivationStrategyJsonConverter(btcNetwork.NbXplorerNetwork.DerivationStrategyFactory) }});
+            var _ = JsonSerializer.Deserialize<WalletInfo>(j, new JsonSerializerOptions {Converters = { new DerivationStrategyJsonConverter(btcNetwork.NbXplorerNetwork.DerivationStrategyFactory) }});
             
             // FeatureBit
-            var featureBit = FeatureBit.TryParse("0b000000100100000100000000").ResultValue;
+            var featureBit = FeatureBits.TryParse("0b000000100100000100000000").ResultValue;
             var opts = new JsonSerializerOptions() {Converters = {new FeatureBitJsonConverter()}};
             j = JsonSerializer.Serialize(featureBit, opts);
             Assert.Contains("prettyPrint", j);
-            var featureBit2 = JsonSerializer.Deserialize<FeatureBit>(j, opts);
+            var featureBit2 = JsonSerializer.Deserialize<FeatureBits>(j, opts);
             Assert.Equal(featureBit, featureBit2);
             
         }
@@ -246,7 +242,7 @@ namespace NRustLightning.Server.Tests
             var logger = new TestLogger();
             var broadcaster = new TestBroadcaster();
             var feeEstiamtor = new TestFeeEstimator();
-            var n = NBitcoin.Network.TestNet;
+            var n = Network.TestNet;
             var chainWatchInterface = new ChainWatchInterfaceUtil(n);
             var keySeed = new byte[]{ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 };
             var keysInterface = new KeysManager(keySeed, DateTime.UnixEpoch);
