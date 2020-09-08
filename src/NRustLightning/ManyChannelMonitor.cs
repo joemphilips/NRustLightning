@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using DotNetLightning.Utils;
 using NBitcoin;
 using NRustLightning.Adaptors;
@@ -77,7 +78,7 @@ namespace NRustLightning
             MemoryPool<byte> pool
         )
         {
-            ManyChannelMonitorHandle newHandle = null;
+            ManyChannelMonitorHandle? newHandle = null;
             FFIOperationWithVariableLengthReturnBuffer func =
                 (outputBufPtr, outputBufLen) =>
                 {
@@ -103,6 +104,7 @@ namespace NRustLightning
                     }
                 };
             var buf = WithVariableLengthReturnBuffer(pool, func);
+            Debug.Assert(newHandle != null);
             var keyToBlockHash = ParseChannelMonitorKeyToItsLatestBlockHash(buf);
             return (
                 new ManyChannelMonitor(newHandle, new object[] {readArgs}),
@@ -176,11 +178,13 @@ namespace NRustLightning
 
         public void BlockConnected(Block block, uint height, Primitives.LNOutPoint? key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
             TellBlockConnectedAfterResume(block, height, key.Item);
         }
 
         public void BlockDisconnected(BlockHeader header, uint height, Primitives.LNOutPoint? key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
             TellBlockDisconnectedAfterResume(header.GetHash(), height, key.Item);
         }
     }

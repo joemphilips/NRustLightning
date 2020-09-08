@@ -174,9 +174,9 @@ type PrimitiveExtensions() =
             IPEndPoint(IPAddress(n.Addr), (int)n.Port)
         | IPv6 n ->
             IPEndPoint(IPAddress(n.Addr), (int)n.Port)
-        | OnionV2 n ->
+        | OnionV2 _ ->
             raise <| NotSupportedException()
-        | OnionV3 n ->
+        | OnionV3 _ ->
             raise <| NotSupportedException()
         
 
