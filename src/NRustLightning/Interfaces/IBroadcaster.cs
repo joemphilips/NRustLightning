@@ -19,7 +19,7 @@ namespace NRustLightning.Interfaces
         private readonly IBroadcaster _broadcaster;
         private readonly Network _n;
         private readonly BroadcastTransaction _broadcastTransaction;
-        public BroadcasterDelegatesHolder(IBroadcaster broadcaster, NBitcoin.Network n)
+        public BroadcasterDelegatesHolder(IBroadcaster broadcaster, Network n)
         {
             _broadcaster = broadcaster ?? throw new ArgumentNullException(nameof(broadcaster));
             _n = n ?? throw new ArgumentNullException(nameof(n));
