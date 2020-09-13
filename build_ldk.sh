@@ -1,0 +1,11 @@
+dotnet run --framework=netcoreapp3.1 -p src/ClangSharp/sources/ClangSharpPInvokeGenerator -- \
+  -f ./rust-lightning/lightning-c-bindings/include/rust_types.h \
+  -f ./rust-lightning/lightning-c-bindings/include/lightning.h \
+  -n "NRustLightning.Binding" \
+  -o ./src/NRustLightning.Binding/Binding.cs \
+  -I ./rust-lightning/lightning-c-bindings/include/ \
+  -I /usr/local/opt/llvm/include \
+  -I /usr/local/opt/llvm/include/c++/v1 \
+  -I /usr/local/opt/llvm/lib/clang/10.0.1/include \
+  -I $(xcrun --show-sdk-path)/usr/include \
+  -L /usr/local/opt/llvm/lib
