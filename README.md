@@ -3,6 +3,10 @@
 
 powered by [rust-lightning](https://github.com/rust-bitcoin/rust-lightning)
 
+> NOTE: this is still work in progress alpha-version, I'm planning to release the first beta when I get sure
+> that on/off-chain recovery works fine and test coverage is good enough.
+> Until then, I do not asssure anything about security.
+
 # Features
 
 * Security focused
