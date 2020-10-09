@@ -37,7 +37,6 @@ namespace NRustLightning.Infrastructure.Configuration
 
         private string? _seedFromConfig;
 
-        private string? _pin;
         
         public NRustLightningNetworkProvider NetworkProvider { get; set; }
         
@@ -139,7 +138,6 @@ namespace NRustLightning.Infrastructure.Configuration
 
             DBCacheMB = config.GetOrDefault("dbcache", Constants.DefaultDBCacheMB);
             _seedFromConfig = config.GetOrDefault("seed", string.Empty);
-            _pin = config.GetOrDefault("pin", string.Empty);
             SeedFilePath = Path.Join(DataDir, "node_secret");
             return this;
         }
@@ -160,40 +158,5 @@ namespace NRustLightning.Infrastructure.Configuration
             return _seedFromConfig;
         }
 
-        public string Pin => _pin;
-
-        public string GetNewPin()
-        {
-            string pin = _pin;
-            if (!string.IsNullOrEmpty(pin)) return pin;
-            
-            Console.WriteLine("========================================================================");
-            Console.WriteLine("Please enter the pin code to secure your seed on disk ");
-            Console.WriteLine("It is recommended to be longer than 10 characters to be cryptographically secure");
-            Console.WriteLine("Please do not forget this pin code. You will need it when restarting the server");
-            Console.WriteLine("========================================================================");
-            while (true)
-            {
-                Console.WriteLine("Please enter your pin code: ");
-                var pin1 = Console.ReadLine();
-                Console.WriteLine("Please enter again:");
-                var pin2 = Console.ReadLine();
-                if (pin1 == pin2 && !string.IsNullOrEmpty(pin1))
-                {
-                    pin = pin1;
-                    break;
-                }
-                else if (pin1 == pin2)
-                {
-                    Console.WriteLine("You cannot specify empty pin code");
-                }
-                else
-                {
-                    Console.WriteLine("pin code mismatch! try again");
-                }
-            }
-
-            return pin;
-        }
     }
 }

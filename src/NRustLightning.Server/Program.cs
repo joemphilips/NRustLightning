@@ -4,11 +4,9 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using DotNetLightning.Chain;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -17,11 +15,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
+using DotNetLightning.Crypto;
 using NBitcoin;
 using NRustLightning.Infrastructure.Configuration;
-using NRustLightning.Infrastructure.Configuration.SubConfiguration;
 using NRustLightning.Infrastructure.Repository;
-using NRustLightning.Interfaces;
+using NRustLightning.Infrastructure.Utils;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.P2P;
 using IKeysRepository = NRustLightning.Infrastructure.Interfaces.IKeysRepository;
@@ -50,10 +49,10 @@ namespace NRustLightning.Server
                     else
                     {
                         var maybeEncryptedSeed = await conf.Value.TryGetEncryptedSeed();
+                        var pin = CliUtils.GetNewSeedPass();
                         if (maybeEncryptedSeed != null)
                         {
                             var isValidPin = false;
-                            var pin = conf.Value.Pin;
                             var maybeErrMsg = repo.InitializeFromEncryptedSeed(maybeEncryptedSeed, pin);
                             if (maybeErrMsg is null)
                             {
@@ -82,8 +81,7 @@ namespace NRustLightning.Server
                         else
                         {
                             logger.LogWarning($"seed not found in {conf.Value.SeedFilePath}! generating new seed...");
-                            var pin = conf.Value.GetNewPin();
-                            var seed = RandomUtils.GetUInt256().ToString();
+                            var seed = CipherSeed.Create();
                             repo.InitializeFromSeed(seed);
                             await repo.EncryptSeedAndSaveToFile(seed, pin);
                         }
