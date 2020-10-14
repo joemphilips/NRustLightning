@@ -7,3 +7,6 @@ env.sh
 
 swagger.json
 *.zip
+
+.fake
+.ionide
