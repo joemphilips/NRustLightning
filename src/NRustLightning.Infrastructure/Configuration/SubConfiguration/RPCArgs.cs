@@ -11,13 +11,13 @@ namespace NRustLightning.Infrastructure.Configuration.SubConfiguration
 {
     public class RPCArgs
     {
-        public Uri Url { get; set; }
-        public string User { get; set; }
-        public string Password { get; set; }
-        public string CookieFile { get; set; }
-        public string AuthenticationString { get; set; }
+        public Uri? Url { get; set; }
+        public string? User { get; set; }
+        public string? Password { get; set; }
+        public string? CookieFile { get; set; }
+        public string? AuthenticationString { get; set; }
 
-        internal static RPCArgs Parse(IConfiguration config, Network n, string prefix = null)
+        public static RPCArgs Parse(IConfiguration config, Network n, string? prefix = null)
         {
             var s = config.GetSection(prefix).GetSection("rpc");
             var rpc = new RPCArgs();
@@ -28,7 +28,7 @@ namespace NRustLightning.Infrastructure.Configuration.SubConfiguration
         internal RPCClient ConfigureRPCClient(NRustLightningNetwork nRustLightningNetwork, ILogger logger)
         {
             var n = nRustLightningNetwork.NBitcoinNetwork;
-            RPCClient rpcClient = null;
+            RPCClient? rpcClient = null;
             if (Url != null && User != null && Password != null)
                 rpcClient = new RPCClient(new NetworkCredential(User, Password), Url, n);
 
