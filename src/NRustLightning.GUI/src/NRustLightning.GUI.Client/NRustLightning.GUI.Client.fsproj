@@ -3,10 +3,13 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RazorLangVersion>3.0</RazorLangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Utils.fs" />
-    <Compile Include="FormValidationExample.fs" />
+    <Compile Include="Components.fs" />
+    <Compile Include="ConfigurationModule\WalletBiwaConfiguration.fs" />
+    <Compile Include="ConfigurationModule\Configuration.fs" />
     <Compile Include="Wallet.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="Startup.fs" />
@@ -15,8 +18,10 @@
     <PackageReference Include="Bolero" Version="0.*" />
     <PackageReference Include="Bolero.Build" Version="0.*" />
     <PackageReference Include="Bolero.HotReload" Version="0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="0.7.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Build" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="3.2.*" />
+    <PackageReference Include="Microsoft.Extensions.Localization" Version="3.1.9" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\NRustLightning.Infrastructure\NRustLightning.Infrastructure.csproj" />

@@ -7,8 +7,13 @@
     <ProjectReference Include="..\..\..\NRustLightning.Infrastructure\NRustLightning.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Configuration" />
+    <Compile Include="ConfigurationService.fs" />
     <Compile Include="BookService.fs" />
     <Compile Include="WalletService.fs" />
+    <Compile Include="InternalServices\RPCClientProvider.fs" />
+    <Compile Include="Extensions.fs" />
+    <Compile Include="Constants.fs" />
     <Compile Include="Startup.fs" />
   </ItemGroup>
   <ItemGroup>

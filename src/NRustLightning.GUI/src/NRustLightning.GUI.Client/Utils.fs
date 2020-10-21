@@ -1,77 +1,71 @@
-// based on: https://github.com/lucamug/elm-form-examples/blob/master/src/Example_18.elm
-module NRustLightning.GUI.Client.Utils
+namespace NRustLightning.GUI.Client.Utils
 
-open Bolero.Html
+// for stackalloc
+#nowarn "9"
 
-let exampleComment =
-    Map.ofList
-        [
-             ("index", "Examples of Form built in elm.")
-             ("1" , "First version: just an old simple form.")
-             ("2" , "Changed the form to be à la Elm using \"application/x-www-form-urlencoded\" as encoding system")
-             ("3" , "Changed the encoding system to json")
-             ("4" , "Added validation")
-             ("5" , "Moved the field updates out of the update function")
-             ("6" , "Replaced the <form> element with <div> and added \"onClick SubmitForm\" to the button")
-             ("7" , "Restored the \"submit-on-enter\" behavior")
-             ("8" , "Added validation while typing")
-             ("9" , "Created the helper \"viewInput\" that generalized the creation of input fields")
-             ("10" , "Adding \"showErrors\" functionality that show error only after the first submit ")
-             ("11" , "Adding focus detection so that focus is evident also during history playback")
-             ("12" , "Adding the icon to hide and show the password")
-             ("13" , "Adding a spinner while the app is waiting for an answer")
-             ("14" , "Adding \"Floating Label\"")
-             ("15" , "Adding Checkboxes")
-             ("16" , "Encoded Checkboxes values into the Json for sending to the server")
-             ("17" , "Adding maximum number of checkable fruits")
-             ("18" , "Adding svg fruit icons")
-             ("19" , "Adding a date picker")
-             ("20" , "Adding HTML date")
-             ("21" , "Adding Autocomplete field")
-        ]
+open System
 
-let viewFooter version =
-    div
-        [ attr.classes ["footer"] ]
-        [
-            a [ attr.href "https://github.com/lucamug/elm-form-examples" ] [  text " [ code ] " ]
-            a [ attr.href "https://medium.com/@l.mugnaini/forms-in-elm-validation-tutorial-and-examples-2339830055da" ] [ text " [ article ]" ]
-        ]
-let urlMirrorService = "https://httpbin.org/post"
+
+[<RequireQualifiedAccess>]
+module Option =
+    let inline toObj (o: Option<'a>) =
+        match o with Some oo -> oo | None -> null
+
+
+type AsyncOperationStatus<'t> =
+    | Started
+    | Finished of 't
     
-let getComment version =
-    Map.tryFind version exampleComment
-    |> Option.defaultValue ""
+type Deferred<'t> =
+    | HasNotStartedYet
+    | InProgress
+    | Resolved of 't
+    
+[<RequireQualifiedAccess>]
+/// Contains utility functions to work with value of the type `Deferred<'T>`.
+module Deferred =
 
-let viewHeader version =
-    div
-        [ attr.classes ["header"] ]
-        [
-            h1 [] [text ("Elm Form - Example" + version)]
-            p [] [ text <| (getComment version) ]
-        ]
+    let hasNotStarted = function
+        | HasNotStartedYet -> true
+        | _ -> false
+    /// Returns whether the `Deferred<'T>` value has been resolved or not.
+    let resolved = function
+        | HasNotStartedYet -> false
+        | InProgress -> false
+        | Resolved _ -> true
         
-let viewSimple exampleVersion viewForm =
-    div
-        []
-        [ viewHeader exampleVersion
-          viewForm
-          viewFooter exampleVersion
-           ]
-        
-let viewResponse response =
-    div
-        [ attr.classes ["response-container"] ]
-        [ h2 [] [ text "Response" ] ]
-let inline viewUtils model (modelResponse: _ option) exampleVersion viewForm =
-    div
-        []
-        [
-            viewHeader exampleVersion
-            viewForm model
-            cond modelResponse <| function
-                                  | Some resp -> viewResponse  resp
-                                  | None -> empty
-        ]
-let view = viewUtils
 
+    /// Returns whether the `Deferred<'T>` value is in progress or not.
+    let inProgress = function
+        | HasNotStartedYet -> false
+        | InProgress -> true
+        | Resolved _ -> false
+
+    /// Transforms the underlying value of the input deferred value when it exists from type to another
+    let map (transform: 'T -> 'U) (deferred: Deferred<'T>) : Deferred<'U> =
+        match deferred with
+        | HasNotStartedYet -> HasNotStartedYet
+        | InProgress -> InProgress
+        | Resolved value -> Resolved (transform value)
+
+    /// Verifies that a `Deferred<'T>` value is resolved and the resolved data satisfies a given requirement.
+    let exists (predicate: 'T -> bool) = function
+        | HasNotStartedYet -> false
+        | InProgress -> false
+        | Resolved value -> predicate value
+
+    /// Like `map` but instead of transforming just the value into another type in the `Resolved` case, it will transform the value into potentially a different case of the the `Deferred<'T>` type.
+    let bind (transform: 'T -> Deferred<'U>) (deferred: Deferred<'T>) : Deferred<'U> =
+        match deferred with
+        | HasNotStartedYet -> HasNotStartedYet
+        | InProgress -> InProgress
+        | Resolved value -> transform value
+        
+[<RequireQualifiedAccess>]
+module String =
+    open FSharp.NativeInterop
+    let isBase64 (s: string) =
+        let dummy' = NativePtr.stackalloc<byte>(s.Length)
+        let dummy = Span<byte>(NativePtr.toVoidPtr dummy', s.Length)
+        Convert.TryFromBase64String(s, dummy) |> fst
+        

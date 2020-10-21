@@ -1,29 +1,46 @@
 namespace NRustLightning.GUI.Server
 
+open System.IO
 open Microsoft.AspNetCore
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
+open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Bolero
 open Bolero.Remoting.Server
 open Bolero.Server.RazorHost
+open Microsoft.Extensions.Logging
 open NRustLightning.GUI
 open Bolero.Templating.Server
 
-type Startup() =
+[<AutoOpen>]
+module private Helpers =
+    let getStartupLoggerFactory() =
+        LoggerFactory.Create(fun builder ->
+                builder
+                    .AddConsole()
+                    .AddDebug()
+                    .SetMinimumLevel(LogLevel.Debug) |> ignore
+            )
 
+type Startup(config: IConfiguration) =
+    let logger = getStartupLoggerFactory().CreateLogger<Startup>();
     // This method gets called by the runtime. Use this method to add services to the container.
     // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
     member this.ConfigureServices(services: IServiceCollection) =
         services.AddMvc().AddRazorRuntimeCompilation() |> ignore
         services.AddServerSideBlazor() |> ignore
         services
+            .AddHttpClient()
+            .ConfigureNRustLightning(config)
+            .AddNRustLightning()
             .AddAuthorization()
             .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie()
                 .Services
             .AddRemoting<BookService>()
+            .AddRemoting<ConfigurationService>()
             .AddRemoting<WalletService>()
             .AddBoleroHost()
 #if DEBUG
@@ -48,11 +65,18 @@ type Startup() =
         |> ignore
 
 module Program =
+    
+    let configureConfig (c: IConfigurationBuilder) =
+        c
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional=false, reloadOnChange=true)
+            .AddJsonFile("appsettings.Development.json", optional=false, reloadOnChange=true) |> ignore
 
     [<EntryPoint>]
     let main args =
         WebHost
             .CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration(configureConfig)
             .UseStaticWebAssets()
             .UseStartup<Startup>()
             .Build()

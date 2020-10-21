@@ -1,5 +1,7 @@
 namespace NRustLightning.GUI.Client
 
+open NRustLightning.GUI.Client.Configuration
+
 module Main =
     open System
     open Elmish
@@ -8,15 +10,13 @@ module Main =
     open Bolero.Remoting
     open Bolero.Remoting.Client
     open Bolero.Templating.Client
-    open NRustLightning.GUI.Client
-    open NRustLightning.GUI.Client.FormValidationExample
 
     /// Routing endpoints definition.
     type Page =
         | [<EndPoint "/">] Home
         | [<EndPoint "/counter">] Counter
         | [<EndPoint "/data">] Data
-        | [<EndPoint "/validation">] FormValidation
+        | [<EndPoint "/config">] Config
 
     type Book =
         {
@@ -63,7 +63,6 @@ module Main =
             password: string
             signedInAs: option<string>
             signInFailed: bool
-            FormValidation: FormValidationExample.Model
         }
 
     let initModel =
@@ -76,7 +75,6 @@ module Main =
             password = ""
             signedInAs = None
             signInFailed = false
-            FormValidation = FormValidationExample.init
         }
 
     /// The Elmish application's update messages.
@@ -97,8 +95,6 @@ module Main =
         | RecvSignOut
         | Error of exn
         | ClearError
-        
-        | FormValidationMsg of FormValidationExample.Msg
 
     let update remote message model =
         let onSignIn = function
@@ -145,16 +141,12 @@ module Main =
         | ClearError ->
             { model with error = None }, Cmd.none
             
-        | FormValidationMsg msg ->
-            let s, cmd = FormValidationExample.update msg model.FormValidation 
-            { model with FormValidation = s }, (Cmd.map FormValidationMsg cmd)
-
     /// Connects the routing system to the Elmish application.
     let router = Router.infer SetPage (fun model -> model.page)
 
     type Main = Template<"wwwroot/main.html">
 
-    let homePage model dispatch =
+    let homePage _model _dispatch =
         Main.Home().Elt()
 
     let counterPage model dispatch =
@@ -211,14 +203,14 @@ module Main =
                 menuItem model Home "Home"
                 menuItem model Counter "Counter"
                 menuItem model Data "Download data"
-                menuItem model FormValidation "Form Validation example"
+                menuItem model Config "Configure Settings"
             ])
             .Body(
                 cond model.page <| function
                 | Home -> homePage model dispatch
                 | Counter -> counterPage model dispatch
-                | FormValidation ->
-                    ecomp<FormValidationComponent, _ ,_> [] model.FormValidation (fun n -> FormValidationMsg n |> dispatch)
+                | Config ->
+                    comp<ConfigurationModule.App> [] []
                 | Data ->
                     cond model.signedInAs <| function
                     | Some username -> dataPage model username dispatch

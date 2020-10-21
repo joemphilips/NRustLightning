@@ -7,7 +7,7 @@ open System.Threading.Tasks
 
 
 type WalletService = {
-    GetBalance: unit -> Task<Money * LNMoney>
+    GetBalance: string -> Async<Money * LNMoney>
 }
     with
     interface IRemoteService with
@@ -17,5 +17,15 @@ type Model = {
     OnChainBalance: Money
     OffChainBalance: LNMoney
 }
+
+let init = {
+    OnChainBalance = Money.Zero
+    OffChainBalance = LNMoney.Zero
+}
+
 type Msg =
     | NoOp
+    
+let update msg model =
+    match msg with
+    | NoOp -> model
