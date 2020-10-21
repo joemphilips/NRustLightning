@@ -2,9 +2,11 @@
 module NRustLightning.GUI.Client.Configuration.ConfigurationModule
 
 open Elmish
+open MatBlazor
 open Bolero
 open Bolero.Remoting
 open Bolero.Html
+open Microsoft.AspNetCore.Components.Web
 open NRustLightning.GUI.Client.Utils
 open NRustLightning.GUI.Client.Components
 
@@ -92,6 +94,11 @@ let view (model: Model) dispatch =
                 input [
                     bind.input.string t.RPCPassword (RPCPasswordInput >> dispatch)
                 ]
+                
+                br []
+                comp<MatButton> [
+                    attr.callback "OnClick" (fun (_e: MouseEventArgs) -> ApplyChanges |> dispatch)
+                ] [ text "Commit" ]
             ]
             
 type App() =
