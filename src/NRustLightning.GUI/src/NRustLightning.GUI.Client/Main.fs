@@ -1,5 +1,6 @@
 namespace NRustLightning.GUI.Client
 
+open MatBlazor
 open NRustLightning.GUI.Client.Configuration
 
 module Main =
@@ -197,7 +198,7 @@ module Main =
             .Url(router.Link page)
             .Text(text)
             .Elt()
-
+            
     let view model dispatch =
         Main()
             .Menu(concat [

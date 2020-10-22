@@ -6,6 +6,7 @@ open Microsoft.Extensions.DependencyInjection
 open System.Runtime.CompilerServices
 open NBitcoin
 open NRustLightning.GUI.Client
+open NRustLightning.GUI.Client.AppState
 open NRustLightning.GUI.Client.Configuration
 open NRustLightning.Infrastructure.Interfaces
 open NRustLightning.Infrastructure.Networks
@@ -28,6 +29,7 @@ type Extensions() =
         let networkType = config.GetNetworkType()
         services
             .AddSingleton(NRustLightningNetworkProvider(networkType))
+            .AddSingleton(AppState())
             .Configure<WalletBiwaConfiguration>(config)
         
     [<Extension>]
