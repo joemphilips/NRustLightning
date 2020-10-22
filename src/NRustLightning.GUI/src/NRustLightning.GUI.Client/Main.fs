@@ -17,6 +17,7 @@ module Main =
         | [<EndPoint "/counter">] Counter
         | [<EndPoint "/data">] Data
         | [<EndPoint "/config">] Config
+        | [<EndPoint "/wallet">] Wallet
 
     type Book =
         {
@@ -203,6 +204,7 @@ module Main =
                 menuItem model Home "Home"
                 menuItem model Counter "Counter"
                 menuItem model Data "Download data"
+                menuItem model Wallet "Wallet View"
                 menuItem model Config "Configure Settings"
             ])
             .Body(
@@ -211,6 +213,8 @@ module Main =
                 | Counter -> counterPage model dispatch
                 | Config ->
                     comp<ConfigurationModule.App> [] []
+                | Wallet ->
+                    comp<WalletModule.App> [] []
                 | Data ->
                     cond model.signedInAs <| function
                     | Some username -> dataPage model username dispatch

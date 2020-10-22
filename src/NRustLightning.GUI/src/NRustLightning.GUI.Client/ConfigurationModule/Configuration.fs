@@ -6,9 +6,11 @@ open MatBlazor
 open Bolero
 open Bolero.Remoting
 open Bolero.Html
+open Microsoft.AspNetCore.Components
 open Microsoft.AspNetCore.Components.Web
 open NRustLightning.GUI.Client.Utils
 open NRustLightning.GUI.Client.Components
+open Bolero.Templating.Client
 
 type ConfigurationService = {
     LoadConfig: unit -> Async<WalletBiwaConfiguration>
@@ -75,28 +77,36 @@ let view (model: Model) dispatch =
         | InProgress -> spinner
         | Resolved t ->
             div [] [
-                text "RPCHost"
-                input [
-                    bind.input.string t.RPCHost (RPCHostInput >> dispatch)
-                ]
+                comp<MatTextField<string>> [
+                    "Value" => t.RPCHost
+                    "Label" => "hostname for bitcoin rpc"
+                    attr.callback "OnInput"
+                        (fun (e: ChangeEventArgs) -> dispatch(RPCHostInput(unbox e.Value)))
+                ] []
                 br []
-                text "RPCPort"
-                input [
-                    bind.input.int t.RPCPort (RPCPortInput >> dispatch)
-                ]
+                comp<MatTextField<int>> [
+                    "Value" => t.RPCPort
+                    "Label" => "port for bitcoin rpc"
+                    attr.callback "OnInput"
+                        (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCPortInput |> dispatch)
+                ] []
                 br []
-                text "RPCUser"
-                input [
-                    bind.input.string t.RPCUser (RPCUserInput >> dispatch)
-                ]
+                comp<MatTextField<string>> [
+                    "Value" => t.RPCUser
+                    "Label" => "username for bitcoin rpc"
+                    attr.callback "OnInput"
+                        (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCUserInput |> dispatch)
+                ] []
                 br []
-                text "RPCPassword"
-                input [
-                    bind.input.string t.RPCPassword (RPCPasswordInput >> dispatch)
-                ]
-                
+                comp<MatTextField<string>> [
+                    "Value" => t.RPCPassword
+                    "Label" => "password for bitcoin rpc"
+                    attr.callback "OnInput"
+                        (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCPasswordInput |> dispatch)
+                ] []
                 br []
                 comp<MatButton> [
+                    "Disabled" => true
                     attr.callback "OnClick" (fun (_e: MouseEventArgs) -> ApplyChanges |> dispatch)
                 ] [ text "Commit" ]
             ]
@@ -106,3 +116,6 @@ type App() =
     override this.Program =
         let service = this.Remote<ConfigurationService>()
         Program.mkProgram (fun _ -> init, Cmd.ofMsg (LoadConfig Started)) (update service) view
+#if DEBUG
+        |> Program.withHotReload
+#endif

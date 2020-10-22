@@ -18,7 +18,7 @@ open NRustLightning.Infrastructure.Networks
 type WalletService(ctx: IRemoteContext, env: IWebHostEnvironment,
                    networkProvider: NRustLightningNetworkProvider, opts: IOptionsMonitor<WalletBiwaConfiguration>,
                    httpClientFactory: IHttpClientFactory) =
-    inherit RemoteHandler<NRustLightning.GUI.Client.Wallet.WalletService>()
+    inherit RemoteHandler<NRustLightning.GUI.Client.WalletModule.WalletService>()
 
     let serializerOptions = JsonSerializerOptions()
     let repoSerializer = RepositorySerializer(networkProvider.GetByCryptoCode"btc")

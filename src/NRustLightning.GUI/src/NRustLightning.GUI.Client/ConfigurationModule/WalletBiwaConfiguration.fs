@@ -30,3 +30,7 @@ type WalletBiwaConfiguration = {
         rpc.HttpClient <- http
         rpc
         
+    member this.Validate() =
+        if (this.RPCHost |> fun h -> Uri.IsWellFormedUriString(h, UriKind.RelativeOrAbsolute)) then Some ("Invalid URL for RPCHost") else
+        if (this.RPCPort = 0) then Some("Port must not be 0") else
+        None
