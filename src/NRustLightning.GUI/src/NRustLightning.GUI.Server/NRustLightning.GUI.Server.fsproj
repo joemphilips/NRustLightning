@@ -13,6 +13,7 @@
     <Compile Include="WalletService.fs" />
     <Compile Include="InternalServices\RPCClientProvider.fs" />
     <Compile Include="Extensions.fs" />
+    <Compile Include="HotReloadExtensions.fs" />
     <Compile Include="Constants.fs" />
     <Compile Include="Startup.fs" />
   </ItemGroup>
@@ -21,5 +22,6 @@
     <PackageReference Include="Bolero.HotReload.Server" Version="0.*" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="3.2.*" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="3.1.*" />
+    <PackageReference Include="System.IO.FileSystem.Watcher.Polling" Version="0.1.2-e200127-1" />
   </ItemGroup>
 </Project>

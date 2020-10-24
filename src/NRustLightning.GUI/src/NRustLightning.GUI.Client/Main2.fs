@@ -6,9 +6,12 @@ open Bolero
 open Bolero.Html
 open Elmish
 open MatBlazor
+open MatBlazor
+open Microsoft.AspNetCore.Components
 open Microsoft.AspNetCore.Components
 open Microsoft.AspNetCore.Components.Web
 open NRustLightning.GUI.Client.AppState
+open Bolero.Templating.Client
 
 type Page =
     | Startup
@@ -50,12 +53,28 @@ let update msg model =
             if (model.NavMenuOpened) then "full" else
             model.bbDrawerClass
         { model with bbDrawerClass = bbDrawerClass; NavMinified = minified }
+        
+[<AutoOpen>]
+module private ButtonWithTooltip =
+            
+    let private button icon onClick forwardRef =
+        comp<MatIconButton> ["Class" => "navToggle"
+                             "Icon" => icon
+                             "ToggleIcon" => icon
+                             "RefBack" => forwardRef
+                             attr.callback "OnClick" (onClick)
+                             ] []
+    let buttonWithTooltip icon tooltip onClick =
+        let buttonComp = button icon onClick
+        let tooltip = comp<MatTooltip> ["Tooltip" => tooltip
+                                        attr.fragmentWith "ChildContent" (fun (f: ForwardRef) -> buttonComp f)] []
+        tooltip
 
 let view ({ AppState = appState; })
          (model: Model)
          (dispatch) =
     comp<MatDrawerContainer> [
-        "Style" => "width: 100vw; height: 100vh"
+        "Style" => "width: 100vw; height: 100vh;"
         "Class" => model.bbDrawerClass
     ] [
         comp<MatDrawer> [
@@ -63,12 +82,12 @@ let view ({ AppState = appState; })
         ] [
             header [attr.classes["drawer-header"]] [
                 div [attr.classes["drawer-logo"]] [
-                    img [attr.alt appState.AppName; attr.classes["logo-img"]; attr.src "_content/NRustLightning.GUI.Client/images/logo-dark.svg"]
+                    img [attr.alt appState.AppName; attr.classes["logo-img"]; attr.src "/images/bitcoin-svglogo.svg"; attr.title appState.AppName]
                     a [attr.classes ["miniHover"]; attr.href "/"] [text appState.AppName]
                 ]
             ]
             comp<MatNavMenu> [ "Multi" => true; "Class" => "app-sidebar" ] [
-                NavMenu.view model dispatch
+                comp<NavMenu.App> [] []
             ]
             footer [attr.classes ["drawer-footer"]] []
         ]
@@ -79,33 +98,20 @@ let view ({ AppState = appState; })
                         comp<MatAppBarSection> [] [
                             comp<MatAppBarTitle> [] [
                                 div [attr.classes ["hidden-mdc-down"]] [
-                                    let button =
-                                        comp<MatIconButton> ["Class" => "navToggle";
-                                                             "ToggleIcon" => "menu"
-                                                             attr.callback "OnClick" (fun (_e: MouseEventArgs) -> NavToggle |> dispatch)
-                                                             ] []
-                                    comp<MatTooltip> ["Tooltip" => "AppHoverNavToggle"
-                                                      attr.fragmentWith "ChildContent" (fun (_: ForwardRef) -> button)] []
-                                    let button = 
-                                        comp<MatIconButton> ["Class" => "navToggle"
-                                                             "Icon" => "format_ident_decrease"
-                                                             "ToggleIcon" => "format_indent_increase"
-                                                             attr.callback "OnClick" (fun (_e: MouseEventArgs) -> NavMinify |> dispatch)
-                                                             ] []
-                                    comp<MatTooltip> ["Tooltip" => "AppHoverNavMinimize";
-                                                      (attr.fragmentWith "ChildContent"(fun (_: ForwardRef) -> button)) ] []
+                                    buttonWithTooltip "menu" "AppHoverNavToggle" (fun (_e: MouseEventArgs) -> dispatch NavToggle)
+                                    buttonWithTooltip "format_indent_decrease" "AppHoverNavMinimize" (fun (_e: MouseEventArgs) -> dispatch NavMinify )
                                 ]
                             ]
                         ]
                         comp<MatAppBarSection> ["Align" => MatAppBarSectionAlign.End] [
-                             div [] [text "This is TopRightBarSection"]
+                            img [attr.alt appState.AppName; attr.classes["logo-img"]; attr.src "/images/bitcoin-svglogo.svg"; attr.title appState.AppName]
                         ]
                     ]
                 ]
                 comp<MatAppBarContent> ["Style" => "flex: 1; display: flex; flex-direction: column;"] [
                     comp<Breadcrumbs.App> [] []
                     section [ attr.classes["container-fluid"]; attr.style "flex: 1" ] [
-                        text "this is child "
+                        text "this is child fuga"
                     ]
                     footer [] []
                 ]
@@ -123,3 +129,6 @@ type MyApp2() =
         assert (this.AppState |> box |> isNull |> not)
         let args = { AppState = this.AppState; }
         Program.mkSimple(fun _ -> Model.Default) update (view args)
+    #if DEBUG
+            |> Program.withHotReload
+    #endif

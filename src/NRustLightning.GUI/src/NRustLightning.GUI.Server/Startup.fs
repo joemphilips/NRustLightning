@@ -7,12 +7,12 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
-open Bolero
 open Bolero.Remoting.Server
 open Bolero.Server.RazorHost
 open Microsoft.Extensions.Logging
-open NRustLightning.GUI
-open Bolero.Templating.Server
+#if DEBUG
+open NRustLightning.GUI.Server.HotReloadExtensions
+#endif
 
 [<AutoOpen>]
 module private Helpers =

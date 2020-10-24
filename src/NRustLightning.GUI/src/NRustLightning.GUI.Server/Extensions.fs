@@ -15,7 +15,6 @@ open NRustLightning.Infrastructure.Configuration
 open NRustLightning.Net
 open NRustLightning.GUI.Server.InternalServices
 
-
 [<Extension;AbstractClass;Sealed>]
 type Extensions() =
     [<Extension>]
