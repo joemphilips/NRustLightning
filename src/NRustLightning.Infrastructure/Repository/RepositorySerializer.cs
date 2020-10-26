@@ -15,7 +15,7 @@ namespace NRustLightning.Infrastructure.Repository
     public class RepositorySerializer
     {
         private readonly NRustLightningNetwork _network;
-        public Network Network => _network?.NBitcoinNetwork;
+        public Network Network => _network.NBitcoinNetwork;
         
         public JsonSerializerOptions Options { get; } = new JsonSerializerOptions();
 

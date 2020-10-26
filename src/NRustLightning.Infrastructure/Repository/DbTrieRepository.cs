@@ -40,7 +40,7 @@ namespace NRustLightning.Infrastructure.Repository
 
         public DbTrieRepository(IOptions<Config> conf, ILogger<DbTrieRepository> logger)
         {
-            _dbPath = conf.Value.DBFilePath;
+            _dbPath = conf.Value.DBFilePath!;
             _conf = conf;
             _logger = logger;
             _pool = MemoryPool<byte>.Shared;
