@@ -33,20 +33,17 @@ type Startup(config: IConfiguration) =
         services.AddServerSideBlazor() |> ignore
         services
             .AddHttpClient()
-            .ConfigureNRustLightning(config)
+            .ConfigureNRustLightning(config, logger)
             .AddNRustLightning()
             .AddAuthorization()
             .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie()
-                .Services
-            .AddRemoting<BookService>()
-            .AddRemoting<ConfigurationService>()
-            .AddRemoting<WalletService>()
+            .AddCookie()
+            .Services
             .AddBoleroHost()
 #if DEBUG
             .AddHotReload(templateDir = __SOURCE_DIRECTORY__ + "/../NRustLightning.GUI.Client")
 #endif
-        |> ignore
+            |> ignore
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     member this.Configure(app: IApplicationBuilder, env: IWebHostEnvironment) =

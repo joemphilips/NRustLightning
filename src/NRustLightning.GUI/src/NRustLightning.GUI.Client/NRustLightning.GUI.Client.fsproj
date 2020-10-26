@@ -13,9 +13,11 @@
     <Compile Include="ConfigurationModule\WalletBiwaConfiguration.fs" />
     <Compile Include="ConfigurationModule\Configuration.fs" />
     <Compile Include="CoinView.fs" />
-    <Compile Include="Wallet.fs" />
-    <Compile Include="Main.fs" />
     <Compile Include="Breadcrumbs.fs" />
+    <Compile Include="Wallet\Utils.fs" />
+    <Compile Include="Wallet\Initialization.fs" />
+    <Compile Include="Wallet\WalletInfo.fs" />
+    <Compile Include="Wallet\Wallet.fs" />
     <Compile Include="NavMenu.fs" />
     <Compile Include="Main2.fs" />
     <Compile Include="Startup.fs" />

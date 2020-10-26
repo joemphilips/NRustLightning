@@ -1,5 +1,6 @@
-namespace NRustLightning.GUI.Server
+namespace NRustLightning.GUI.Server.Services
 
+open System
 open System.IO
 open System.Text.Json
 open System.Threading
@@ -11,7 +12,7 @@ open NBitcoin.RPC
 open NRustLightning.GUI.Client.Configuration
 
 
-type ConfigurationService(ctx: IRemoteContext, env: IWebHostEnvironment, conf: IConfiguration, opts: IOptions<WalletBiwaConfiguration>) =
+type ConfigurationService(ctx: IRemoteContext, env: IWebHostEnvironment, conf: IConfiguration, opts: IOptions<WalletBiwaConfiguration>) as this =
     inherit RemoteHandler<ConfigurationModule.ConfigurationService>()
 #if DEBUG
     let path = "appsettings.Development.json"
@@ -19,11 +20,10 @@ type ConfigurationService(ctx: IRemoteContext, env: IWebHostEnvironment, conf: I
     let path = "appsettings.json"
 #endif
     let jsonPath = Path.Combine(env.ContentRootPath, path)
-    let json = jsonPath |> File.ReadAllText
-    let mutable configs = JsonSerializer.Deserialize<WalletBiwaConfiguration>(json)
+    let mutable configs = opts.Value
     let lockObj = new SemaphoreSlim(1, 1)
     
-    member private this.CommitConfig(newConf) = async {
+    member internal this.CommitConfig(newConf) = async {
         try
             do! lockObj.WaitAsync() |> Async.AwaitTask
             use fs = File.OpenWrite(jsonPath)

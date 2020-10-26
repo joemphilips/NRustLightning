@@ -34,6 +34,9 @@ module Deferred =
         | InProgress -> false
         | Resolved _ -> true
         
+    let toOption = function
+        | Resolved t -> Some t
+        | _ -> None
 
     /// Returns whether the `Deferred<'T>` value is in progress or not.
     let inProgress = function

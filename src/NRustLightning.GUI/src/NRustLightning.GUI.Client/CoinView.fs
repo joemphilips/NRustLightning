@@ -1,5 +1,7 @@
-module NRustLightning.GUI.Client.CoinView
+[<RequireQualifiedAccess>]
+module NRustLightning.GUI.Client.CoinViewModule
 
+open Elmish
 open Bolero
 open Bolero.Html
 open MatBlazor
@@ -9,6 +11,17 @@ type Model = {
     Utxos: Coin list
 }
 
+type Msg =
+    | NoOp
+
+
+let init = {
+    Utxos = []
+}
+
+let update msg model =
+    match msg with
+    | NoOp -> model
 let utxoView _utxo =
     comp<MatDataTableContent<Coin>> []
         [
@@ -23,3 +36,8 @@ let view model _dispatch =
                                                  th [] [ text "Type" ] ] )
         attr.fragmentWith "MatTableRow" (fun (coin: Coin) -> utxoView coin)
     ] []
+    
+type App () =
+    inherit ProgramComponent<Model, Msg>()
+    override this.Program =
+        Program.mkSimple (fun _ -> init) update view

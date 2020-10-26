@@ -8,71 +8,55 @@ open MatBlazor
 open Microsoft.AspNetCore.Components
 open Microsoft.AspNetCore.Components.Routing
 open NRustLightning.GUI.Client.Utils
+open NRustLightning.GUI.Client.Wallet.Utils
 
-type private Args = {
-    NavigationManager: NavigationManager
-}
-type Model = {
-    Order: int
-    WalletNames: Deferred<string []>
-}
+type Model =
+    | Home
+    | Wallet of WalletNames: Map<WalletId, string>
+    | Config
+    | CoinView
 
 type Msg =
     | NoOp
-    | LoadWalletNames of AsyncOperationStatus<string[]>
 
-let update msg model =
-    match msg with
-    | NoOp -> model
-    | LoadWalletNames(Started) ->
-        { model with WalletNames = InProgress }
-    | LoadWalletNames(Finished names) ->
-        { model with WalletNames = Resolved names }
-    
-let init = {
-    Order = 1
-    WalletNames = HasNotStartedYet
-}
-
-let private view { NavigationManager = navigationManager } model _dispatch =
-    comp<MatNavMenu> ["Multi" => true; "Class" => "app-sidebar"] [
-        text "This is NavMenu"
-        comp<MatNavItem> ["Href" => (navigationManager.ToAbsoluteUri" ").AbsoluteUri
-                          "NavLinkMatch" => NavLinkMatch.All
-                          ] [
-            comp<MatIcon>[] [text MatIconNames.Home]
-        ]
-        
-        comp<MatNavSubMenu> [] [
-            comp<MatNavSubMenuHeader> [] [
-                comp<MatNavItem> ["AllowSelection" => false] [
-                    comp<MatIcon> [] [text MatIconNames.Account_balance_wallet]
-                    span [] [text "List Of Wallets"]
-                ]
+let private view model dispatch =
+    cond model <| function
+        | Model.Home ->
+            // Home
+            comp<MatNavItem> ["NavLinkMatch" => NavLinkMatch.All
+                              ] [
+                comp<MatIcon>[ on.click(fun _ -> dispatch(NoOp)) ] [text MatIconNames.Home]
             ]
-            comp<MatNavSubMenuList> [] [
-                cond model.WalletNames <|
-                    function
-                    | HasNotStartedYet -> empty
-                    | InProgress -> Components.spinner
-                    | Resolved names ->
-                        comp<MatNavItem> ["Href" => navigationManager.ToAbsoluteUri("/wallet")] [
-                            forEach names <| fun n -> textf "Wallet of name: %s" n
+        | Model.Wallet names ->
+            // Wallet
+            comp<MatNavSubMenu> [] [
+                comp<MatNavSubMenuHeader> [] [
+                    comp<MatNavItem> ["AllowSelection" => false] [
+                        comp<MatIcon> [] [text MatIconNames.Account_balance_wallet]
+                        span [attr.classes ["miniHover"]] [text "List Of Wallets"]
+                    ]
+                ]
+                comp<MatNavSubMenuList> [] [
+                    forEach names <| fun kv ->
+                        let name = kv.Value
+                        comp<MatNavItem> [] [
+                            textf "Wallet of name: %s" name
                         ]
-                        
-                comp<MatNavItem> [] [
-                    comp<MatFAB> ["Icon" => MatIconNames.Add; "Label" => "Create New Wallet"] []
+                            
+                    comp<MatNavItem> [] [
+                        comp<MatFAB> ["Icon" => MatIconNames.Add; "Label" => "Create New Wallet"
+                                      ] [
+                        ]
+                    ]
                 ]
             ]
-        ]
-    ]
+        | Model.CoinView ->
+            text "TODO: show coinview"
+        | Model.Config ->
+            text "TODO: show config"
     
+type EApp() =
+    inherit ElmishComponent<Model, Msg>()
     
-type App() =
-    inherit ProgramComponent<Model,Msg>()
-    
-    [<Inject>]
-    member val NavigationManager = Unchecked.defaultof<NavigationManager> with get,set
-    override this.Program =
-        let args = { NavigationManager = this.NavigationManager }
-        Program.mkSimple (fun _ -> init) update (view args)
+    override this.View model dispatch =
+        view model dispatch

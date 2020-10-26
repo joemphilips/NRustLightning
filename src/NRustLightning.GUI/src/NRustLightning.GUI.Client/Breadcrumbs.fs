@@ -65,9 +65,6 @@ type App() =
     [<Inject>]
     member val internal AppState = Unchecked.defaultof<AppState> with get, set
     
-    [<Inject>]
-    member val internal NavigationManager = Unchecked.defaultof<NavigationManager> with get, set
-    
     override this.Program =
         let subsc initial =
             let sub dispatch =

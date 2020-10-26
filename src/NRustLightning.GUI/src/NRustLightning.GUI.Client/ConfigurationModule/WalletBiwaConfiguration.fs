@@ -1,27 +1,39 @@
 namespace NRustLightning.GUI.Client.Configuration
 
 open System
+open System.IO
 open System.Net
 open NBitcoin
 open NBitcoin.RPC
 open System.Net.Http
 
+module private Defaults =
+    let homePath = 
+        (if Environment.OSVersion.Platform = PlatformID.Unix || Environment.OSVersion.Platform = PlatformID.MacOSX then
+             Environment.GetEnvironmentVariable("HOME")
+         else
+             Environment.GetEnvironmentVariable("%HOMEDRIVE%%HOMEPATH%")) |> Option.ofObj |> Option.defaultWith(fun _ -> failwith "Failed to define Home directory Path");
+    let homeDirectoryName = ".walletbiwa"
+    let homeDirectoryPath = Path.Join(homePath.AsSpan(), homeDirectoryName.AsSpan())
+    let dataDirectoryPath = Path.Join(homeDirectoryPath.AsSpan(), "data".AsSpan())
 
 [<CLIMutable>]
 type WalletBiwaConfiguration = {
-    RPCHost: string
-    RPCPort: int
-    RPCPassword: string
-    RPCUser: string
-    RPCCookieFile: string
+    mutable RPCHost: string
+    mutable RPCPort: int
+    mutable RPCPassword: string
+    mutable RPCUser: string
+    mutable RPCCookieFile: string
+    mutable DBPath: string
 }
     with
     static member Default = {
-        RPCHost = "localhost"
+        RPCHost = "http://localhost"
         RPCPort = 18334
         RPCPassword = null
         RPCUser = null
         RPCCookieFile = null
+        DBPath = Defaults.dataDirectoryPath
     }
     member this.Url = Uri(this.RPCHost)
     member this.GetRPCClient(network: Network, http: HttpClient) =

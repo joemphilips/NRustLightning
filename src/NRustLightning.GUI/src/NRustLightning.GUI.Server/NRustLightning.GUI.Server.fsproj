@@ -7,19 +7,19 @@
     <ProjectReference Include="..\..\..\NRustLightning.Infrastructure\NRustLightning.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Configuration" />
-    <Compile Include="ConfigurationService.fs" />
-    <Compile Include="BookService.fs" />
-    <Compile Include="WalletService.fs" />
-    <Compile Include="InternalServices\RPCClientProvider.fs" />
+    <Compile Include="Repository.fs" />
+    <Compile Include="RPCClientProvider.fs" />
+    <Compile Include="Services\ConfigurationService.fs" />
+    <Compile Include="Services\WalletService.fs" />
+    <Compile Include="Services\MainService.fs" />
     <Compile Include="Extensions.fs" />
     <Compile Include="HotReloadExtensions.fs" />
-    <Compile Include="Constants.fs" />
     <Compile Include="Startup.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Bolero.Server" Version="0.*" />
     <PackageReference Include="Bolero.HotReload.Server" Version="0.*" />
+    <PackageReference Include="FSharp.Control.AsyncSeq" Version="3.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="3.2.*" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="3.1.*" />
     <PackageReference Include="System.IO.FileSystem.Watcher.Polling" Version="0.1.2-e200127-1" />

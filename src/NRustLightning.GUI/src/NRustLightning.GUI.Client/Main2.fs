@@ -1,58 +1,81 @@
 module NRustLightning.GUI.Client.Main2
 
 open System
-open System.Linq
 open Bolero
 open Bolero.Html
+open Bolero.Remoting
 open Elmish
 open MatBlazor
-open MatBlazor
-open Microsoft.AspNetCore.Components
 open Microsoft.AspNetCore.Components
 open Microsoft.AspNetCore.Components.Web
 open NRustLightning.GUI.Client.AppState
 open Bolero.Templating.Client
+open NRustLightning.GUI.Client.Configuration
+open NRustLightning.GUI.Client.Utils
+open NRustLightning.GUI.Client.Wallet
+open NRustLightning.GUI.Client.Wallet.Utils
 
 type Page =
-    | Startup
-    | Wallet
-    | CoinView
-    | Configuration
-
+    | [<EndPoint "/">] Home
+    | [<EndPoint "/wallet">] Wallet
+    | [<EndPoint "/coinview">] CoinView
+    | [<EndPoint "/config">] Configuration
 
 type Model = {
     bbDrawerClass: string
     NavMenuOpened: bool
     NavMinified: bool
+    Page: Page
+    WalletNames: Deferred<Map<WalletId, string>>
 }
     with
     static member Default = {
         bbDrawerClass = String.Empty
         NavMenuOpened = false
         NavMinified = true
+        Page = Home
+        WalletNames = HasNotStartedYet
     }
-
+    
 type Msg =
     | NavToggle
     | NavMinify
+    | LoadWalletNames of AsyncOperationStatus<Map<WalletId, string>>
+    | SetPage of Page
 
 type Args = internal {
     AppState: AppState
 }
 
-let update msg model =
+type MainService = {
+    GetWalletList: unit -> Async<Map<WalletId, string>>
+}
+    with
+    interface IRemoteService with
+        member this.BasePath = "/main"
+    
+
+let update service msg model =
     match msg with
     | NavToggle ->
         let opened =  not model.NavMenuOpened
         let bbDrawerClass = if opened then "full" else "closed"
-        { model with NavMenuOpened = opened; bbDrawerClass = bbDrawerClass }
+        { model with NavMenuOpened = opened; bbDrawerClass = bbDrawerClass }, Cmd.none
     | NavMinify ->
-        let minified = if (model.NavMenuOpened |> not) then true  else not model.NavMinified
+        let minified = if (model.NavMenuOpened |> not) then true else not model.NavMinified
         let bbDrawerClass =
             if (minified) then "mini" else
             if (model.NavMenuOpened) then "full" else
             model.bbDrawerClass
-        { model with bbDrawerClass = bbDrawerClass; NavMinified = minified }
+        { model with bbDrawerClass = bbDrawerClass; NavMinified = minified }, Cmd.none
+    | SetPage page ->
+        { model with Page = page }, Cmd.none
+    | LoadWalletNames(Started) ->
+        let onSuccess = Finished >> LoadWalletNames
+        let onError e = raise e
+        { model with WalletNames = InProgress}, Cmd.OfAsync.either (service.GetWalletList) () onSuccess onError
+    | LoadWalletNames(Finished names) ->
+        { model with WalletNames = Resolved names}, Cmd.none
         
 [<AutoOpen>]
 module private ButtonWithTooltip =
@@ -87,7 +110,11 @@ let view ({ AppState = appState; })
                 ]
             ]
             comp<MatNavMenu> [ "Multi" => true; "Class" => "app-sidebar" ] [
-                comp<NavMenu.App> [] []
+                ecomp<NavMenu.EApp,_,_> [] NavMenu.Home (fun (_: NavMenu.Msg) -> Home |> SetPage |> dispatch)
+                ecomp<NavMenu.EApp,_,_>
+                    []
+                    (model.WalletNames |> Deferred.toOption |> Option.map(Map.toList) |> Option.toList |> Seq.concat |> Map.ofSeq |> NavMenu.Wallet)
+                    (fun _ -> Page.Wallet |> SetPage |> dispatch)
             ]
             footer [attr.classes ["drawer-footer"]] []
         ]
@@ -111,7 +138,15 @@ let view ({ AppState = appState; })
                 comp<MatAppBarContent> ["Style" => "flex: 1; display: flex; flex-direction: column;"] [
                     comp<Breadcrumbs.App> [] []
                     section [ attr.classes["container-fluid"]; attr.style "flex: 1" ] [
-                        text "this is child fuga"
+                        cond model.Page <| function
+                            | Home ->
+                                text "this is child "
+                            | Wallet ->
+                                comp<WalletModule.App> [] []
+                            | CoinView ->
+                                comp<CoinViewModule.App> [] []
+                            | Configuration ->
+                                comp<ConfigurationModule.App> [] []
                     ]
                     footer [] []
                 ]
@@ -128,7 +163,8 @@ type MyApp2() =
     override this.Program =
         assert (this.AppState |> box |> isNull |> not)
         let args = { AppState = this.AppState; }
-        Program.mkSimple(fun _ -> Model.Default) update (view args)
+        let service = this.Remote<MainService>()
+        Program.mkProgram(fun _ -> Model.Default, Cmd.ofMsg(LoadWalletNames(Started))) (update service) (view args)
     #if DEBUG
-            |> Program.withHotReload
+        |> Program.withHotReload
     #endif
