@@ -17,6 +17,7 @@ open NRustLightning.Infrastructure.Configuration
 open NRustLightning.Net
 open NRustLightning.GUI.Server.Services
 open Bolero.Remoting.Server
+open MatBlazor
 
 [<Extension;AbstractClass;Sealed>]
 type ConfigurationExtension =
@@ -47,6 +48,13 @@ type Extensions =
             .AddRemoting<ConfigurationService>()
             .AddRemoting<WalletService>()
             .AddRemoting<MainService>()
+            .AddMatToaster(fun config ->
+                config.Position <- MatToastPosition.TopRight
+                config.PreventDuplicates <- true
+                config.NewestOnTop <- true
+                config.ShowCloseButton <- true
+                config.VisibleStateDuration <- 30000
+                ())
             .Configure<WalletBiwaConfiguration>(fun (w: WalletBiwaConfiguration) -> w.LoadArgs(config, logger))
             .AddSingleton(NRustLightningNetworkProvider(networkType))
         

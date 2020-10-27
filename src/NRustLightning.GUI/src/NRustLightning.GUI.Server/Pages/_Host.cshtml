@@ -16,16 +16,7 @@
     <link href="_content/MatBlazor/dist/matBlazor.css" rel="stylesheet" />
   </head>
   <body>
-    <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
-      <div class="navbar-brand">
-        <a class="navbar-item has-text-weight-bold is-size-5" href="https://fsbolero.io">
-          <img style="height:40px" src="https://github.com/fsbolero/website/raw/master/src/Website/img/wasm-fsharp.png" />
-          &nbsp;
-          Bolero
-        </a>
-      </div>
-    </nav>
-    <div id="main">@(await Html.RenderComponentAsync<Client.Main2.MyApp2>(BoleroHostConfig))</div>
+    <div id="main">@(await Html.RenderComponentAsync<Client.Main.MyApp>(BoleroHostConfig))</div>
     @Html.RenderBoleroScript(BoleroHostConfig)
   </body>
 </html>

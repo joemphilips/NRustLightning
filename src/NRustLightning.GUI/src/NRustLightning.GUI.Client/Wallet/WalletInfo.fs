@@ -1,7 +1,9 @@
+[<RequireQualifiedAccess>]
 module NRustLightning.GUI.Client.Wallet.WalletInfoModule
 
-open System.Text
+open Bolero
 open Elmish
+open Microsoft.AspNetCore.Blazor.Components
 open NRustLightning.GUI.Client.Wallet.Utils
 open NBitcoin
 open DotNetLightning.Utils
@@ -17,7 +19,7 @@ type WalletInfo = {
 }
 
 type Model = {
-    Id: WalletId option
+    Id: WalletId
     OnChainBalance: Money option
     OffChainBalance: LNMoney option
 }
@@ -25,17 +27,19 @@ type Model = {
 type Msg =
     | NoOp
     
-let init = {
-    Id = None
-    OnChainBalance = None
-    OffChainBalance = None
-}
-
 let update msg model =
     match msg with
-    | NoOp -> model, Cmd.none
+    | NoOp -> model
 
 
 let view _model _dispatch =
-    empty
+    text "TODO: show wallet info"
 
+type App() =
+    inherit ProgramComponent<Model, Msg>()
+    
+    [<Parameter>]
+    member val Id = Unchecked.defaultof<WalletId> with get, set
+    
+    override this.Program =
+        Program.mkSimple(fun _ -> { Model.Id = this.Id; OnChainBalance = None; OffChainBalance = None }) update view

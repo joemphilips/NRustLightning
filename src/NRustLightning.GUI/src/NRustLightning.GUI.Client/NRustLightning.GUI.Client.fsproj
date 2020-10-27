@@ -15,11 +15,12 @@
     <Compile Include="CoinView.fs" />
     <Compile Include="Breadcrumbs.fs" />
     <Compile Include="Wallet\Utils.fs" />
-    <Compile Include="Wallet\Initialization.fs" />
+    <Compile Include="Wallet\Import.fs" />
+    <Compile Include="Wallet\Generate.fs" />
     <Compile Include="Wallet\WalletInfo.fs" />
     <Compile Include="Wallet\Wallet.fs" />
     <Compile Include="NavMenu.fs" />
-    <Compile Include="Main2.fs" />
+    <Compile Include="Main.fs" />
     <Compile Include="Startup.fs" />
   </ItemGroup>
   <ItemGroup>

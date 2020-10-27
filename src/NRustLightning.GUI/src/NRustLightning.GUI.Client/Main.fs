@@ -1,6 +1,5 @@
-module NRustLightning.GUI.Client.Main2
+module NRustLightning.GUI.Client.Main
 
-open System
 open Bolero
 open Bolero.Html
 open Bolero.Remoting
@@ -18,6 +17,9 @@ open NRustLightning.GUI.Client.Wallet.Utils
 type Page =
     | [<EndPoint "/">] Home
     | [<EndPoint "/wallet">] Wallet
+    | [<EndPoint "/wallet/import">] WalletImport of PageModel<WalletImportModule.Model>
+    | [<EndPoint "/wallet/generate">] WalletGenerate
+    | [<EndPoint "/wallet/{masterFingerPrint}/{*keyPathIndexes}">] WalletDetail of masterFingerPrint: string * keyPathIndexes: uint32 []
     | [<EndPoint "/coinview">] CoinView
     | [<EndPoint "/config">] Configuration
 
@@ -27,14 +29,16 @@ type Model = {
     NavMinified: bool
     Page: Page
     WalletNames: Deferred<Map<WalletId, string>>
+    WalletImport: WalletImportModule.Model
 }
     with
     static member Default = {
-        bbDrawerClass = String.Empty
-        NavMenuOpened = false
+        bbDrawerClass = "mini"
+        NavMenuOpened = true
         NavMinified = true
         Page = Home
         WalletNames = HasNotStartedYet
+        WalletImport = WalletImportModule.init
     }
     
 type Msg =
@@ -42,9 +46,11 @@ type Msg =
     | NavMinify
     | LoadWalletNames of AsyncOperationStatus<Map<WalletId, string>>
     | SetPage of Page
+    | WalletImportMsg of WalletImportModule.Msg
 
 type Args = internal {
     AppState: AppState
+    Toaster: IMatToaster
 }
 
 type MainService = {
@@ -53,9 +59,8 @@ type MainService = {
     with
     interface IRemoteService with
         member this.BasePath = "/main"
-    
 
-let update service msg model =
+let update service { Toaster = toaster } msg model =
     match msg with
     | NavToggle ->
         let opened =  not model.NavMenuOpened
@@ -76,7 +81,21 @@ let update service msg model =
         { model with WalletNames = InProgress}, Cmd.OfAsync.either (service.GetWalletList) () onSuccess onError
     | LoadWalletNames(Finished names) ->
         { model with WalletNames = Resolved names}, Cmd.none
+    | WalletImportMsg msg ->
+        match model.Page with
+        | WalletImport m ->
+            let newModel = WalletImportModule.update {Toaster = toaster} msg m.Model
+            { model with Page = WalletImport({ m with Model = newModel }) }, Cmd.none
+        | _ -> model, Cmd.none
         
+        
+let defaultModel =
+    function
+    | WalletImport model -> Router.definePageModel model WalletImportModule.init
+    | _ -> ()
+let router =
+    Router.inferWithModel SetPage (fun m -> m.Page) defaultModel
+    
 [<AutoOpen>]
 module private ButtonWithTooltip =
             
@@ -92,7 +111,6 @@ module private ButtonWithTooltip =
         let tooltip = comp<MatTooltip> ["Tooltip" => tooltip
                                         attr.fragmentWith "ChildContent" (fun (f: ForwardRef) -> buttonComp f)] []
         tooltip
-
 let view ({ AppState = appState; })
          (model: Model)
          (dispatch) =
@@ -110,11 +128,24 @@ let view ({ AppState = appState; })
                 ]
             ]
             comp<MatNavMenu> [ "Multi" => true; "Class" => "app-sidebar" ] [
-                ecomp<NavMenu.EApp,_,_> [] NavMenu.Home (fun (_: NavMenu.Msg) -> Home |> SetPage |> dispatch)
                 ecomp<NavMenu.EApp,_,_>
-                    []
-                    (model.WalletNames |> Deferred.toOption |> Option.map(Map.toList) |> Option.toList |> Seq.concat |> Map.ofSeq |> NavMenu.Wallet)
+                    ["Href" => router.Link Home]
+                    NavMenu.Home
+                    (fun (_: NavMenu.Msg) -> Home |> SetPage |> dispatch)
+                ecomp<NavMenu.EApp,_,_>
+                    ["Href" => router.Link Wallet]
+                    (model.WalletNames |> Deferred.toOption
+                                       |> Option.map(Map.toList)
+                                       |> Option.toList
+                                       |> Seq.concat
+                                       |> Map.ofSeq
+                                       |> Map.map(fun wId name -> { NavMenu.WalletComponentArgs.HRef = router.Link(WalletDetail (wId.ToEncodableValue())); NavMenu.WalletComponentArgs.WalletName = name })
+                                       |> fun infos -> NavMenu.Wallet(infos, router.Link (WalletImport Router.noModel), router.Link(WalletGenerate)))
                     (fun _ -> Page.Wallet |> SetPage |> dispatch)
+                ecomp<NavMenu.EApp,_,_>
+                    ["Href" => router.Link Configuration]
+                    NavMenu.Config
+                    (fun (_: NavMenu.Msg) -> Configuration |> SetPage |> dispatch)
             ]
             footer [attr.classes ["drawer-footer"]] []
         ]
@@ -143,6 +174,13 @@ let view ({ AppState = appState; })
                                 text "this is child "
                             | Wallet ->
                                 comp<WalletModule.App> [] []
+                            | WalletImport pageModel ->
+                                ecomp<WalletImportModule.EApp,_,_> [] pageModel.Model (WalletImportMsg >> dispatch)
+                            | WalletGenerate ->
+                                comp<WalletGenerateModule.App> [] []
+                            | WalletDetail(fingerPrint, indexes) ->
+                                let wId = WalletId.FromElements(fingerPrint, indexes)
+                                comp<WalletInfoModule.App> ["Id" => wId] []
                             | CoinView ->
                                 comp<CoinViewModule.App> [] []
                             | Configuration ->
@@ -152,19 +190,25 @@ let view ({ AppState = appState; })
                 ]
             ]
         ]
+        comp<MatToastContainer> [] []
     ]
 
-type MyApp2() =
+type MyApp() =
     inherit ProgramComponent<Model, Msg>()
     
     [<Inject>]
     member val AppState: AppState = Unchecked.defaultof<AppState> with get, set
     
+    [<Inject>]
+    member val Toaster = Unchecked.defaultof<IMatToaster> with get, set
+    
     override this.Program =
         assert (this.AppState |> box |> isNull |> not)
-        let args = { AppState = this.AppState; }
+        let args = { AppState = this.AppState; Toaster = this.Toaster }
         let service = this.Remote<MainService>()
-        Program.mkProgram(fun _ -> Model.Default, Cmd.ofMsg(LoadWalletNames(Started))) (update service) (view args)
+        Program.mkProgram(fun _ -> Model.Default, Cmd.ofMsg(LoadWalletNames(Started))) (update service args) (view args)
+        |> Program.withRouter router
     #if DEBUG
+        |> Program.withConsoleTrace
         |> Program.withHotReload
     #endif

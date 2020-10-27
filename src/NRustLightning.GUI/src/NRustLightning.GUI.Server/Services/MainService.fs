@@ -5,7 +5,7 @@ open NRustLightning.GUI.Server
 open NRustLightning.Infrastructure.Repository
 
 type MainService(ctx: IRemoteContext, repo: Repository) =
-    inherit RemoteHandler<NRustLightning.GUI.Client.Main2.MainService>()
+    inherit RemoteHandler<NRustLightning.GUI.Client.Main.MainService>()
     
     override this.Handler = {
         GetWalletList = fun () -> async {

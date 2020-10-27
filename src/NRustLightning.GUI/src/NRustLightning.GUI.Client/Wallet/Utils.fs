@@ -12,6 +12,16 @@ type WalletId = private WalletId of RootedKeyPath
     override this.ToString() =
         this.Value.ToString()
         
+    member this.ToEncodableValue() =
+        let master = this.Value.MasterFingerprint.ToString()
+        let paths = this.Value.KeyPath.Indexes
+        (master, paths)
+        
+    static member FromElements(masterKeyFingerPrint: string, keyPathIndexes: uint32[]) =
+        let m = HDFingerprint.Parse(masterKeyFingerPrint)
+        let paths = KeyPath(keyPathIndexes)
+        RootedKeyPath(m, paths) |> WalletId
+        
     static member TryParse(s: string) =
         match RootedKeyPath.TryParse(s) with
         | true, r -> Some (WalletId r)

@@ -10,24 +10,31 @@ open Microsoft.AspNetCore.Components.Routing
 open NRustLightning.GUI.Client.Utils
 open NRustLightning.GUI.Client.Wallet.Utils
 
+type WalletComponentArgs = {
+    WalletName: string
+    HRef: string
+}
 type Model =
     | Home
-    | Wallet of WalletNames: Map<WalletId, string>
+    | Wallet of WalletNames: Map<WalletId, WalletComponentArgs> * importWalletHRef: string * generateWalletHRef: string
     | Config
-    | CoinView
 
 type Msg =
     | NoOp
 
-let private view model dispatch =
+type Args = {
+    Href: string
+}
+let private view {Href = href} model dispatch =
     cond model <| function
         | Model.Home ->
             // Home
             comp<MatNavItem> ["NavLinkMatch" => NavLinkMatch.All
+                              "Href" => href
                               ] [
                 comp<MatIcon>[ on.click(fun _ -> dispatch(NoOp)) ] [text MatIconNames.Home]
             ]
-        | Model.Wallet names ->
+        | Model.Wallet (infos, importHRef, generateHRef) ->
             // Wallet
             comp<MatNavSubMenu> [] [
                 comp<MatNavSubMenuHeader> [] [
@@ -37,26 +44,38 @@ let private view model dispatch =
                     ]
                 ]
                 comp<MatNavSubMenuList> [] [
-                    forEach names <| fun kv ->
-                        let name = kv.Value
-                        comp<MatNavItem> [] [
+                    forEach infos <| fun kv ->
+                        let name = kv.Value.WalletName
+                        comp<MatNavItem> [ "Href" => kv.Value.HRef  ] [
                             textf "Wallet of name: %s" name
                         ]
                             
-                    comp<MatNavItem> [] [
-                        comp<MatFAB> ["Icon" => MatIconNames.Add; "Label" => "Create New Wallet"
+                    comp<MatNavItem> ["Href" => importHRef] [
+                        comp<MatFAB> ["Icon" => MatIconNames.Import_export; "Label" => "Import Wallet"
+                                      ] [
+                        ]
+                    ]
+                    comp<MatNavItem> ["Href" => generateHRef] [
+                        comp<MatFAB> ["Icon" => MatIconNames.Add; "Label" => "Create Wallet"
                                       ] [
                         ]
                     ]
                 ]
             ]
-        | Model.CoinView ->
-            text "TODO: show coinview"
         | Model.Config ->
-            text "TODO: show config"
+            comp<MatNavItem> [ "Href" => href] [
+                comp<MatIcon> [on.click(fun _ -> dispatch(NoOp))] [
+                    text MatIconNames.Settings
+                    span [attr.classes ["miniHover"]] [text "Config"]
+                ]
+            ]
     
 type EApp() =
     inherit ElmishComponent<Model, Msg>()
     
+    [<Parameter>]
+    member val Href = Unchecked.defaultof<string> with get, set
+    
     override this.View model dispatch =
-        view model dispatch
+        let args = { Href = this.Href }
+        view args model dispatch
