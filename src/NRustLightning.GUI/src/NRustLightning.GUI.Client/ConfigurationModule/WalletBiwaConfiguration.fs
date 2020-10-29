@@ -29,10 +29,10 @@ type WalletBiwaConfiguration = {
     mutable RPCUser: string
     mutable RPCCookieFile: string
     mutable DBPath: string
-    mutable _Network: string
+    mutable Network: string
 }
     with
-    member this.Network = Network.GetNetwork (this._Network)
+    member this.GetNetwork() = Network.GetNetwork (this.Network)
     static member Default = {
         RPCHost = "http://localhost"
         RPCPort = 18334
@@ -40,13 +40,19 @@ type WalletBiwaConfiguration = {
         RPCUser = null
         RPCCookieFile = null
         DBPath = Defaults.dataDirectoryPath
-        _Network = Network.RegTest.ToString()
+        Network = Network.RegTest.ToString()
     }
-    member this.Url = Uri(this.RPCHost)
-    member this.GetRPCClient(http: HttpClient) =
-        let cred = NetworkCredential(this.RPCUser, this.RPCPassword)
-        let rpc = RPCClient(cred, this.Url, this.Network)
-        rpc.HttpClient <- http
+    member private this.GetUrl() = Uri(sprintf "%s:%d/" this.RPCHost this.RPCPort)
+    member this.GetRPCClient(?http: HttpClient) =
+        let cred =
+            if (this.RPCUser |> String.IsNullOrWhiteSpace |> not && this.RPCPassword |> String.IsNullOrWhiteSpace |> not) then
+                sprintf "%s:%s" this.RPCUser this.RPCPassword
+            else
+                sprintf "cookiefile=%s" this.RPCCookieFile
+        let rpc = RPCClient(cred, this.GetUrl(), this.GetNetwork())
+        http |> Option.iter(fun h ->
+            rpc.HttpClient <- h
+        )
         rpc
         
     member this.Validate() =

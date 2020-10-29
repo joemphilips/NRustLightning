@@ -31,7 +31,7 @@ type ConfigurationExtension =
         this.RPCPassword <- config.GetOrDefault("RPCPassword", d.RPCPassword)
         this.RPCUser <- config.GetOrDefault("RPCUser", d.RPCUser)
         this.RPCCookieFile <- config.GetOrDefault("RPCCookieFile", d.RPCCookieFile)
-        this._Network <- config.GetOrDefault("Network", d._Network)
+        this.Network <- config.GetOrDefault("Network", d.Network)
         ()
 
 [<Extension;AbstractClass;Sealed>]

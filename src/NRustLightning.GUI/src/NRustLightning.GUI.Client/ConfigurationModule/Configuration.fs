@@ -68,7 +68,7 @@ let update (service: ConfigurationService) msg model =
     | RPCUserInput s, _ ->
         updateConfig (fun x -> { x with RPCUser = s }) model
     | NetworkInput n, _ ->
-        updateConfig (fun x -> { x with _Network = n.ToString() }) model
+        updateConfig (fun x -> { x with Network = n.ToString() }) model
     | ApplyChanges, { Configuration = Resolved(conf) } ->
         let onSuccess = function
             | Ok _ -> NoOp
@@ -129,7 +129,7 @@ let view (model: Model) dispatch =
                 
                 comp<MatSelectItem<Network>> ["Items" => Network.GetNetworks().ToArray()
                                               "Label" => "Bitcoin Network"
-                                              "Value" => t.Network
+                                              "Value" => t.GetNetwork()
                                               attr.callback "ValueChanged" (NetworkInput >> dispatch)] []
                 
                 cond <| (t.Validate()) <| function
@@ -159,4 +159,5 @@ type App() =
         Program.mkProgram (fun _ -> init, Cmd.ofMsg (LoadConfig Started)) (update service) view
 #if DEBUG
         |> Program.withHotReload
+        |> Program.withConsoleTrace
 #endif

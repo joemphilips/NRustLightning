@@ -23,19 +23,14 @@ type ConfigurationService(ctx: IRemoteContext, env: IWebHostEnvironment, conf: I
     let path = "appsettings.json"
 #endif
     let jsonPath = Path.Combine(env.ContentRootPath, path)
-    let mutable configs = opts.CurrentValue
     let lockObj = new SemaphoreSlim(1, 1)
-    
-    do
-        printfn "configs url: %A" configs.Url
-        printfn "And Network: %A" configs.Network
     
     member internal this.CommitConfig(newConf) = async {
         try
             do! lockObj.WaitAsync() |> Async.AwaitTask
+            do File.Delete(jsonPath)
             use fs = File.OpenWrite(jsonPath)
-            configs <- newConf
-            do! JsonSerializer.SerializeAsync(fs, configs) |> Async.AwaitTask
+            do! JsonSerializer.SerializeAsync(fs, newConf) |> Async.AwaitTask
         finally
             lockObj.Release() |> ignore
     }
@@ -43,13 +38,18 @@ type ConfigurationService(ctx: IRemoteContext, env: IWebHostEnvironment, conf: I
         let cli = conf.GetRPCClient(httpClientFactory.CreateClient("ConfigurationService"))
         try
             let! _info = cli.GetBlockchainInfoAsync() |> Async.AwaitTask
-            return None
+            try
+                let! _ = cli.GetBlockHeaderAsync(conf.GetNetwork().GenesisHash) |> Async.AwaitTask
+                return None
+            with
+            | ex ->
+                return Some(sprintf "Failed to get genesis block! Are you sure this node is running in expected network?: %s" ex.Message)
         with
         | :? AggregateException as aex when aex.InnerExceptions.Any(fun e -> e :? HttpRequestException) ->
             return Some(sprintf "Failed to connect to rpc server: %s" aex.Message)
         | :? RPCException as ex ->
             return (Some(sprintf "Failed to connect to rpc server: %s" ex.Message))
-        | ex -> return Some (sprintf "Unexpected Error: %s" ex.Message)
+        | ex -> return Some (sprintf "Unexpected Error: %s" (ex.ToString()))
     }
         
     override this.Handler = {
@@ -57,11 +57,11 @@ type ConfigurationService(ctx: IRemoteContext, env: IWebHostEnvironment, conf: I
             match! this.ValidateConfigAsync(newConf) with
             | Some x -> return Error x
             | None ->
-            do! this.CommitConfig(newConf)
-            return Ok()
+                do! this.CommitConfig(newConf)
+                return Ok()
         }
         
         LoadConfig = fun () -> async {
-            return configs
+            return opts.CurrentValue
         }
     }
