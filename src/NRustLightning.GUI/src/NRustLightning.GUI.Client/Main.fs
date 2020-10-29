@@ -12,7 +12,6 @@ open Bolero.Templating.Client
 open NRustLightning.GUI.Client.Configuration
 open NRustLightning.GUI.Client.Utils
 open NRustLightning.GUI.Client.Wallet
-open NRustLightning.GUI.Client.Wallet.Utils
 
 type Page =
     | [<EndPoint "/">] Home
@@ -51,6 +50,7 @@ type Msg =
 type Args = internal {
     AppState: AppState
     Toaster: IMatToaster
+    WalletService: WalletService
 }
 
 type MainService = {
@@ -60,7 +60,7 @@ type MainService = {
     interface IRemoteService with
         member this.BasePath = "/main"
 
-let update service { Toaster = toaster } msg model =
+let update service { Toaster = toaster; WalletService = walletService } msg model =
     match msg with
     | NavToggle ->
         let opened =  not model.NavMenuOpened
@@ -84,8 +84,8 @@ let update service { Toaster = toaster } msg model =
     | WalletImportMsg msg ->
         match model.Page with
         | WalletImport m ->
-            let newModel = WalletImportModule.update {Toaster = toaster} msg m.Model
-            { model with Page = WalletImport({ m with Model = newModel }) }, Cmd.none
+            let newModel, cmd = WalletImportModule.update {Toaster = toaster; Service = walletService } msg m.Model
+            { model with Page = WalletImport({ m with Model = newModel }) }, Cmd.map(WalletImportMsg) cmd
         | _ -> model, Cmd.none
         
         
@@ -114,6 +114,7 @@ module private ButtonWithTooltip =
 let view ({ AppState = appState; })
          (model: Model)
          (dispatch) =
+    comp<MatThemeProvider> [] [
     comp<MatDrawerContainer> [
         "Style" => "width: 100vw; height: 100vh;"
         "Class" => model.bbDrawerClass
@@ -192,6 +193,7 @@ let view ({ AppState = appState; })
         ]
         comp<MatToastContainer> [] []
     ]
+    ]
 
 type MyApp() =
     inherit ProgramComponent<Model, Msg>()
@@ -204,8 +206,9 @@ type MyApp() =
     
     override this.Program =
         assert (this.AppState |> box |> isNull |> not)
-        let args = { AppState = this.AppState; Toaster = this.Toaster }
         let service = this.Remote<MainService>()
+        let walletService = this.Remote<WalletService>()
+        let args = { AppState = this.AppState; Toaster = this.Toaster; WalletService = walletService }
         Program.mkProgram(fun _ -> Model.Default, Cmd.ofMsg(LoadWalletNames(Started))) (update service args) (view args)
         |> Program.withRouter router
     #if DEBUG

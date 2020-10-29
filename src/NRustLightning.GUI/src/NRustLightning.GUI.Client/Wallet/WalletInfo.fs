@@ -4,19 +4,11 @@ module NRustLightning.GUI.Client.Wallet.WalletInfoModule
 open Bolero
 open Elmish
 open Microsoft.AspNetCore.Blazor.Components
-open NRustLightning.GUI.Client.Wallet.Utils
+open NRustLightning.GUI.Client.Wallet
 open NBitcoin
 open DotNetLightning.Utils
 
 open Bolero.Html
-
-type WalletInfo = {
-    Id: WalletId
-    OnChainBalance: Money
-    OffChainBalance: LNMoney
-    CryptoCode: string
-    Name: string
-}
 
 type Model = {
     Id: WalletId

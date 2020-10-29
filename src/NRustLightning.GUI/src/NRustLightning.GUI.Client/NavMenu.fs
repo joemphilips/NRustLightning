@@ -8,7 +8,7 @@ open MatBlazor
 open Microsoft.AspNetCore.Components
 open Microsoft.AspNetCore.Components.Routing
 open NRustLightning.GUI.Client.Utils
-open NRustLightning.GUI.Client.Wallet.Utils
+open NRustLightning.GUI.Client.Wallet
 
 type WalletComponentArgs = {
     WalletName: string
@@ -66,8 +66,8 @@ let private view {Href = href} model dispatch =
             comp<MatNavItem> [ "Href" => href] [
                 comp<MatIcon> [on.click(fun _ -> dispatch(NoOp))] [
                     text MatIconNames.Settings
-                    span [attr.classes ["miniHover"]] [text "Config"]
                 ]
+                span [attr.classes ["miniHover"]] [text "Config"]
             ]
     
 type EApp() =

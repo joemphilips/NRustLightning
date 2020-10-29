@@ -83,6 +83,7 @@ let view (model: Model) dispatch =
                     attr.callback "OnInput"
                         (fun (e: ChangeEventArgs) -> dispatch(RPCHostInput(unbox e.Value)))
                 ] []
+                comp<MatDivider> [] []
                 br []
                 comp<MatTextField<int>> [
                     "Value" => t.RPCPort
@@ -90,6 +91,7 @@ let view (model: Model) dispatch =
                     attr.callback "OnInput"
                         (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCPortInput |> dispatch)
                 ] []
+                comp<MatDivider> [] []
                 br []
                 comp<MatTextField<string>> [
                     "Value" => t.RPCUser
@@ -97,6 +99,7 @@ let view (model: Model) dispatch =
                     attr.callback "OnInput"
                         (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCUserInput |> dispatch)
                 ] []
+                comp<MatDivider> [] []
                 br []
                 comp<MatTextField<string>> [
                     "Value" => t.RPCPassword
@@ -104,11 +107,14 @@ let view (model: Model) dispatch =
                     attr.callback "OnInput"
                         (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCPasswordInput |> dispatch)
                 ] []
+                comp<MatDivider> [] []
                 br []
                 comp<MatButton> [
                     "Disabled" => true
                     attr.callback "OnClick" (fun (_e: MouseEventArgs) -> ApplyChanges |> dispatch)
                 ] [ text "Commit" ]
+                comp<MatDivider> [] []
+                br []
             ]
             
 type App() =

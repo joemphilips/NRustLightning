@@ -1,7 +1,7 @@
-module NRustLightning.GUI.Client.Wallet.Utils
+namespace NRustLightning.GUI.Client.Wallet
 
 open System
-open NBitcoin
+open DotNetLightning.Utils
 open NBitcoin
 
 
@@ -43,3 +43,12 @@ type WalletId = private WalletId of RootedKeyPath
     interface IComparable<WalletId> with
         member this.CompareTo(o) =
             o.ToString().CompareTo(this.ToString())
+            
+type WalletInfo = {
+    Id: WalletId
+    OnChainBalance: Money
+    OffChainBalance: LNMoney
+    CryptoCode: string
+    Name: string
+}
+

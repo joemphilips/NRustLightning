@@ -15,7 +15,6 @@ open NRustLightning.Infrastructure.Networks
 open NRustLightning.Infrastructure.Repository
 open NRustLightning.GUI.Client.Configuration
 open NRustLightning.GUI.Client.Wallet
-open NRustLightning.GUI.Client.Wallet.Utils
 
 type O = OptionalArgumentAttribute
 type D = System.Runtime.InteropServices.DefaultParameterValueAttribute
@@ -40,7 +39,7 @@ type Repository(conf: IOptionsMonitor<WalletBiwaConfiguration>, networkProvider:
     do
         _engine.ConfigurePagePool(PagePool(pageSize, (50 * 1000 * 1000) / pageSize))
         
-    member this.SetWalletInfo(info: WalletInfoModule.WalletInfo, [<O;D(null)>]ct: CancellationToken) =
+    member this.SetWalletInfo(info: WalletInfo, [<O;D(null)>]ct: CancellationToken) =
         if (info |> box |> isNull) then raise <| ArgumentNullException("info") else
         task {
             use! tx = _engine.OpenTransaction(ct)
@@ -49,7 +48,7 @@ type Repository(conf: IOptionsMonitor<WalletBiwaConfiguration>, networkProvider:
             do! tx.Commit()
         }
         
-    member this.GetWalletInfo(wId: WalletId, [<O;D(null)>]ct: CancellationToken): Task<WalletInfoModule.WalletInfo option> =
+    member this.GetWalletInfo(wId: WalletId, [<O;D(null)>]ct: CancellationToken): Task<WalletInfo option> =
         task {
             use! tx = _engine.OpenTransaction(ct)
             let! row = tx.GetTable(DBKeys.WalletIdToWalletInfo).Get(wId.ToString())
@@ -66,7 +65,7 @@ type Repository(conf: IOptionsMonitor<WalletBiwaConfiguration>, networkProvider:
             asyncSeq {
                 for t in a do
                     let! v =  t.ReadValue().AsTask() |> Async.AwaitTask
-                    yield JsonSerializer.Deserialize<WalletInfoModule.WalletInfo>(v.Span, serializerOptions)
+                    yield JsonSerializer.Deserialize<WalletInfo>(v.Span, serializerOptions)
             } |> AsyncSeq.toArrayAsync |> Async.StartAsTask
     }
         

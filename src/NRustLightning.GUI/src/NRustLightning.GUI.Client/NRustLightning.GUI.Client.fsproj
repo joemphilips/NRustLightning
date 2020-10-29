@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="Utils.fs" />
     <Compile Include="Localization.fs" />
+    <Compile Include="Themes.fs" />
     <Compile Include="AppState.fs" />
     <Compile Include="Components.fs" />
     <Compile Include="ConfigurationModule\WalletBiwaConfiguration.fs" />
@@ -15,6 +16,7 @@
     <Compile Include="CoinView.fs" />
     <Compile Include="Breadcrumbs.fs" />
     <Compile Include="Wallet\Utils.fs" />
+    <Compile Include="Wallet\WalletService.fs" />
     <Compile Include="Wallet\Import.fs" />
     <Compile Include="Wallet\Generate.fs" />
     <Compile Include="Wallet\WalletInfo.fs" />

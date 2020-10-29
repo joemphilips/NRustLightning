@@ -1,23 +1,11 @@
 [<RequireQualifiedAccess>]
 module NRustLightning.GUI.Client.Wallet.WalletModule
 
-open NBitcoin
-open Bolero
 open Bolero.Remoting
+open Bolero
 open Bolero.Html
 open Bolero.Templating.Client
-open DotNetLightning.Utils
 open Elmish
-
-open NRustLightning.GUI.Client.Wallet.Utils
-
-type WalletService = {
-    GetBalance: WalletId -> Async<(Money * LNMoney) option>
-    GetWalletInfo: WalletId -> Async<(WalletInfoModule.WalletInfo) option>
-}
-    with
-    interface IRemoteService with
-        member this.BasePath = "/wallet"
 
 type Model = {
     WalletInfos: WalletInfoModule.Model seq
