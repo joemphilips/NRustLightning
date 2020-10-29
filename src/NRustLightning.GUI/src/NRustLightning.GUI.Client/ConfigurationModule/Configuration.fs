@@ -1,6 +1,8 @@
 [<RequireQualifiedAccess>]
 module NRustLightning.GUI.Client.Configuration.ConfigurationModule
 
+open System
+open System.Linq
 open Elmish
 open Humanizer
 open MatBlazor
@@ -9,6 +11,7 @@ open Bolero.Remoting
 open Bolero.Html
 open Microsoft.AspNetCore.Components
 open Microsoft.AspNetCore.Components.Web
+open NBitcoin
 open NRustLightning.GUI.Client.Utils
 open NRustLightning.GUI.Client.Components
 open Bolero.Templating.Client
@@ -19,7 +22,7 @@ type ConfigurationService = {
 }
     with
     interface IRemoteService with
-        member this.BasePath = "/config"
+        member this.BasePath = "/config-service"
 
 type Model = {
     Configuration: Deferred<WalletBiwaConfiguration>
@@ -32,16 +35,19 @@ type Msg =
     | RPCPasswordInput of string
     | RPCUserInput of string
     | RPCCookiefileInput of string
-    | InvalidInput of exn
-    | TryApplyChanges
+    | NetworkInput of Network
+    | InvalidInput of err: string
     | ApplyChanges
     | LoadConfig of AsyncOperationStatus<WalletBiwaConfiguration>
+    | NoOp
     
 let init = {
     Configuration = HasNotStartedYet
     ErrorMsg = None
 }
     
+let private updateConfig (update: WalletBiwaConfiguration -> WalletBiwaConfiguration) (model) =
+    { model with Configuration = model.Configuration |> Deferred.map(update) }, Cmd.none
 let update (service: ConfigurationService) msg model =
     match msg, model with
     | LoadConfig Started, { Configuration = HasNotStartedYet } ->
@@ -52,34 +58,31 @@ let update (service: ConfigurationService) msg model =
     | LoadConfig(Finished c), _ ->
         { model with Configuration = Resolved(c) }, Cmd.none
     | RPCHostInput r, _ ->
-        let newConf = model.Configuration |> Deferred.map(fun x -> { x with RPCHost = r })
-        { model with Configuration = newConf }, Cmd.none
+        updateConfig (fun x -> { x with RPCHost = r }) model
     | RPCPortInput r, _ ->
-        let newConf = model.Configuration |> Deferred.map(fun x -> { x with RPCPort = r })
-        { model with Configuration = newConf }, Cmd.none
+        updateConfig (fun x -> { x with RPCPort = r }) model
     | RPCCookiefileInput r, _  ->
-        let newConf = model.Configuration |> Deferred.map(fun x -> { x with RPCCookieFile = r })
-        { model with Configuration = newConf }, Cmd.none
+        updateConfig (fun x -> { x with RPCCookieFile = r }) model
     | RPCPasswordInput s, _ ->
-        let newConf = model.Configuration |> Deferred.map(fun x -> { x with RPCPassword = s })
-        { model with Configuration = newConf }, Cmd.none
+        updateConfig (fun x -> { x with RPCPassword = s }) model
     | RPCUserInput s, _ ->
-        let newConf = model.Configuration |> Deferred.map(fun x -> { x with RPCUser = s })
-        { model with Configuration = newConf }, Cmd.none
-    | TryApplyChanges, { Configuration = Resolved conf } ->
-        let onSuccess _ = ApplyChanges
-        let onError = InvalidInput
-        model, Cmd.OfAsync.either (conf.ValidateAsync) () onSuccess onError
+        updateConfig (fun x -> { x with RPCUser = s }) model
+    | NetworkInput n, _ ->
+        updateConfig (fun x -> { x with _Network = n.ToString() }) model
     | ApplyChanges, { Configuration = Resolved(conf) } ->
-        let onError = InvalidInput
+        let onSuccess = function
+            | Ok _ -> NoOp
+            | Error x ->
+                InvalidInput(x)
         { model with ErrorMsg = None },
-        Cmd.OfAsync.attempt
+        Cmd.OfAsync.perform
             (service.Update)
             (conf)
-            (onError)
+            (onSuccess)
     | ApplyChanges, _ -> model, Cmd.none
+    | NoOp, _ -> model, Cmd.none
     | InvalidInput exn, _ ->
-        { model with ErrorMsg = exn.ToString() |> Some }, Cmd.none
+        { model with ErrorMsg = exn |> Some }, Cmd.none
         
         
 let view (model: Model) dispatch =
@@ -116,27 +119,36 @@ let view (model: Model) dispatch =
                         (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCPasswordInput |> dispatch)
                 ] []
                 comp<MatDivider> [] []
+                
                 comp<MatTextField<string>> [
                     "Value" => t.RPCCookieFile
                     "Label" => "Path to the Cookiefile for bitcoind"
                     attr.callback "OnInput" (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCCookiefileInput |> dispatch)
                 ] []
-                cond <| (t.Validate(), model.ErrorMsg) <| function
-                    | None, None ->
+                comp<MatDivider> [] []
+                
+                comp<MatSelectItem<Network>> ["Items" => Network.GetNetworks().ToArray()
+                                              "Label" => "Bitcoin Network"
+                                              "Value" => t.Network
+                                              attr.callback "ValueChanged" (NetworkInput >> dispatch)] []
+                
+                cond <| (t.Validate()) <| function
+                    | None ->
                         empty
-                    | Some e, _ ->
+                    | Some e ->
                         div [attr.style "color: red"] [
                             textf "Invalid Config: %s" (e)
                         ]
-                    | _, Some e ->
+                cond <| (model.ErrorMsg) <| function
+                    | None -> empty
+                    | Some e ->
                         div [attr.style "color: red"] [
                             textf "Failed to validate config: %s" (e)
                         ]
-                        
                 comp<MatDivider> [] []
                 comp<MatButton> [
                     "Disabled" => t.Validate().IsSome
-                    attr.callback "OnClick" (fun (_e: MouseEventArgs) -> TryApplyChanges |> dispatch)
+                    attr.callback "OnClick" (fun (_e: MouseEventArgs) -> ApplyChanges |> dispatch)
                 ] [ text "Commit" ]
             ]
             

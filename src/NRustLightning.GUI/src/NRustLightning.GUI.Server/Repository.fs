@@ -21,7 +21,7 @@ type D = System.Runtime.InteropServices.DefaultParameterValueAttribute
 module DBKeys =
     let [<Literal>] WalletIdToWalletInfo = "ww"
 
-type Repository(conf: IOptionsMonitor<WalletBiwaConfiguration>, networkProvider: NRustLightningNetworkProvider) =
+type Repository(conf: IOptionsMonitor<WalletBiwaConfiguration>) =
     let _dbPath = conf.CurrentValue.DBPath
     let openEngine() =
         task {
@@ -29,16 +29,19 @@ type Repository(conf: IOptionsMonitor<WalletBiwaConfiguration>, networkProvider:
         }
     let pageSize = 8192
     let serializerOptions = JsonSerializerOptions()
-    let repoSerializer = RepositorySerializer(networkProvider.GetByCryptoCode"btc")
+    let repoSerializer = RepositorySerializer()
     
     do
         if (_dbPath |> Directory.Exists |> not) then
             Directory.CreateDirectory(_dbPath) |> ignore
         repoSerializer.ConfigureSerializer(serializerOptions)
+        
     let _engine = openEngine().GetAwaiter().GetResult();
     do
         _engine.ConfigurePagePool(PagePool(pageSize, (50 * 1000 * 1000) / pageSize))
         
+    member val SerializerOptions = serializerOptions with get
+    
     member this.SetWalletInfo(info: WalletInfo, [<O;D(null)>]ct: CancellationToken) =
         if (info |> box |> isNull) then raise <| ArgumentNullException("info") else
         task {

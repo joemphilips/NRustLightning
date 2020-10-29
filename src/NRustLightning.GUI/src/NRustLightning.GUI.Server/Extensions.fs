@@ -9,12 +9,13 @@ open NBitcoin
 open NRustLightning.GUI.Client.AppState
 open NRustLightning.GUI.Client.Configuration
 open NRustLightning.Infrastructure.Interfaces
-open NRustLightning.Infrastructure.Networks
+open NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes
 open NRustLightning.Infrastructure.Repository
 open NRustLightning.Infrastructure.Configuration
 open NRustLightning.Net
 open NRustLightning.GUI.Server.Services
 open Bolero.Remoting.Server
+open Microsoft.Extensions.DependencyInjection;
 open MatBlazor
 
 [<Extension;AbstractClass;Sealed>]
@@ -30,6 +31,7 @@ type ConfigurationExtension =
         this.RPCPassword <- config.GetOrDefault("RPCPassword", d.RPCPassword)
         this.RPCUser <- config.GetOrDefault("RPCUser", d.RPCUser)
         this.RPCCookieFile <- config.GetOrDefault("RPCCookieFile", d.RPCCookieFile)
+        this._Network <- config.GetOrDefault("Network", d._Network)
         ()
 
 [<Extension;AbstractClass;Sealed>]
@@ -41,7 +43,6 @@ type Extensions =
             
     [<Extension>]
     static member ConfigureNRustLightning(services: IServiceCollection, config: IConfiguration, logger: ILogger) =
-        let networkType = config.GetNetworkType()
         services
             .AddRemoting<ConfigurationService>()
             .AddRemoting<WalletService>()
@@ -53,15 +54,14 @@ type Extensions =
                 config.ShowCloseButton <- true
                 config.VisibleStateDuration <- 30000
                 ())
-            .Configure<WalletBiwaConfiguration>(fun (w: WalletBiwaConfiguration) -> w.LoadArgs(config, logger))
-            .AddSingleton(NRustLightningNetworkProvider(networkType))
+            .Configure<WalletBiwaConfiguration>(fun (w: WalletBiwaConfiguration) -> w.LoadArgs(config, logger)) |> ignore
+        services
         
     [<Extension>]
     static member AddNRustLightning(services: IServiceCollection) =
         services
             .AddSingleton<ISocketDescriptorFactory, SocketDescriptorFactory>()
             .AddSingleton<IKeysRepository, FlatFileKeyRepository>()
-            .AddSingleton<RPCClientProvider>()
             .AddSingleton(AppState())
             .AddSingleton<Repository>()
             .AddSingleton<IRepository, DbTrieRepository>()

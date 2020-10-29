@@ -18,39 +18,32 @@ open NRustLightning.Infrastructure.Repository
 open NRustLightning.Infrastructure.Networks
 
 type WalletService(ctx: IRemoteContext, env: IWebHostEnvironment,
-                   networkProvider: NRustLightningNetworkProvider, opts: IOptionsMonitor<WalletBiwaConfiguration>,
+                   opts: IOptionsMonitor<WalletBiwaConfiguration>,
                    keysRepository: IKeysRepository,
-                   repository: Repository, rpcClientProvider: RPCClientProvider) =
+                   httpClientFactory: IHttpClientFactory,
+                   repository: Repository) =
     inherit RemoteHandler<NRustLightning.GUI.Client.Wallet.WalletService>()
 
-    let serializerOptions = JsonSerializerOptions()
-    let repoSerializer = RepositorySerializer(networkProvider.GetByCryptoCode"btc")
-    do repoSerializer.ConfigureSerializer(serializerOptions)
-    
     override this.Handler = {
         GetBalance = fun walletId -> async {
             let! info = repository.GetWalletInfo(walletId) |> Async.AwaitTask
             match info with
             | None -> return None
             | Some info ->
-                let rpc = rpcClientProvider.GetRPCClient(info.CryptoCode)
-                match rpc with
-                | None -> return None
-                | Some rpc ->
-                    let! b = rpc.GetBalanceAsync() |> Async.AwaitTask
-                    return (b, LNMoney.Zero) |> Some
+                let rpc = opts.CurrentValue.GetRPCClient(httpClientFactory.CreateClient"WalletService")
+                let! b = rpc.GetBalanceAsync() |> Async.AwaitTask
+                return (b, LNMoney.Zero) |> Some
         }
         GetWalletInfo = fun walletId -> async {
             return! repository.GetWalletInfo(walletId) |> Async.AwaitTask
         }
         TrackCipherSeed = fun cipherSeed -> async {
-            let cryptoCode = "btc" // todo: support altchains?
-            let n = networkProvider.GetByCryptoCode(cryptoCode)
-            let rpc = rpcClientProvider.GetRPCClient(cryptoCode).Value
+            let n = opts.CurrentValue.Network
+            let rpc = opts.CurrentValue.GetRPCClient(httpClientFactory.CreateClient"WalletService")
             let extKey = ExtKey(cipherSeed.Entropy)
-            let path = (n.BaseKeyPath.ToString() + "0'") |> KeyPath
+            let path = ("0'") |> KeyPath
             let accountBasePrivKey = extKey.Derive(path)
-            let accountBase = accountBasePrivKey.Neuter() |> fun x -> BitcoinExtPubKey(x, n.NBitcoinNetwork)
+            let accountBase = accountBasePrivKey.Neuter() |> fun x -> BitcoinExtPubKey(x, n)
             let od =
                 PubKeyProvider.HD(accountBase, path, PubKeyProvider.DeriveType.HARDENED)
                 |> fun x -> PubKeyProvider.NewOrigin(RootedKeyPath(extKey.ParentFingerprint, path), x)

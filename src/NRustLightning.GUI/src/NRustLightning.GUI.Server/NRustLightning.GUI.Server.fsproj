@@ -9,7 +9,6 @@
   <ItemGroup>
     <Compile Include="Constnats.fs" />
     <Compile Include="Repository.fs" />
-    <Compile Include="RPCClientProvider.fs" />
     <Compile Include="Services\ConfigurationService.fs" />
     <Compile Include="Services\WalletService.fs" />
     <Compile Include="Services\MainService.fs" />

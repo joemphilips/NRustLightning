@@ -3,9 +3,13 @@ namespace NRustLightning.GUI.Client.Configuration
 open System
 open System.IO
 open System.Net
+open System.Text.Json.Serialization
 open NBitcoin
 open NBitcoin.RPC
 open System.Net.Http
+open NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes
+
+exception ConfigException of string
 
 module private Defaults =
     let homePath = 
@@ -25,8 +29,10 @@ type WalletBiwaConfiguration = {
     mutable RPCUser: string
     mutable RPCCookieFile: string
     mutable DBPath: string
+    mutable _Network: string
 }
     with
+    member this.Network = Network.GetNetwork (this._Network)
     static member Default = {
         RPCHost = "http://localhost"
         RPCPort = 18334
@@ -34,11 +40,12 @@ type WalletBiwaConfiguration = {
         RPCUser = null
         RPCCookieFile = null
         DBPath = Defaults.dataDirectoryPath
+        _Network = Network.RegTest.ToString()
     }
     member this.Url = Uri(this.RPCHost)
-    member this.GetRPCClient(network: Network, http: HttpClient) =
+    member this.GetRPCClient(http: HttpClient) =
         let cred = NetworkCredential(this.RPCUser, this.RPCPassword)
-        let rpc = RPCClient(cred, this.Url, network)
+        let rpc = RPCClient(cred, this.Url, this.Network)
         rpc.HttpClient <- http
         rpc
         
@@ -48,10 +55,3 @@ type WalletBiwaConfiguration = {
         if ((this.RPCPassword |> String.IsNullOrWhiteSpace || this.RPCUser |> String.IsNullOrWhiteSpace) && this.RPCCookieFile |> String.IsNullOrWhiteSpace) then Some("You must specify either RPC user/pass or cookie file") else
         if (this.RPCCookieFile |> String.IsNullOrWhiteSpace |> not && (this.RPCCookieFile) |> File.Exists |> not) then Some ("The RPCCookieFile does not exist") else
         None
-        
-    member this.ValidateAsync() = async {
-        match this.Validate() with
-        | Some e -> return Error e
-        | None ->
-            return Ok()
-    }
