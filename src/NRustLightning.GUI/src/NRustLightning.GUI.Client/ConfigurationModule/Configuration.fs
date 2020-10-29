@@ -2,6 +2,7 @@
 module NRustLightning.GUI.Client.Configuration.ConfigurationModule
 
 open Elmish
+open Humanizer
 open MatBlazor
 open Bolero
 open Bolero.Remoting
@@ -14,7 +15,7 @@ open Bolero.Templating.Client
 
 type ConfigurationService = {
     LoadConfig: unit -> Async<WalletBiwaConfiguration>
-    Update: WalletBiwaConfiguration -> Async<unit>
+    Update: WalletBiwaConfiguration -> Async<Result<unit, string>>
 }
     with
     interface IRemoteService with
@@ -30,7 +31,9 @@ type Msg =
     | RPCPortInput of int
     | RPCPasswordInput of string
     | RPCUserInput of string
-    | ServiceFailed of exn
+    | RPCCookiefileInput of string
+    | InvalidInput of exn
+    | TryApplyChanges
     | ApplyChanges
     | LoadConfig of AsyncOperationStatus<WalletBiwaConfiguration>
     
@@ -54,20 +57,28 @@ let update (service: ConfigurationService) msg model =
     | RPCPortInput r, _ ->
         let newConf = model.Configuration |> Deferred.map(fun x -> { x with RPCPort = r })
         { model with Configuration = newConf }, Cmd.none
+    | RPCCookiefileInput r, _  ->
+        let newConf = model.Configuration |> Deferred.map(fun x -> { x with RPCCookieFile = r })
+        { model with Configuration = newConf }, Cmd.none
     | RPCPasswordInput s, _ ->
         let newConf = model.Configuration |> Deferred.map(fun x -> { x with RPCPassword = s })
         { model with Configuration = newConf }, Cmd.none
     | RPCUserInput s, _ ->
         let newConf = model.Configuration |> Deferred.map(fun x -> { x with RPCUser = s })
         { model with Configuration = newConf }, Cmd.none
+    | TryApplyChanges, { Configuration = Resolved conf } ->
+        let onSuccess _ = ApplyChanges
+        let onError = InvalidInput
+        model, Cmd.OfAsync.either (conf.ValidateAsync) () onSuccess onError
     | ApplyChanges, { Configuration = Resolved(conf) } ->
-        model,
+        let onError = InvalidInput
+        { model with ErrorMsg = None },
         Cmd.OfAsync.attempt
             (service.Update)
             (conf)
-            (ServiceFailed)
+            (onError)
     | ApplyChanges, _ -> model, Cmd.none
-    | ServiceFailed exn, _ ->
+    | InvalidInput exn, _ ->
         { model with ErrorMsg = exn.ToString() |> Some }, Cmd.none
         
         
@@ -84,7 +95,6 @@ let view (model: Model) dispatch =
                         (fun (e: ChangeEventArgs) -> dispatch(RPCHostInput(unbox e.Value)))
                 ] []
                 comp<MatDivider> [] []
-                br []
                 comp<MatTextField<int>> [
                     "Value" => t.RPCPort
                     "Label" => "port for bitcoin rpc"
@@ -92,7 +102,6 @@ let view (model: Model) dispatch =
                         (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCPortInput |> dispatch)
                 ] []
                 comp<MatDivider> [] []
-                br []
                 comp<MatTextField<string>> [
                     "Value" => t.RPCUser
                     "Label" => "username for bitcoin rpc"
@@ -100,7 +109,6 @@ let view (model: Model) dispatch =
                         (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCUserInput |> dispatch)
                 ] []
                 comp<MatDivider> [] []
-                br []
                 comp<MatTextField<string>> [
                     "Value" => t.RPCPassword
                     "Label" => "password for bitcoin rpc"
@@ -108,13 +116,28 @@ let view (model: Model) dispatch =
                         (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCPasswordInput |> dispatch)
                 ] []
                 comp<MatDivider> [] []
-                br []
-                comp<MatButton> [
-                    "Disabled" => true
-                    attr.callback "OnClick" (fun (_e: MouseEventArgs) -> ApplyChanges |> dispatch)
-                ] [ text "Commit" ]
+                comp<MatTextField<string>> [
+                    "Value" => t.RPCCookieFile
+                    "Label" => "Path to the Cookiefile for bitcoind"
+                    attr.callback "OnInput" (fun (e: ChangeEventArgs) -> e.Value |> unbox |> RPCCookiefileInput |> dispatch)
+                ] []
+                cond <| (t.Validate(), model.ErrorMsg) <| function
+                    | None, None ->
+                        empty
+                    | Some e, _ ->
+                        div [attr.style "color: red"] [
+                            textf "Invalid Config: %s" (e)
+                        ]
+                    | _, Some e ->
+                        div [attr.style "color: red"] [
+                            textf "Failed to validate config: %s" (e)
+                        ]
+                        
                 comp<MatDivider> [] []
-                br []
+                comp<MatButton> [
+                    "Disabled" => t.Validate().IsSome
+                    attr.callback "OnClick" (fun (_e: MouseEventArgs) -> TryApplyChanges |> dispatch)
+                ] [ text "Commit" ]
             ]
             
 type App() =

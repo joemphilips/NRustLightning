@@ -32,10 +32,18 @@ type ConfigurationService(ctx: IRemoteContext, env: IWebHostEnvironment, conf: I
         finally
             lockObj.Release() |> ignore
     }
+    member private this.ValidateConfigAsync(conf: WalletBiwaConfiguration): Async<Result<_,string>> = async {
+        return Ok ()
+    }
         
     override this.Handler = {
         Update = fun newConf -> async {
-            do! this.CommitConfig(newConf)
+            let! r = this.ValidateConfigAsync(newConf)
+            match r with
+            | Error e -> return Error e
+            | Ok _ ->
+                do! this.CommitConfig(newConf)
+                return Ok()
         }
         
         LoadConfig = fun () -> async {

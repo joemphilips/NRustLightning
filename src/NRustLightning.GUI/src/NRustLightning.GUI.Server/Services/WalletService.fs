@@ -13,11 +13,13 @@ open NBitcoin.RPC
 open NBitcoin.Scripting
 open NRustLightning.GUI.Client.Configuration
 open NRustLightning.GUI.Server
+open NRustLightning.Infrastructure.Interfaces
 open NRustLightning.Infrastructure.Repository
 open NRustLightning.Infrastructure.Networks
 
 type WalletService(ctx: IRemoteContext, env: IWebHostEnvironment,
                    networkProvider: NRustLightningNetworkProvider, opts: IOptionsMonitor<WalletBiwaConfiguration>,
+                   keysRepository: IKeysRepository,
                    repository: Repository, rpcClientProvider: RPCClientProvider) =
     inherit RemoteHandler<NRustLightning.GUI.Client.Wallet.WalletService>()
 

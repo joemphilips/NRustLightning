@@ -1,7 +1,6 @@
 namespace NRustLightning.GUI.Server
 
 open System
-open Microsoft.AspNetCore.Connections
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open System.Runtime.CompilerServices

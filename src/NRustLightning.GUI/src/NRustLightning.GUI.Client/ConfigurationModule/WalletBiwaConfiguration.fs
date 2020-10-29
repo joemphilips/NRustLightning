@@ -43,6 +43,15 @@ type WalletBiwaConfiguration = {
         rpc
         
     member this.Validate() =
-        if (this.RPCHost |> fun h -> Uri.IsWellFormedUriString(h, UriKind.RelativeOrAbsolute)) then Some ("Invalid URL for RPCHost") else
+        if (this.RPCHost |> fun h -> Uri.IsWellFormedUriString(h, UriKind.RelativeOrAbsolute)) |> not then Some ("Invalid URL for RPCHost") else
         if (this.RPCPort = 0) then Some("Port must not be 0") else
+        if ((this.RPCPassword |> String.IsNullOrWhiteSpace || this.RPCUser |> String.IsNullOrWhiteSpace) && this.RPCCookieFile |> String.IsNullOrWhiteSpace) then Some("You must specify either RPC user/pass or cookie file") else
+        if (this.RPCCookieFile |> String.IsNullOrWhiteSpace |> not && (this.RPCCookieFile) |> File.Exists |> not) then Some ("The RPCCookieFile does not exist") else
         None
+        
+    member this.ValidateAsync() = async {
+        match this.Validate() with
+        | Some e -> return Error e
+        | None ->
+            return Ok()
+    }
