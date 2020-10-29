@@ -18,8 +18,6 @@ namespace NRustLightning.Infrastructure.JsonConverters
 
         public override void Write(Utf8JsonWriter writer, PaymentRequest value, JsonSerializerOptions options)
         {
-            if (value is null)
-                return;
             var s = value.ToString();
             writer.WriteStringValue(s);
         }

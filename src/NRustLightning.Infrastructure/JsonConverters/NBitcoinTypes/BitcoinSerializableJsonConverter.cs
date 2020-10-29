@@ -21,7 +21,7 @@ namespace NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes
             reader.AssertJsonType(JsonTokenType.String);
             try
             {
-                IBitcoinSerializable obj = null;
+                IBitcoinSerializable? obj = null;
                 var bytes = Encoders.Hex.DecodeData(reader.GetString());
                 if (!Network.Consensus.ConsensusFactory.TryCreateNew(objectType, out obj))
                 {
