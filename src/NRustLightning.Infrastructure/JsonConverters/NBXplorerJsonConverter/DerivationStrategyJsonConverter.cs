@@ -17,7 +17,7 @@ namespace NRustLightning.Infrastructure.JsonConverters.NBXplorerJsonConverter
         public override DerivationStrategyBase Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType ==  JsonTokenType.Null)
-                return null;
+                throw new JsonException();
 
             try
             {
