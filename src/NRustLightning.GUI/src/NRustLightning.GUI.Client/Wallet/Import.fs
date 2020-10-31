@@ -8,6 +8,7 @@ open Bolero
 open Bolero.Html
 open DotNetLightning.Crypto
 open MatBlazor
+open Microsoft.AspNetCore.Components
 open Microsoft.AspNetCore.Components.Web
 open NBitcoin
 
@@ -18,10 +19,12 @@ type Model = {
     Mnemonic: MnemonicInProgress
     DialogIsOpen: bool
     SnackbarIsOpen: bool
+    WalletName: string
     ErrorMsg: string option
 }
 
 type Msg =
+    | WalletNameInput of string
     | UpdateMnemonic of index: int * content: string
     | CommitMnemonic
     | SetPin of int * string
@@ -35,6 +38,7 @@ let init = {
     Mnemonic = InEdit [ for _ in 0..23 -> "" ]
     DialogIsOpen = false
     SnackbarIsOpen = false
+    WalletName = String.Empty
     ErrorMsg = None
 }
 
@@ -45,6 +49,8 @@ type Args = {
 }
 let update { Toaster = toaster; Service = service } msg model =
     match msg with
+    | WalletNameInput s ->
+        { model with WalletName = s }, Cmd.none
     | UpdateMnemonic (i, content) ->
         let newM = model.Mnemonic |> function InEdit l -> l |> List.mapi(fun index m -> if index = i then content else m ) |> InEdit | el ->  el
         { model with Mnemonic = newM }, Cmd.none
@@ -98,7 +104,7 @@ let update { Toaster = toaster; Service = service } msg model =
         let onError e =
             toaster.Add(e.ToString(), MatToastType.Warning, "Failed to import this cipher seed") |> ignore
             NoOp
-        model, Cmd.OfAsync.either(service.TrackCipherSeed) cipherSeed onSuccess onError
+        model, Cmd.OfAsync.either(service.TrackNewWallet) (model.WalletName, cipherSeed) onSuccess onError
     | CipherSeedImported ->
         { model with SnackbarIsOpen = true }, Cmd.none
     | NoOp -> model, Cmd.none
@@ -111,13 +117,18 @@ let view model dispatch =
         function
             | InEdit mnemonic -> 
                 div [] [
+                    h1 [] [text "Please enter your wallet name"]
+                    comp<MatTextField<string>> ["Label" => "Your wallet name"
+                                                "Value" => model.WalletName
+                                                attr.callback "OnInput" (fun (e: ChangeEventArgs) -> e.Value |> unbox |> WalletNameInput |> dispatch)] []
+                    comp<MatDivider> [] []
                     h1 [] [text "Please Enter your aezeed mnemonic to recover your wallet"]
                     div [attr.style "display: flex; flex-direction: row; flex-wrap: wrap"] [
                         for i in 0..23 ->
                             div [attr.classes ["mat-elevation-z2"]; attr.style "width: 30vh; margin: 8px 5px"] [
                                 comp<MatAutocompleteList<string>> ["Items" => mnemonicWordList
                                                                    "TItem" => string
-                                                                   "Label" => sprintf "Enter %dth mnemonic" (i + 1)
+                                                                   "Label" => sprintf "Enter the %dth word" (i + 1)
                                                                    attr.callback "OnTextChanged" (fun (v: string) -> dispatch(UpdateMnemonic(i, v)))
                                                                    ] [
                                 ]

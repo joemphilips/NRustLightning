@@ -37,7 +37,7 @@ type WalletService(ctx: IRemoteContext, env: IWebHostEnvironment,
         GetWalletInfo = fun walletId -> async {
             return! repository.GetWalletInfo(walletId) |> Async.AwaitTask
         }
-        TrackCipherSeed = fun cipherSeed -> async {
+        TrackNewWallet = fun (name, cipherSeed) -> async {
             let n = opts.CurrentValue.GetNetwork()
             let rpc = opts.CurrentValue.GetRPCClient(httpClientFactory.CreateClient"WalletService")
             let extKey = ExtKey(cipherSeed.Entropy)

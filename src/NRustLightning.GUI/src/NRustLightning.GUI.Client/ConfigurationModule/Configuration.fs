@@ -159,5 +159,4 @@ type App() =
         Program.mkProgram (fun _ -> init, Cmd.ofMsg (LoadConfig Started)) (update service) view
 #if DEBUG
         |> Program.withHotReload
-        |> Program.withConsoleTrace
 #endif

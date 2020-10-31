@@ -9,7 +9,7 @@ open NRustLightning.GUI.Client.Wallet
 type WalletService = {
     GetBalance: WalletId -> Async<(Money * LNMoney) option>
     GetWalletInfo: WalletId -> Async<(WalletInfo) option>
-    TrackCipherSeed: CipherSeed -> Async<Result<unit, string>>
+    TrackNewWallet: string * CipherSeed -> Async<Result<unit, string>>
 }
     with
     interface IRemoteService with
