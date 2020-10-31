@@ -21,7 +21,7 @@ namespace NRustLightning.Binding.Tests
         public unsafe void Test1()
         {
             var nodeSeed = new byte[32];
-            var net = LDKNetwork.LDKNetwork_Testnet;
+            var net = LDKNetwork.LDKNetwork_Bitcoin;
             
             var logger = new LDKLogger();
             Log log = (thisArg, record) => {};
@@ -53,10 +53,20 @@ namespace NRustLightning.Binding.Tests
             var mon1ThisArgHandle = GCHandle.Alloc(mon1ThisArg);
             mon1.this_arg = Unsafe.AsPointer(ref mon1ThisArgHandle);
             
+            BroadcastTx broadcastTx = (arg, tx) => {};
+            var broadcast = new LDKBroadcasterInterface()
+            {
+                this_arg = null,
+                broadcast_transaction = (IntPtr)Unsafe.AsPointer(ref broadcastTx)
+            };
+            
             
             var config = Methods.UserConfig_default();
-            var cm = Methods.ChannelManager_new(net, feeEst, );
-            LDKCVecTempl_ChannelDetails details = Methods.ChannelManager_list_channels();
+            var cm = Methods.ChannelManager_new(net, feeEst, mon1, broadcast, logger, keysSource, 0);
+            fixed (LDKChannelManager* fixedCm = cm)
+            {
+                LDKCVecTempl_ChannelDetails details = Methods.ChannelManager_list_channels(Unsafe.AsPointer(ref cm));
+            }
             var d = details.data;
             Methods.ChannelDetails_get_counterparty_features(d);
             
