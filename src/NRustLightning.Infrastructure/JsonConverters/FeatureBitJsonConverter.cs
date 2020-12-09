@@ -12,7 +12,7 @@ namespace NRustLightning.Infrastructure.JsonConverters
         {
             FeatureBits result;
             if (reader.TokenType == JsonTokenType.Null)
-                return null;
+                throw new JsonException();
             if (!reader.Read())
                 throw new JsonException();
             

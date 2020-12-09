@@ -14,31 +14,41 @@ namespace NRustLightning.Infrastructure.Repository
     /// </summary>
     public class RepositorySerializer
     {
-        private readonly NRustLightningNetwork _network;
-        public Network Network => _network?.NBitcoinNetwork;
+        private readonly NRustLightningNetwork? _network;
+        public Network? Network => _network?.NBitcoinNetwork;
         
         public JsonSerializerOptions Options { get; } = new JsonSerializerOptions();
 
-        public RepositorySerializer(NRustLightningNetwork network)
+        public RepositorySerializer(NRustLightningNetwork? network = null)
         {
-            _network = network ?? throw new ArgumentNullException(nameof(network));
+            _network = network;
             ConfigureSerializer(Options);
         }
 
         public void ConfigureSerializer(JsonSerializerOptions options)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
-            options.Converters.Add(new DerivationStrategyJsonConverter(_network.NbXplorerNetwork.DerivationStrategyFactory));
-            options.Converters.Add(new BitcoinAddressJsonConverter(_network.NBitcoinNetwork));
+            if (_network != null)
+            {
+                options.Converters.Add(new DerivationStrategyJsonConverter(_network.NbXplorerNetwork.DerivationStrategyFactory));
+                options.Converters.Add(new BitcoinAddressJsonConverter(_network.NBitcoinNetwork));
+            }
             options.Converters.Add(new HexPubKeyConverter());
             options.Converters.Add(new PaymentRequestJsonConverter());
             options.Converters.Add(new NullableStructConverterFactory());
-            options.Converters.Add(new TrackedSourceJsonConverter(_network.NbXplorerNetwork));
+            if (_network != null)
+            {
+                options.Converters.Add(new TrackedSourceJsonConverter(_network.NbXplorerNetwork));
+            }
+
             options.Converters.Add(new uint256JsonConverter());
             options.Converters.Add(new FeatureBitJsonConverter());
             options.Converters.Add(new KeyPathJsonConverter());
             options.Converters.Add(new ScriptJsonConverter());
-            options.Converters.Add(new BitcoinSerializableJsonConverterFactory(_network.NBitcoinNetwork));
+            if (_network != null)
+            {
+                options.Converters.Add(new BitcoinSerializableJsonConverterFactory(_network.NBitcoinNetwork));
+            }
             // this is a last resort for serializing F# value, we usually want to try custom converters first.
             // So it must be specified at last.
             options.Converters.Add(new JsonFSharpConverter());

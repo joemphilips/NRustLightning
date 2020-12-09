@@ -1,7 +1,7 @@
 using NBitcoin.RPC;
 using NRustLightning.Infrastructure.Networks;
 
-namespace NRustLightning.Server.Interfaces
+namespace NRustLightning.Infrastructure.Interfaces
 {
     public interface IRPCClientProvider
     {

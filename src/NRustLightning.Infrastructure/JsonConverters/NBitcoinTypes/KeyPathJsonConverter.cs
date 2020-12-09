@@ -2,8 +2,6 @@ using System;
 using System.Reflection;
 using System.Text.Json;
 using NBitcoin;
-using NBitcoin.JsonConverters;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes
 {
@@ -17,9 +15,9 @@ namespace NRustLightning.Infrastructure.JsonConverters.NBitcoinTypes
         public override KeyPath Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.Null)
-                return null;
+                throw new JsonException();
             reader.AssertJsonType(JsonTokenType.String);
-            if (KeyPath.TryParse(reader.GetString(), out var k))
+            if (KeyPath.TryParse(reader.GetString(), out var k) && k != null)
                 return k;
             throw new JsonException("Invalid key path");
         }

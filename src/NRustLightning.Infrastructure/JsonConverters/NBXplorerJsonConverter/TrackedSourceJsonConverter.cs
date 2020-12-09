@@ -17,7 +17,7 @@ namespace NRustLightning.Infrastructure.JsonConverters.NBXplorerJsonConverter
         public override TrackedSource Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.String)
-                return null;
+                throw new JsonException();
 
             var s = reader.GetString();
             if (TrackedSource.TryParse(s, out var v, Network))

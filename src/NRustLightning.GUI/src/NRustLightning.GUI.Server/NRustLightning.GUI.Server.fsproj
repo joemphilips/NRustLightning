@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NRustLightning.GUI.Client\NRustLightning.GUI.Client.fsproj" />
+    <ProjectReference Include="..\..\..\NRustLightning.Infrastructure\NRustLightning.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Constnats.fs" />
+    <Compile Include="Repository.fs" />
+    <Compile Include="Services\ConfigurationService.fs" />
+    <Compile Include="Services\WalletService.fs" />
+    <Compile Include="Services\MainService.fs" />
+    <Compile Include="Extensions.fs" />
+    <Compile Include="HotReloadExtensions.fs" />
+    <Compile Include="Startup.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Bolero.Server" Version="0.*" />
+    <PackageReference Include="Bolero.HotReload.Server" Version="0.*" />
+    <PackageReference Include="FSharp.Control.AsyncSeq" Version="3.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="5.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="5.0.*" />
+    <PackageReference Include="System.IO.FileSystem.Watcher.Polling" Version="0.1.2-e200127-1" />
+  </ItemGroup>
+</Project>

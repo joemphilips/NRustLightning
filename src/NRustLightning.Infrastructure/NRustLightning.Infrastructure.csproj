@@ -2,12 +2,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NRustLightning\NRustLightning.csproj" />
-    <ProjectReference Include="..\FSharp.SystemTextJson\FSharp.SystemTextJson.fsproj" />
     <ProjectReference Include="..\NRustLightning.Net\NRustLightning.Net.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="DBTrie" Version="1.0.31" />
+    <PackageReference Include="FSharp.SystemTextJson" Version="0.15.14" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.6" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.6" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.6" />

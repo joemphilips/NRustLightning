@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RazorLangVersion>3.0</RazorLangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Utils.fs" />
+    <Compile Include="Localization.fs" />
+    <Compile Include="Themes.fs" />
+    <Compile Include="AppState.fs" />
+    <Compile Include="Components.fs" />
+    <Compile Include="ConfigurationModule\WalletBiwaConfiguration.fs" />
+    <Compile Include="ConfigurationModule\Configuration.fs" />
+    <Compile Include="CoinView.fs" />
+    <Compile Include="Breadcrumbs.fs" />
+    <Compile Include="Wallet\Utils.fs" />
+    <Compile Include="Wallet\WalletService.fs" />
+    <Compile Include="Wallet\Import.fs" />
+    <Compile Include="Wallet\Generate.fs" />
+    <Compile Include="Wallet\WalletInfo.fs" />
+    <Compile Include="Wallet\Wallet.fs" />
+    <Compile Include="NavMenu.fs" />
+    <Compile Include="Main.fs" />
+    <Compile Include="Startup.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Bolero" Version="0.*" />
+    <PackageReference Include="Bolero.Build" Version="0.*" />
+    <PackageReference Include="Bolero.HotReload" Version="0.*" />
+    <PackageReference Include="Humanizer" Version="2.8.26" />
+    <PackageReference Include="MatBlazor" Version="2.7.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="0.7.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="5.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Localization" Version="3.1.9" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\NRustLightning.Infrastructure\NRustLightning.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="UIResources.properties" />
+    <Folder Include="Resources" />
+  </ItemGroup>
+</Project>

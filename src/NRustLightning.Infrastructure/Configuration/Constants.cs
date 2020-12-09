@@ -8,9 +8,9 @@ namespace NRustLightning.Infrastructure.Configuration
     public static class Constants
     {
         public static readonly string HomePath =
-            Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX
+            (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX
                 ? Environment.GetEnvironmentVariable("HOME")
-                : Environment.GetEnvironmentVariable("%HOMEDRIVE%%HOMEPATH%");
+                : Environment.GetEnvironmentVariable("%HOMEDRIVE%%HOMEPATH%")) ?? Utils.Utils.Fail<string>("Failed to define Home directory Path");
 
         public static readonly string HomeDirectoryName = ".nrustlightning";
         public static readonly string HomeDirectoryPath = Path.Join(HomePath, HomeDirectoryName);

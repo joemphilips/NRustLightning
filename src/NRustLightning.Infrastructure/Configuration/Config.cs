@@ -23,12 +23,12 @@ namespace NRustLightning.Infrastructure.Configuration
         public Uri NBXplorerUri { get; set; } = new Uri(Constants.DefaultNBXplorerUri);
         public string? NBXCookieFile = null;
         public string ConfigurationFile { get; set; } = "nrustlightning.conf";
-        public string DataDir { get; set; }
+        public string? DataDir { get; set; }
         public List<ChainConfiguration> ChainConfiguration { get; } = new List<ChainConfiguration>();
 
         public UserConfigObject RustLightningConfig { get; set; } = new UserConfigObject();
 
-        public string DBFilePath { get; set; }
+        public string? DBFilePath { get; set; }
 
         public int PaymentTimeoutSec { get; set; } = Constants.DefaultPaymentTimeoutSec;
 
@@ -50,7 +50,7 @@ namespace NRustLightning.Infrastructure.Configuration
             logger?.LogInformation($"Network type: {networkType}");
             NetworkProvider = new NRustLightningNetworkProvider(networkType);
             var defaultSettings = NRustLightningDefaultSettings.GetDefaultSettings(NetworkProvider.NetworkType);
-            var d = config.GetOrDefault<string>("datadir", null);
+            var d = config.GetOrDefault<string?>("datadir", null);
             DataDir = d is null ? Path.GetDirectoryName(defaultSettings.DefaultDataDir) : Path.Join(d, NRustLightningDefaultSettings.GetFolderName(networkType));
             
             if (!Directory.Exists(DataDir))

@@ -3,6 +3,7 @@ using System.Net.Http;
 using Microsoft.Extensions.Options;
 using NBitcoin.RPC;
 using NRustLightning.Infrastructure.Configuration;
+using NRustLightning.Infrastructure.Interfaces;
 using NRustLightning.Infrastructure.Networks;
 using NRustLightning.Server.Configuration;
 using NRustLightning.Server.Interfaces;
@@ -18,10 +19,10 @@ namespace NRustLightning.Server.Services
             foreach (var chainConfig in config.Value.ChainConfiguration)
             {
                 var rpc = chainConfig?.Rpc;
-                if (!(chainConfig is null))
+                if (!(rpc is null))
                 {
                     rpc.HttpClient = httpClientFactory.CreateClient(nameof(RPCClientProvider));
-                    _ChainClients.Add(chainConfig.CryptoCode, rpc);
+                    _ChainClients.Add(chainConfig!.CryptoCode, rpc);
                 }
             }
         }
